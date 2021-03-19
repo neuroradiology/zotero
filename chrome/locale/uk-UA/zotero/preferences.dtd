@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Загальні">
 
-<!ENTITY zotero.preferences.userInterface "Інтерфейс">
-<!ENTITY zotero.preferences.layout "Компонування">
-<!ENTITY zotero.preferences.layout.standard "Стандарт">
-<!ENTITY zotero.preferences.layout.stacked "Stacked">
-<!ENTITY zotero.preferences.fontSize "Розмір шрифту:">
-<!ENTITY zotero.preferences.fontSize.small "Маленький">
-<!ENTITY zotero.preferences.fontSize.medium "Середній">
-<!ENTITY zotero.preferences.fontSize.large "Великий">
-<!ENTITY zotero.preferences.fontSize.xlarge "Величезний">
-<!ENTITY zotero.preferences.fontSize.notes "Розмір шрифту приміток">
-
 <!ENTITY zotero.preferences.fileHandling "File Handling">
 <!ENTITY zotero.preferences.automaticSnapshots "Автоматично робити знімки при створенні документів з веб-сторінок">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Автоматично прикріпляти пов'язані PDF та інші файли при зберіганні">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Об'єднати локальні дані з віддаленими даними, не звертаючи уваги на історію синхронізації.">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Restore from Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Overwrite local Zotero data with data from the online library.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Restore to Online Library">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Replace Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Overwrite online library with local Zotero data">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Скинути історію синхронізації файлів">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Compare all attachment files with the storage service">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Отримати додаткові стилі...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Відкрити/закрити панель Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Зберегти в Zotero (значок в адресному рядку браузера)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Перключенні повноекранного режиму">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Фокус на панелі бібліотек">

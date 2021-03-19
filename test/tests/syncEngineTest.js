@@ -244,7 +244,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/collections?format=json&collectionKey=AAAAAAAA",
+				url: "users/1/collections?collectionKey=AAAAAAAA",
 				status: 200,
 				headers: headers,
 				json: [
@@ -257,7 +257,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/searches?format=json&searchKey=AAAAAAAA",
+				url: "users/1/searches?searchKey=AAAAAAAA",
 				status: 200,
 				headers: headers,
 				json: [
@@ -270,7 +270,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/items?format=json&itemKey=AAAAAAAA&includeTrashed=1",
+				url: "users/1/items?itemKey=AAAAAAAA&includeTrashed=1",
 				status: 200,
 				headers: headers,
 				json: [
@@ -284,7 +284,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/items?format=json&itemKey=BBBBBBBB&includeTrashed=1",
+				url: "users/1/items?itemKey=BBBBBBBB&includeTrashed=1",
 				status: 200,
 				headers: headers,
 				json: [
@@ -339,7 +339,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			yield assertInCache(obj);
 			
 			obj = yield Zotero.Items.getByLibraryAndKeyAsync(userLibraryID, "BBBBBBBB");
-			assert.equal(obj.getNote(), 'This is a note.');
+			assert.equal(obj.note, 'This is a note.');
 			assert.equal(obj.parentItemID, parentItemID);
 			assert.equal(obj.version, 3);
 			assert.isTrue(obj.synced);
@@ -418,7 +418,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `groups/${group.id}/collections?format=json&collectionKey=AAAAAAAA`,
+				url: `groups/${group.id}/collections?collectionKey=AAAAAAAA`,
 				status: 200,
 				headers: headers,
 				json: [
@@ -431,7 +431,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `groups/${group.id}/searches?format=json&searchKey=AAAAAAAA`,
+				url: `groups/${group.id}/searches?searchKey=AAAAAAAA`,
 				status: 200,
 				headers: headers,
 				json: [
@@ -444,7 +444,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `groups/${group.id}/items?format=json&itemKey=AAAAAAAA&includeTrashed=1`,
+				url: `groups/${group.id}/items?itemKey=AAAAAAAA&includeTrashed=1`,
 				status: 200,
 				headers: headers,
 				json: [
@@ -458,7 +458,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `groups/${group.id}/items?format=json&itemKey=BBBBBBBB&includeTrashed=1`,
+				url: `groups/${group.id}/items?itemKey=BBBBBBBB&includeTrashed=1`,
 				status: 200,
 				headers: headers,
 				json: [
@@ -513,7 +513,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			yield assertInCache(obj);
 			
 			obj = Zotero.Items.getByLibraryAndKey(libraryID, "BBBBBBBB");
-			assert.equal(obj.getNote(), 'This is a note.');
+			assert.equal(obj.note, 'This is a note.');
 			assert.equal(obj.parentItemID, parentItemID);
 			assert.equal(obj.version, 3);
 			assert.isTrue(obj.synced);
@@ -746,35 +746,58 @@ describe("Zotero.Sync.Data.Engine", function () {
 		})
 		
 		
-		it("should upload child item after parent item", function* () {
-			({ engine, client, caller } = yield setup());
+		it("should upload child items after parent items", async function () {
+			({ engine, client, caller } = await setup());
 			
 			var library = Zotero.Libraries.userLibrary;
 			var lastLibraryVersion = 5;
 			library.libraryVersion = lastLibraryVersion;
-			yield library.saveTx();
+			await library.saveTx();
 			
-			// Create top-level note, book, and child note
-			var item1 = new Zotero.Item('note');
-			item1.setNote('A');
-			yield item1.saveTx();
-			var item2 = yield createDataObject('item');
-			var item3 = new Zotero.Item('note');
-			item3.parentItemID = item2.id;
-			item3.setNote('B');
-			yield item3.saveTx();
+			// Create top-level note, embedded-image attachment, book, and child note
+			var note1 = await createDataObject('item', { itemType: 'note', note: 'A' });
+			var attachment = await Zotero.Attachments.importEmbeddedImage({
+				blob: await File.createFromFileName(
+					OS.Path.join(getTestDataDirectory().path, 'test.png')
+				),
+				parentItemID: note1.id
+			});
+			var item = await createDataObject('item');
+			var note2 = await createDataObject('item', { itemType: 'note', parentID: item.id, note: 'B' });
 			// Move note under parent
-			item1.parentItemID = item2.id;
-			yield item1.saveTx();
+			note1.parentItemID = item.id;
+			await note1.saveTx();
 			var handled = false;
 			
 			server.respond(function (req) {
 				if (req.method == "POST" && req.url == baseURL + "users/1/items") {
 					let json = JSON.parse(req.requestBody);
-					assert.lengthOf(json, 3);
-					assert.equal(json[0].key, item2.key);
-					assert.equal(json[1].key, item1.key);
-					assert.equal(json[2].key, item3.key);
+					assert.lengthOf(json, 4);
+					assert.equal(json[0].key, item.key);
+					assert.oneOf(
+						[json[1].key, json[2].key, json[3].key].join(''),
+						[
+							[note1.key, attachment.key, note2.key].join(''),
+							[note2.key, note1.key, attachment.key].join(''),
+						]
+					);
+					let successful;
+					if (json[1].key == note1.key) {
+						successful = {
+							"0": item.toResponseJSON({ version: lastLibraryVersion }),
+							"1": note1.toResponseJSON({ version: lastLibraryVersion }),
+							"2": attachment.toResponseJSON({ version: lastLibraryVersion }),
+							"3": note2.toResponseJSON({ version: lastLibraryVersion }),
+						};
+					}
+					else {
+						successful = {
+							"0": item.toResponseJSON({ version: lastLibraryVersion }),
+							"1": note2.toResponseJSON({ version: lastLibraryVersion }),
+							"2": note1.toResponseJSON({ version: lastLibraryVersion }),
+							"3": attachment.toResponseJSON({ version: lastLibraryVersion }),
+						};
+					}
 					handled = true;
 					req.respond(
 						200,
@@ -783,11 +806,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 							"Last-Modified-Version": ++lastLibraryVersion
 						},
 						JSON.stringify({
-							successful: {
-								"0": item2.toResponseJSON({ version: lastLibraryVersion }),
-								"1": item1.toResponseJSON({ version: lastLibraryVersion }),
-								"2": item3.toResponseJSON({ version: lastLibraryVersion })
-							},
+							successful,
 							unchanged: {},
 							failed: {}
 						})
@@ -796,8 +815,58 @@ describe("Zotero.Sync.Data.Engine", function () {
 				}
 			});
 			
-			yield engine.start();
+			await engine.start();
 			assert.isTrue(handled);
+		});
+		
+		
+		it("shouldn't update existing cache object after upload on 'unchanged' response", async function () {
+			({ engine, client, caller } = await setup());
+			
+			var library = Zotero.Libraries.userLibrary;
+			var lastLibraryVersion = 5;
+			library.libraryVersion = lastLibraryVersion;
+			await library.saveTx();
+			
+			var item = await createDataObject('item', { version: 1, title: "A" });
+			var json = item.toJSON();
+			// Save current version to cache so the patch object is empty, as if the item had been
+			// added to a collection and removed from it (such that even dateModified didn't change)
+			await Zotero.Sync.Data.Local.saveCacheObjects('item', library.id, [json]);
+			
+			server.respond(function (req) {
+				if (req.method == "POST" && req.url == baseURL + "users/1/items") {
+					let json = JSON.parse(req.requestBody);
+					req.respond(
+						200,
+						{
+							"Content-Type": "application/json",
+							"Last-Modified-Version": ++lastLibraryVersion
+						},
+						JSON.stringify({
+							successful: {},
+							unchanged: {
+								"0": item.key
+							},
+							failed: {}
+						})
+					);
+					return;
+				}
+			});
+			
+			await engine.start();
+			
+			// Check data in cache
+			var version = await Zotero.Sync.Data.Local.getLatestCacheObjectVersion(
+				'item', library.id, item.key
+			);
+			assert.equal(version, 1);
+			json = await Zotero.Sync.Data.Local.getCacheObject(
+				'item', library.id, item.key, 1
+			);
+			assert.propertyVal(json.data, 'itemType', 'book');
+			assert.propertyVal(json.data, 'title', 'A');
 		});
 		
 		
@@ -1074,7 +1143,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `${target}/items?format=json&itemKey=${item.key}&includeTrashed=1`,
+				url: `${target}/items?itemKey=${item.key}&includeTrashed=1`,
 				status: 200,
 				headers,
 				json: [itemResponseJSON]
@@ -1227,8 +1296,8 @@ describe("Zotero.Sync.Data.Engine", function () {
 						assert.propertyVal(itemJSON, "contentType", item.attachmentContentType);
 						assert.propertyVal(itemJSON, "charset", item.attachmentCharset);
 						assert.propertyVal(itemJSON, "filename", item.attachmentFilename);
-						assert.propertyVal(itemJSON, "mtime", null);
-						assert.propertyVal(itemJSON, "md5", null);
+						assert.notPropertyVal(itemJSON, "mtime");
+						assert.notPropertyVal(itemJSON, "md5");
 						req.respond(
 							200,
 							{
@@ -1316,6 +1385,62 @@ describe("Zotero.Sync.Data.Engine", function () {
 			assert.equal(json.data.mtime, mtime);
 			assert.equal(json.data.md5, md5);
 		})
+		
+		// See also: "shouldn't include external annotations" in syncLocalTest.js
+		it("shouldn't upload external annotations", async function () {
+			({ engine, client, caller } = await setup());
+			
+			var library = Zotero.Libraries.userLibrary;
+			var libraryID = library.id;
+			var lastLibraryVersion = 5;
+			library.libraryVersion = lastLibraryVersion;
+			await library.saveTx();
+			var nextLibraryVersion = lastLibraryVersion + 1;
+			
+			var attachment = await importFileAttachment('test.pdf');
+			var annotation1 = await createAnnotation('highlight', attachment);
+			var annotation2 = await createAnnotation('highlight', attachment, { isExternal: true });
+			
+			var item1ResponseJSON = attachment.toResponseJSON();
+			item1ResponseJSON.version = item1ResponseJSON.data.version = nextLibraryVersion;
+			var item2ResponseJSON = annotation1.toResponseJSON();
+			item2ResponseJSON.version = item2ResponseJSON.data.version = nextLibraryVersion;
+			
+			server.respond(function (req) {
+				if (req.method == "POST") {
+					assert.equal(
+						req.requestHeaders["If-Unmodified-Since-Version"], lastLibraryVersion
+					);
+					
+					if (req.url == baseURL + "users/1/items") {
+						let json = JSON.parse(req.requestBody);
+						assert.lengthOf(json, 2);
+						let keys = [json[0].key, json[1].key];
+						assert.include(keys, attachment.key);
+						assert.include(keys, annotation1.key);
+						
+						req.respond(
+							200,
+							{
+								"Content-Type": "application/json",
+								"Last-Modified-Version": nextLibraryVersion
+							},
+							JSON.stringify({
+								successful: {
+									"0": item1ResponseJSON,
+									"1": item2ResponseJSON
+								},
+								unchanged: {},
+								failed: {}
+							})
+						);
+						return;
+					}
+				}
+			})
+			
+			await engine.start();
+		});
 		
 		it("should update local objects with remotely saved version after uploading if necessary", function* () {
 			({ engine, client, caller } = yield setup());
@@ -1480,7 +1605,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			yield engine.start();
 		})
 		
-		it("should ignore errors when saving downloaded objects", function* () {
+		it("should add objects to sync queue if they can't be saved", function* () {
 			({ engine, client, caller } = yield setup({
 				stopOnError: false
 			}));
@@ -1540,7 +1665,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/collections?format=json&collectionKey=AAAAAAAA%2CBBBBBBBB%2CCCCCCCCC",
+				url: "users/1/collections?collectionKey=AAAAAAAA%2CBBBBBBBB%2CCCCCCCCC",
 				status: 200,
 				headers: headers,
 				json: [
@@ -1560,14 +1685,14 @@ describe("Zotero.Sync.Data.Engine", function () {
 						key: "CCCCCCCC",
 						version: 1,
 						name: "C",
-						// Unknown field -- should be ignored
+						// Unknown field -- collection should be queued
 						unknownField: 5
 					})
 				]
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/searches?format=json&searchKey=DDDDDDDD%2CEEEEEEEE%2CFFFFFFFF",
+				url: "users/1/searches?searchKey=DDDDDDDD%2CEEEEEEEE%2CFFFFFFFF",
 				status: 200,
 				headers: headers,
 				json: [
@@ -1613,7 +1738,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/items?format=json&itemKey=GGGGGGGG%2CHHHHHHHH&includeTrashed=1",
+				url: "users/1/items?itemKey=GGGGGGGG%2CHHHHHHHH&includeTrashed=1",
 				status: 200,
 				headers: headers,
 				json: [
@@ -1622,7 +1747,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 						version: 3,
 						itemType: "book",
 						title: "G",
-						// Unknown item field -- should be ignored
+						// Unknown item field -- item should be queued
 						unknownField: "B"
 					}),
 					makeItemJSON({
@@ -1636,7 +1761,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: "users/1/items?format=json&itemKey=JJJJJJJJ&includeTrashed=1",
+				url: "users/1/items?itemKey=JJJJJJJJ&includeTrashed=1",
 				status: 200,
 				headers: headers,
 				json: [
@@ -1668,7 +1793,6 @@ describe("Zotero.Sync.Data.Engine", function () {
 			// Check for saved objects
 			yield assert.eventually.ok(Zotero.Collections.getByLibraryAndKeyAsync(userLibraryID, "AAAAAAAA"));
 			yield assert.eventually.ok(Zotero.Searches.getByLibraryAndKeyAsync(userLibraryID, "DDDDDDDD"));
-			yield assert.eventually.ok(Zotero.Items.getByLibraryAndKeyAsync(userLibraryID, "GGGGGGGG"));
 			
 			// Check for queued objects
 			var keys = yield Zotero.Sync.Data.Local.getObjectsFromSyncQueue('collection', userLibraryID);
@@ -1678,9 +1802,113 @@ describe("Zotero.Sync.Data.Engine", function () {
 			assert.sameMembers(keys, ['EEEEEEEE', 'FFFFFFFF']);
 			
 			var keys = yield Zotero.Sync.Data.Local.getObjectsFromSyncQueue('item', userLibraryID);
-			assert.sameMembers(keys, ['HHHHHHHH', 'JJJJJJJJ']);
+			assert.sameMembers(keys, ['GGGGGGGG', 'HHHHHHHH', 'JJJJJJJJ']);
 			
-			assert.equal(spy.callCount, 3);
+			// Unknown search condition, search operator, item field, and item type
+			//
+			// Missing parent collection and item collection don't throw errors because they don't
+			// indicate a guaranteed problem with the client
+			assert.equal(spy.callCount, 4);
+		});
+		
+		it("shouldn't show CR window if remote data contains unknown field", async function () {
+			({ engine, client, caller } = await setup({
+				stopOnError: false
+			}));
+			
+			var library = Zotero.Libraries.userLibrary;
+			library.libraryVersion = 1;
+			await library.saveTx();
+			
+			var item = createUnsavedDataObject('item', { title: 'a' });
+			item.version = 1;
+			await item.saveTx();
+			
+			var json = item.toResponseJSON();
+			json.data.title = 'b';
+			json.data.invalidField = 'abcd';
+			
+			var headers = {
+				"Last-Modified-Version": 2
+			};
+			server.respond(function (req) {
+				// Return 412, because item has changed remotely
+				if (req.method == "POST") {
+					if (!req.url.startsWith(baseURL + "users/1/items")) {
+						throw new Error("Unexpected POST");
+					}
+					req.respond(
+						412,
+						{
+							"Last-Modified-Version": 2
+						},
+						""
+					);
+				}
+			});
+			setResponse({
+				method: "GET",
+				url: "users/1/settings?since=1",
+				status: 200,
+				headers,
+				json: {}
+			});
+			setResponse({
+				method: "GET",
+				url: "users/1/collections?format=versions&since=1",
+				status: 200,
+				headers,
+				json: {}
+			});
+			setResponse({
+				method: "GET",
+				url: "users/1/searches?format=versions&since=1",
+				status: 200,
+				headers,
+				json: {}
+			});
+			setResponse({
+				method: "GET",
+				url: "users/1/items/top?format=versions&since=1&includeTrashed=1",
+				status: 200,
+				headers,
+				json: {
+					[item.key]: 2
+				}
+			});
+			setResponse({
+				method: "GET",
+				url: "users/1/items?format=versions&since=1&includeTrashed=1",
+				status: 200,
+				headers,
+				json: {
+					[item.key]: 2
+				}
+			});
+			setResponse({
+				method: "GET",
+				url: `users/1/items?itemKey=${item.key}&includeTrashed=1`,
+				status: 200,
+				headers,
+				json: [json]
+			});
+			setResponse({
+				method: "GET",
+				url: "users/1/deleted?since=1",
+				status: 200,
+				headers,
+				json: {}
+			});
+			var spy = sinon.spy(engine, "onError");
+			await engine.start();
+			
+			var userLibraryID = Zotero.Libraries.userLibraryID;
+			
+			// Library version should have been updated
+			assert.equal(Zotero.Libraries.getVersion(userLibraryID), 2);
+			
+			var keys = await Zotero.Sync.Data.Local.getObjectsFromSyncQueue('item', userLibraryID);
+			assert.sameMembers(keys, [item.key]);
 		});
 		
 		it("should delay on second upload conflict", function* () {
@@ -1699,20 +1927,18 @@ describe("Zotero.Sync.Data.Engine", function () {
 			var item = yield createDataObject('item');
 			
 			var lastLibraryVersion = 5;
-			var calls = 0;
+			var postCalls = 0;
+			var settingsCalls = 0;
 			var t;
 			server.respond(function (req) {
-				if (req.method == "POST") {
-					calls++;
-				}
-				
 				// On first and second upload attempts, return 412
-				if (req.method == "POST" && req.url.startsWith(baseURL + "users/1/items")) {
-					if (calls == 1 || calls == 2) {
-						if (calls == 2) {
-							assert.isAbove(new Date() - t, 50);
-						}
-						t = new Date();
+				if (req.method == "POST") {
+					if (!req.url.startsWith(baseURL + "users/1/items")) {
+						throw new Error("Unexpected POST");
+					}
+					postCalls++;
+					// 1st and 2nd requests
+					if (postCalls == 1 || postCalls == 2) {
 						req.respond(
 							412,
 							{
@@ -1721,24 +1947,34 @@ describe("Zotero.Sync.Data.Engine", function () {
 							""
 						);
 					}
+					// 3rd request
 					else {
+						let json = item.toResponseJSON();
+						json.version = ++lastLibraryVersion;
 						req.respond(
 							200,
 							{
-								"Last-Modified-Version": ++lastLibraryVersion
+								"Last-Modified-Version": json.version
 							},
 							JSON.stringify({
 								successful: {
-									"0": item.toResponseJSON()
+									"0": json
 								},
 								unchanged: {},
 								failed: {}
 							})
 						);
 					}
+					t = new Date();
 					return;
 				}
 				if (req.method == "GET") {
+					if (req.url.startsWith(baseURL + "users/1/settings")) {
+						settingsCalls++;
+						if (settingsCalls == 2) {
+							assert.isAbove(new Date() - t, 75);
+						}
+					}
 					req.respond(
 						200,
 						{
@@ -1746,14 +1982,16 @@ describe("Zotero.Sync.Data.Engine", function () {
 						},
 						JSON.stringify({})
 					);
+					t = new Date();
 					return;
 				}
 			});
 			
-			Zotero.Sync.Data.conflictDelayIntervals = [50, 70000];
+			Zotero.Sync.Data.conflictDelayIntervals = [75, 70000];
 			yield engine.start();
 			
-			assert.equal(calls, 3);
+			assert.equal(postCalls, 3);
+			assert.equal(settingsCalls, 2);
 			assert.isTrue(item.synced);
 			assert.equal(library.libraryVersion, lastLibraryVersion);
 		});
@@ -2138,7 +2376,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${itemKey}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${itemKey}&includeTrashed=1`,
 				status: 200,
 				headers,
 				json: [
@@ -2193,7 +2431,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${itemKey}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${itemKey}&includeTrashed=1`,
 				status: 200,
 				headers,
 				json: [
@@ -2257,7 +2495,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${itemKey}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${itemKey}&includeTrashed=1`,
 				status: 200,
 				headers,
 				json: [itemResponseJSON]
@@ -2317,7 +2555,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			});
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=AAAAAAAA%2C${itemKey}&includeTrashed=1`,
+				url: `users/1/items?itemKey=AAAAAAAA%2C${itemKey}&includeTrashed=1`,
 				status: 200,
 				headers: headers,
 				json: [
@@ -2591,7 +2829,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			};
 			setResponse({
 				method: "GET",
-				url: "users/1/collections?format=json&collectionKey=AAAAAAAA%2CBBBBBBBB%2CCCCCCCCC",
+				url: "users/1/collections?collectionKey=AAAAAAAA%2CBBBBBBBB%2CCCCCCCCC",
 				status: 200,
 				headers,
 				json: [
@@ -2632,7 +2870,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			};
 			setResponse({
 				method: "GET",
-				url: `users/1/collections?format=json&collectionKey=${collectionKey}`,
+				url: `users/1/collections?collectionKey=${collectionKey}`,
 				status: 200,
 				headers,
 				json: [
@@ -2676,7 +2914,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			};
 			setResponse({
 				method: "GET",
-				url: `users/1/collections?format=json&collectionKey=${collectionKey}`,
+				url: `users/1/collections?collectionKey=${collectionKey}`,
 				status: 200,
 				headers,
 				json: [
@@ -3223,7 +3461,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${objects.map(o => o.key).join('%2C')}`
+				url: `users/1/items?itemKey=${objects.map(o => o.key).join('%2C')}`
 					+ `&includeTrashed=1`,
 				status: 200,
 				headers: {
@@ -3324,13 +3562,13 @@ describe("Zotero.Sync.Data.Engine", function () {
 				await obj.saveTx({
 					skipDateModifiedUpdate: true
 				});
-				values[i].left.note = obj.getNote();
+				values[i].left.note = obj.note;
 				values[i].left.version = obj.getField('version');
 			}
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${objects.map(o => o.key).join('%2C')}`
+				url: `users/1/items?itemKey=${objects.map(o => o.key).join('%2C')}`
 					+ `&includeTrashed=1`,
 				status: 200,
 				headers: {
@@ -3366,8 +3604,8 @@ describe("Zotero.Sync.Data.Engine", function () {
 			await engine._downloadObjects('item', objects.map(o => o.key));
 			await crPromise;
 			
-			assert.equal(objects[0].getNote(), values[0].right.note);
-			assert.equal(objects[1].getNote(), values[1].left.note);
+			assert.equal(objects[0].note, values[0].right.note);
+			assert.equal(objects[1].note, values[1].left.note);
 			assert.equal(objects[0].version, values[0].right.version);
 			assert.equal(objects[1].version, values[1].right.version);
 			assert.isTrue(objects[0].synced);
@@ -3446,7 +3684,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${objects.map(o => o.key).join('%2C')}`
+				url: `users/1/items?itemKey=${objects.map(o => o.key).join('%2C')}`
 					+ `&includeTrashed=1`,
 				status: 200,
 				headers: {
@@ -3466,7 +3704,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 				assert.equal(mergeGroup.rightpane.getAttribute('selected'), 'true');
 				assert.equal(
 					resolveAll.label,
-					Zotero.getString('sync.conflict.resolveAllRemoteFields')
+					Zotero.getString('sync.conflict.resolveAllRemote')
 				);
 				wizard.getButton('next').click();
 				
@@ -3475,7 +3713,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 				mergeGroup.leftpane.click();
 				assert.equal(
 					resolveAll.label,
-					Zotero.getString('sync.conflict.resolveAllLocalFields')
+					Zotero.getString('sync.conflict.resolveAllLocal')
 				);
 				resolveAll.click();
 				
@@ -3568,7 +3806,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${objects.map(o => o.key).join('%2C')}`
+				url: `users/1/items?itemKey=${objects.map(o => o.key).join('%2C')}`
 					+ `&includeTrashed=1`,
 				status: 200,
 				headers: {
@@ -3588,7 +3826,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 				assert.equal(mergeGroup.rightpane.getAttribute('selected'), 'true');
 				assert.equal(
 					resolveAll.label,
-					Zotero.getString('sync.conflict.resolveAllRemoteFields')
+					Zotero.getString('sync.conflict.resolveAllRemote')
 				);
 				wizard.getButton('next').click();
 				
@@ -3596,7 +3834,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 				assert.equal(mergeGroup.rightpane.getAttribute('selected'), 'true');
 				assert.equal(
 					resolveAll.label,
-					Zotero.getString('sync.conflict.resolveAllRemoteFields')
+					Zotero.getString('sync.conflict.resolveAllRemote')
 				);
 				resolveAll.click();
 				
@@ -3654,7 +3892,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${obj.key}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${obj.key}&includeTrashed=1`,
 				status: 200,
 				headers: {
 					"Last-Modified-Version": 15
@@ -3714,7 +3952,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${obj.key}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${obj.key}&includeTrashed=1`,
 				status: 200,
 				headers: {
 					"Last-Modified-Version": 15
@@ -3769,7 +4007,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${key}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${key}&includeTrashed=1`,
 				status: 200,
 				headers: {
 					"Last-Modified-Version": 15
@@ -3824,7 +4062,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${key}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${key}&includeTrashed=1`,
 				status: 200,
 				headers: {
 					"Last-Modified-Version": 15
@@ -3843,7 +4081,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 			assert.ok(yield Zotero.Sync.Data.Local.getDateDeleted('item', libraryID, key));
 		});
 		
-		it("should handle remote move to trash and local deletion", function* () {
+		it("should delete locally trashed item on remote deletion", function* () {
 			var libraryID = Zotero.Libraries.userLibraryID;
 			({ engine, client, caller } = yield setup());
 			var type = 'item';
@@ -3879,6 +4117,85 @@ describe("Zotero.Sync.Data.Engine", function () {
 			
 			// Deletion shouldn't be in sync delete log
 			assert.isFalse(yield Zotero.Sync.Data.Local.getDateDeleted('item', libraryID, obj.key));
+		});
+	});
+	
+	
+	describe("#_updateGroupItemUsers()", function () {
+		it("should update createdByUserID and lastModifiedByUserID", async function () {
+			var { id: groupID, libraryID } = await createGroup();
+			({ engine, client, caller } = await setup({ libraryID }));
+			
+			var item1 = await createDataObject('item', { libraryID });
+			var item1DateModified = item1.dateModified;
+			var item2 = await createDataObject('item', { libraryID });
+			var responseJSON = [
+				item1.toResponseJSON(),
+				item2.toResponseJSON()
+			];
+			responseJSON[0].meta.createdByUser = {
+				id: 152315,
+				username: "user152315",
+				name: "User 152315"
+			};
+			responseJSON[0].meta.lastModifiedByUser = {
+				id: 352352,
+				username: "user352352",
+				name: "User 352352"
+			};
+			responseJSON[1].meta.createdByUser = {
+				id: 346534,
+				username: "user346534",
+				name: "User 346534"
+			};
+			
+			setResponse({
+				method: "GET",
+				url: `groups/${groupID}/items?itemKey=${item1.key}%2C${item2.key}&includeTrashed=1`,
+				status: 200,
+				headers: {
+					"Last-Modified-Version": 5
+				},
+				json: responseJSON
+			});
+			
+			await engine._updateGroupItemUsers();
+			
+			assert.equal(item1.createdByUserID, 152315);
+			assert.equal(item1.lastModifiedByUserID, 352352);
+			assert.equal(item1.dateModified, item1DateModified);
+			assert.equal(item2.createdByUserID, 346534);
+		});
+		
+		
+		it("should use username if no name", async function () {
+			var { id: groupID, libraryID } = await createGroup();
+			({ engine, client, caller } = await setup({ libraryID }));
+			
+			var item = await createDataObject('item', { libraryID });
+			var responseJSON = [
+				item.toResponseJSON()
+			];
+			responseJSON[0].meta.createdByUser = {
+				id: 235235,
+				username: "user235235",
+				name: ""
+			};
+			
+			setResponse({
+				method: "GET",
+				url: `groups/${groupID}/items?itemKey=${item.key}&includeTrashed=1`,
+				status: 200,
+				headers: {
+					"Last-Modified-Version": 6
+				},
+				json: responseJSON
+			});
+			
+			await engine._updateGroupItemUsers();
+			
+			assert.equal(item.createdByUserID, 235235);
+			assert.equal(Zotero.Users.getName(235235), 'user235235');
 		});
 	});
 	
@@ -4078,8 +4395,7 @@ describe("Zotero.Sync.Data.Engine", function () {
 				setResponse({
 					method: "GET",
 					url: "users/1/" + plural
-						+ "?format=json"
-						+ "&" + type + "Key=" + objectJSON[type][0].key + "%2C" + objectJSON[type][1].key
+						+ "?" + type + "Key=" + objectJSON[type][0].key + "%2C" + objectJSON[type][1].key
 						+ suffix,
 					status: 200,
 					headers: headers,
@@ -4392,29 +4708,32 @@ describe("Zotero.Sync.Data.Engine", function () {
 					);
 					let version = data.expectedVersion + 1;
 					let json = JSON.parse(req.requestBody);
+					
 					let o1 = json.find(o => o.key == objectJSON[type][1].key);
 					assert.notProperty(o1, 'version');
 					let o2 = json.find(o => o.key == objectJSON[type][2].key);
 					assert.notProperty(o2, 'version');
 					let o3 = json.find(o => o.key == objectJSON[type][3].key);
 					assert.notProperty(o3, 'version');
-					let response = {
-						successful: {
-							"0": Object.assign(objectJSON[type][1], { version }),
-							"1": Object.assign(objectJSON[type][2], { version }),
-							"2": Object.assign(objectJSON[type][3], { version })
-						},
-						unchanged: {},
-						failed: {}
-					};
 					if (type == 'item') {
 						let o = json.find(o => o.key == objectJSON.item[4].key);
 						assert.notProperty(o, 'version');
 						// Attachment items should include storage properties
 						assert.propertyVal(o, 'mtime', objects.item[4].attachmentSyncedModificationTime);
 						assert.propertyVal(o, 'md5', objects.item[4].attachmentSyncedHash);
-						response.successful["3"] = Object.assign(objectJSON[type][4], { version })
 					}
+					let response = {
+						successful: {},
+						unchanged: {},
+						failed: {}
+					};
+					// Return objects in the order provided
+					json.map(x => x.key).forEach((key, index) => {
+						response.successful[index] = Object.assign(
+							objectJSON[type].find(x => x.key == key),
+							{ version }
+						);
+					});
 					req.respond(
 						200,
 						{

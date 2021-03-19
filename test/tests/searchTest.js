@@ -218,6 +218,27 @@ describe("Zotero.Search", function() {
 				});
 			});
 			
+			describe("dateAdded", function () {
+				it("should handle 'today'", async function () {
+					var item = await createDataObject('item');
+					
+					var s = new Zotero.Search();
+					s.libraryID = item.libraryID;
+					s.name = "Test";
+					s.addCondition('dateAdded', 'is', 'today');
+					var matches = await s.search();
+					assert.includeMembers(matches, [item.id]);
+					
+					// Make sure 'yesterday' doesn't match
+					s = new Zotero.Search();
+					s.libraryID = item.libraryID;
+					s.name = "Test";
+					s.addCondition('dateAdded', 'is', 'yesterday');
+					matches = await s.search();
+					assert.lengthOf(matches, 0);
+				});
+			});
+			
 			describe("fileTypeID", function () {
 				it("should search by attachment file type", function* () {
 					let s = new Zotero.Search();
@@ -339,6 +360,36 @@ describe("Zotero.Search", function() {
 				});
 			});
 			
+			describe("annotationText", function () {
+				it("should return matches for annotation text", async function () {
+					var attachment = await importPDFAttachment();
+					var annotation = await createAnnotation('highlight', attachment);
+					var str = annotation.annotationText.substr(0, 7);
+					
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.addCondition('joinMode', 'any');
+					s.addCondition('annotationText', 'contains', str);
+					var matches = await s.search();
+					assert.sameMembers(matches, [annotation.id]);
+				});
+			});
+			
+			describe("annotationComment", function () {
+				it("should return matches for annotation comment", async function () {
+					var attachment = await importPDFAttachment();
+					var annotation = await createAnnotation('note', attachment);
+					var str = annotation.annotationComment.substr(0, 7);
+					
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.addCondition('joinMode', 'any');
+					s.addCondition('annotationComment', 'contains', str);
+					var matches = await s.search();
+					assert.sameMembers(matches, [annotation.id]);
+				});
+			});
+			
 			describe("fulltextWord", function () {
 				it("should return matches with full-text conditions", function* () {
 					let s = new Zotero.Search();
@@ -385,6 +436,31 @@ describe("Zotero.Search", function() {
 					s.addCondition('fulltextWord', 'contains', 'nomatch');
 					let matches = yield s.search();
 					assert.deepEqual(matches, [foobarItem.id]);
+				});
+			});
+			
+			describe("includeParentsAndChildren", function () {
+				it("should handle ANY search with no-op condition", async function () {
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.name = "Test";
+					s.addCondition('joinMode', 'any');
+					s.addCondition('savedSearch', 'is', Zotero.Utilities.randomString());
+					s.addCondition('includeParentsAndChildren', 'true');
+					var matches = await s.search();
+					assert.lengthOf(matches, 0);
+				});
+				
+				it("should handle ANY search with two no-op conditions", async function () {
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.name = "Test";
+					s.addCondition('joinMode', 'any');
+					s.addCondition('savedSearch', 'is', Zotero.Utilities.randomString());
+					s.addCondition('savedSearch', 'is', Zotero.Utilities.randomString());
+					s.addCondition('includeParentsAndChildren', 'true');
+					var matches = await s.search();
+					assert.lengthOf(matches, 0);
 				});
 			});
 			
@@ -452,6 +528,19 @@ describe("Zotero.Search", function() {
 		});
 	});
 	
+	describe("#deleted", function () {
+		it("should set trash status", async function () {
+			var search = await createDataObject('search');
+			assert.isFalse(search.deleted);
+			search.deleted = true;
+			await search.saveTx();
+			assert.isTrue(search.deleted);
+			search.deleted = false;
+			await search.saveTx();
+			assert.isFalse(search.deleted);
+		});
+	});
+	
 	describe("#toJSON()", function () {
 		it("should output all data", function* () {
 			let s = new Zotero.Search();
@@ -508,6 +597,41 @@ describe("Zotero.Search", function() {
 			assert.equal(conditions["1"].condition, 'year');
 			assert.equal(conditions["1"].operator, 'is');
 			assert.equal(conditions["1"].value, '2016');
+		});
+		
+		it("should ignore unknown property in non-strict mode", function () {
+			var json = {
+				name: "Search",
+				conditions: [
+					{
+						condition: 'title',
+						operator: 'contains',
+						value: 'foo'
+					}
+				],
+				foo: "Bar"
+			};
+			var s = new Zotero.Search();
+			s.fromJSON(json);
+		});
+		
+		it("should throw on unknown property in strict mode", function () {
+			var json = {
+				name: "Search",
+				conditions: [
+					{
+						condition: 'title',
+						operator: 'contains',
+						value: 'foo'
+					}
+				],
+				foo: "Bar"
+			};
+			var s = new Zotero.Search();
+			var f = () => {
+				s.fromJSON(json, { strict: true });
+			};
+			assert.throws(f, /^Unknown search property/);
 		});
 	});
 });

@@ -31,8 +31,7 @@ Zotero.Collection = function(params = {}) {
 	this._childCollections = new Set();
 	this._childItems = new Set();
 	
-	Zotero.Utilities.assignProps(this, params, ['name', 'libraryID', 'parentID',
-		'parentKey', 'lastSync']);
+	Zotero.Utilities.assignProps(this, params, ['name', 'libraryID', 'parentID', 'parentKey']);
 }
 
 Zotero.extendClass(Zotero.DataObject, Zotero.Collection);
@@ -153,6 +152,7 @@ Zotero.Collection.prototype.loadFromRow = function(row) {
 		
 		// Boolean
 		case 'synced':
+		case 'deleted':
 		case 'hasChildCollections':
 		case 'hasChildItems':
 			val = !!val;
@@ -174,9 +174,15 @@ Zotero.Collection.prototype.loadFromRow = function(row) {
 }
 
 
-Zotero.Collection.prototype.hasChildCollections = function() {
+Zotero.Collection.prototype.hasChildCollections = function (includeTrashed) {
 	this._requireData('childCollections');
-	return this._childCollections.size > 0;
+	if (!this._childCollections.size) {
+		return false;
+	}
+	if (includeTrashed) {
+		return this._childCollections.size > 0;
+	}
+	return !this.getChildCollections().every(c => c.deleted);
 }
 
 Zotero.Collection.prototype.hasChildItems = function() {
@@ -196,7 +202,7 @@ Zotero.Collection.prototype.getChildCollections = function (asIDs) {
 	
 	// Return collectionIDs
 	if (asIDs) {
-		return this._childCollections.values();
+		return [...this._childCollections.values()];
 	}
 	
 	// Return Zotero.Collection objects
@@ -328,6 +334,19 @@ Zotero.Collection.prototype._saveData = Zotero.Promise.coroutine(function* (env)
 			}.bind(this));
 		}
 	}
+	
+	if (this._changedData.deleted !== undefined) {
+		if (this._changedData.deleted) {
+			sql = "REPLACE INTO deletedCollections (collectionID) VALUES (?)";
+		}
+		else {
+			sql = "DELETE FROM deletedCollections WHERE collectionID=?";
+		}
+		yield Zotero.DB.queryAsync(sql, collectionID);
+		
+		this._clearChanged('deleted');
+		this._markForReload('primaryData');
+	}
 });
 
 Zotero.Collection.prototype._finalizeSave = Zotero.Promise.coroutine(function* (env) {
@@ -413,8 +432,8 @@ Zotero.Collection.prototype.addItems = Zotero.Promise.coroutine(function* (itemI
  *
  * @return {Promise}
  */
-Zotero.Collection.prototype.removeItem = function (itemID) {
-	return this.removeItems([itemID]);
+Zotero.Collection.prototype.removeItem = function (itemID, options = {}) {
+	return this.removeItems([itemID], options);
 }
 
 
@@ -424,7 +443,7 @@ Zotero.Collection.prototype.removeItem = function (itemID) {
  *
  * Does not require a separate save()
  */
-Zotero.Collection.prototype.removeItems = Zotero.Promise.coroutine(function* (itemIDs) {
+Zotero.Collection.prototype.removeItems = Zotero.Promise.coroutine(function* (itemIDs, options = {}) {
 	if (!itemIDs || !itemIDs.length) {
 		return;
 	}
@@ -443,7 +462,8 @@ Zotero.Collection.prototype.removeItems = Zotero.Promise.coroutine(function* (it
 		let item = yield this.ChildObjects.getAsync(itemID);
 		item.removeFromCollection(this.id);
 		yield item.save({
-			skipDateModifiedUpdate: true
+			skipDateModifiedUpdate: true,
+			skipEditCheck: options.skipEditCheck
 		})
 	}
 });
@@ -630,19 +650,25 @@ Zotero.Collection.prototype._eraseData = Zotero.Promise.coroutine(function* (env
 		}.bind(this));
 	}
 	
-	var placeholders = collections.map(() => '?').join();
-	
-	// Remove item associations for all descendent collections
-	yield Zotero.DB.queryAsync('DELETE FROM collectionItems WHERE collectionID IN '
-		+ '(' + placeholders + ')', collections);
-	
-	// Remove parent definitions first for FK check
-	yield Zotero.DB.queryAsync('UPDATE collections SET parentCollectionID=NULL '
-		+ 'WHERE parentCollectionID IN (' + placeholders + ')', collections);
-	
-	// And delete all descendent collections
-	yield Zotero.DB.queryAsync ('DELETE FROM collections WHERE collectionID IN '
-		+ '(' + placeholders + ')', collections);
+	yield Zotero.Utilities.Internal.forEachChunkAsync(
+		collections,
+		Zotero.DB.MAX_BOUND_PARAMETERS,
+		async function (chunk) {
+			var placeholders = chunk.map(() => '?').join();
+			
+			// Remove item associations for all descendent collections
+			await Zotero.DB.queryAsync('DELETE FROM collectionItems WHERE collectionID IN '
+				+ '(' + placeholders + ')', chunk);
+			
+			// Remove parent definitions first for FK check
+			await Zotero.DB.queryAsync('UPDATE collections SET parentCollectionID=NULL '
+				+ 'WHERE parentCollectionID IN (' + placeholders + ')', chunk);
+			
+			// And delete all descendent collections
+			await Zotero.DB.queryAsync('DELETE FROM collections WHERE collectionID IN '
+				+ '(' + placeholders + ')', chunk);
+		}
+	);
 	
 	env.deletedObjectIDs = collections;
 	
@@ -693,7 +719,26 @@ Zotero.Collection.prototype.serialize = function(nested) {
  *
  * If this object is identified (has an id or library/key), loadAllData() must have been called.
  */
-Zotero.Collection.prototype.fromJSON = function (json) {
+Zotero.Collection.prototype.fromJSON = function (json, options = {}) {
+	if (options.strict) {
+		for (let prop in json) {
+			switch (prop) {
+			case 'key':
+			case 'version':
+			case 'name':
+			case 'parentCollection':
+			case 'relations':
+			case 'deleted':
+				break;
+			
+			default:
+				let e = new Error(`Unknown collection property '${prop}'`);
+				e.name = "ZoteroInvalidDataError";
+				throw e;
+			}
+		}
+	}
+	
 	if (!json.name) {
 		throw new Error("'name' property not provided for collection");
 	}
@@ -701,6 +746,10 @@ Zotero.Collection.prototype.fromJSON = function (json) {
 	this.parentKey = json.parentCollection ? json.parentCollection : false;
 	
 	this.setRelations(json.relations || {});
+	
+	if (json.deleted || this.deleted) {
+		this.deleted = !!json.deleted;
+	}
 }
 
 

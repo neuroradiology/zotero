@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Zatvoriť">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
+<!ENTITY manageAttachments.label "Spravovať prílohy">
+<!ENTITY convertToStored.label "Konvertovať prelinkované súbory na uložené súbory...">
 <!ENTITY importCmd.label "Importovať...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Importovať zo schránky">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY viewMenu.label "Zobraziť">
+<!ENTITY layout.label "Rozloženie">
+<!ENTITY standardView.label "Štandardné zobrazenie">
+<!ENTITY stackedView.label "Poskladané zobrazenie">
+<!ENTITY collectionsPane.label "Tabla zbierok">
+<!ENTITY itemPane.label "Tabla exemplárov">
+<!ENTITY tagSelector.label "Výber značiek">
+<!ENTITY recursiveCollections.label "Zobraziť exempláre v podadresároch">
+<!ENTITY fontSize.label "Veľkosť písma">
+<!ENTITY noteFontSize.label "Veľkosť písma v poznámkach">
+
+
 <!ENTITY toolsMenu.label "Nástroje">
 <!ENTITY toolsMenu.accesskey "T">
 <!ENTITY installConnector.label "Nainštalovať konektor prehliadača">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Doplnky">
+<!ENTITY developer.label "Vývojár">
 
 
 <!ENTITY minimizeWindow.key "m">

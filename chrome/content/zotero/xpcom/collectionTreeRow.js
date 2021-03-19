@@ -54,6 +54,9 @@ Zotero.CollectionTreeRow.prototype.__defineGetter__('id', function () {
 		case 'unfiled':
 			return 'U' + this.ref.libraryID;
 		
+		case 'retracted':
+			return 'R' + this.ref.libraryID;
+		
 		case 'publications':
 			return 'P' + this.ref.libraryID;
 			
@@ -98,6 +101,10 @@ Zotero.CollectionTreeRow.prototype.isDuplicates = function () {
 
 Zotero.CollectionTreeRow.prototype.isUnfiled = function () {
 	return this.type == 'unfiled';
+}
+
+Zotero.CollectionTreeRow.prototype.isRetracted = function () {
+	return this.type == 'retracted';
 }
 
 Zotero.CollectionTreeRow.prototype.isTrash = function()
@@ -162,7 +169,7 @@ Zotero.CollectionTreeRow.prototype.__defineGetter__('editable', function () {
 		return true;
 	}
 	var libraryID = this.ref.libraryID;
-	if (this.isCollection() || this.isSearch() || this.isDuplicates() || this.isUnfiled()) {
+	if (this.isCollection() || this.isSearch() || this.isDuplicates() || this.isUnfiled() || this.isRetracted()) {
 		var type = Zotero.Libraries.get(libraryID).libraryType;
 		if (type == 'group') {
 			var groupID = Zotero.Groups.getGroupIDFromLibraryID(libraryID);
@@ -185,7 +192,7 @@ Zotero.CollectionTreeRow.prototype.__defineGetter__('filesEditable', function ()
 	if (this.isGroup()) {
 		return this.ref.filesEditable;
 	}
-	if (this.isCollection() || this.isSearch() || this.isDuplicates() || this.isUnfiled()) {
+	if (this.isCollection() || this.isSearch() || this.isDuplicates() || this.isUnfiled() || this.isRetracted()) {
 		var type = Zotero.Libraries.get(libraryID).libraryType;
 		if (type == 'group') {
 			var groupID = Zotero.Groups.getGroupIDFromLibraryID(libraryID);
@@ -265,8 +272,17 @@ Zotero.CollectionTreeRow.prototype.getSearchResults = Zotero.Promise.coroutine(f
 	}
 	
 	if(!Zotero.CollectionTreeCache.lastResults) {
-		var s = yield this.getSearchObject();
-		Zotero.CollectionTreeCache.lastResults = yield s.search();
+		let s = yield this.getSearchObject();
+		Zotero.CollectionTreeCache.error = false;
+		try {
+			Zotero.CollectionTreeCache.lastResults = yield s.search();
+		}
+		catch (e) {
+			Zotero.logError(e);
+			Zotero.CollectionTreeCache.lastResults = [];
+			// Flag error so ZoteroPane::onCollectionSelected() can show a message
+			Zotero.CollectionTreeCache.error = true;
+		}
 		Zotero.CollectionTreeCache.lastTreeRow = this;
 	}
 	
@@ -320,6 +336,7 @@ Zotero.CollectionTreeRow.prototype.getSearchObject = Zotero.Promise.coroutine(fu
 		// Library root
 		if (this.isLibrary(true)) {
 			s.addCondition('noChildren', 'true');
+			// Allow tag selector to match child items in "Title, Creator, Year" mode
 			includeScopeChildren = true;
 		}
 		else if (this.isCollection()) {
@@ -328,6 +345,7 @@ Zotero.CollectionTreeRow.prototype.getSearchObject = Zotero.Promise.coroutine(fu
 			if (Zotero.Prefs.get('recursiveCollections')) {
 				s.addCondition('recursive', 'true');
 			}
+			// Allow tag selector to match child items in "Title, Creator, Year" mode
 			includeScopeChildren = true;
 		}
 		else if (this.isPublications()) {

@@ -333,8 +333,7 @@ Zotero.File = new function(){
 	 * Runs synchronously, so should only be run on local (e.g. chrome) URLs
 	 */
 	function getContentsFromURL(url) {
-		var xmlhttp = Components.classes["@mozilla.org/xmlextras/xmlhttprequest;1"]
-						.createInstance();
+		var xmlhttp = new XMLHttpRequest();
 		xmlhttp.open('GET', url, false);
 		xmlhttp.overrideMimeType("text/plain");
 		xmlhttp.send(null);
@@ -450,7 +449,7 @@ Zotero.File = new function(){
 	
 	this.download = Zotero.Promise.coroutine(function* (uri, path) {
 		Zotero.debug("Saving " + (uri.spec ? uri.spec : uri)
-			+ " to " + (path.path ? path.path : path));			
+			+ " to " + (path.pathQueryRef ? path.pathQueryRef : path));
 		
 		var deferred = Zotero.Promise.defer();
 		NetUtil.asyncFetch(uri, function (is, status, request) {
@@ -474,7 +473,8 @@ Zotero.File = new function(){
 	 * @param {Object} [options]
 	 * @param {Boolean} [options.overwrite=false] - Overwrite file if one exists
 	 * @param {Boolean} [options.unique=false] - Add suffix to create unique filename if necessary
-	 * @return {String|false} - New filename, or false if destination file exists and `overwrite` not set
+	 * @return {String|false} - New filename, or false if destination file exists and `overwrite`
+	 *     and `unique` not set
 	 */
 	this.rename = async function (file, newName, options = {}) {
 		var overwrite = options.overwrite || false;
@@ -488,6 +488,12 @@ Zotero.File = new function(){
 		if (origName === newName) {
 			Zotero.debug("Filename has not changed");
 			return origName;
+		}
+		
+		// If only the case changed, we need to overwrite so move() doesn't think the destination
+		// file already exists
+		if (origName.toLowerCase() === newName.toLowerCase()) {
+			overwrite = true;
 		}
 		
 		var parentDir = OS.Path.dirname(origPath);
@@ -563,50 +569,39 @@ Zotero.File = new function(){
 	/**
 	 * @return {Promise<Boolean>}
 	 */
-	this.directoryIsEmpty = Zotero.Promise.coroutine(function* (path) {
-		var it = new OS.File.DirectoryIterator(path);
+	this.directoryIsEmpty = async function (path) {
+		var iterator = new OS.File.DirectoryIterator(path);
+		var empty = true;
 		try {
-			let entry = yield it.next();
-			return false;
-		}
-		catch (e) {
-			if (e != StopIteration) {
-				throw e;
-			}
+			await iterator.forEach(() => {
+				iterator.close();
+				empty = false;
+			});
 		}
 		finally {
-			it.close();
+			iterator.close();
 		}
-		return true;
-	});
+		return empty;
+	};
 	
 	
 	/**
-	 * Run a generator with an OS.File.DirectoryIterator, closing the
-	 * iterator when done
+	 * Run a function on each entry in a directory
 	 *
-	 * The DirectoryIterator is passed as the first parameter to the generator.
+	 * 'entry' is an instance of OS.File.DirectoryIterator.Entry:
 	 *
-	 * Zotero.File.iterateDirectory(path, function* (iterator) {
-	 *    while (true) {
-	 *        var entry = yield iterator.next();
-	 *        [...]
-	 *    }
-	 * })
+	 * https://developer.mozilla.org/en-US/docs/Mozilla/JavaScript_code_modules/OSFile.jsm/OS.File.DirectoryIterator.Entry
 	 *
 	 * @return {Promise}
 	 */
-	this.iterateDirectory = function (path, generator) {
+	this.iterateDirectory = async function (path, onEntry) {
 		var iterator = new OS.File.DirectoryIterator(path);
-		return Zotero.Promise.coroutine(generator)(iterator)
-		.catch(function (e) {
-			if (e != StopIteration) {
-				throw e;
-			}
-		})
-		.finally(function () {
+		try {
+			await iterator.forEach(onEntry);
+		}
+		finally {
 			iterator.close();
-		});
+		}
 	}
 	
 	
@@ -681,85 +676,82 @@ Zotero.File = new function(){
 			
 			Zotero.debug("Moving files in " + oldDir);
 			
-			yield Zotero.File.iterateDirectory(oldDir, function* (iterator) {
-				while (true) {
-					let entry = yield iterator.next();
-					let dest = newDir + entry.path.substr(rootDir.length);
-					
-					// entry.isDir can be false for some reason on Travis, causing spurious test failures
-					if (Zotero.automatedTest && !entry.isDir && (yield OS.File.stat(entry.path)).isDir) {
-						Zotero.debug("Overriding isDir for " + entry.path);
-						entry.isDir = true;
+			yield Zotero.File.iterateDirectory(oldDir, async function (entry) {
+				var dest = newDir + entry.path.substr(rootDir.length);
+				
+				// entry.isDir can be false for some reason on Travis, causing spurious test failures
+				if (Zotero.automatedTest && !entry.isDir && (await OS.File.stat(entry.path)).isDir) {
+					Zotero.debug("Overriding isDir for " + entry.path);
+					entry.isDir = true;
+				}
+				
+				// Move files in directory
+				if (!entry.isDir) {
+					try {
+						await OS.File.move(
+							entry.path,
+							dest,
+							{
+								noOverwrite: options
+									&& options.noOverwrite
+									&& options.noOverwrite(entry.path)
+							}
+						);
 					}
+					catch (e) {
+						checkError(e);
+						Zotero.debug("Error moving " + entry.path);
+						addError(e);
+					}
+				}
+				else {
+					// Move directory with external command if possible and the directory doesn't
+					// already exist in target
+					let moved = false;
 					
-					// Move files in directory
-					if (!entry.isDir) {
+					if (useCmd && !(await OS.File.exists(dest))) {
+						Zotero.debug(`Moving ${entry.path} with ${cmd}`);
+						let args = [entry.path, dest];
 						try {
-							yield OS.File.move(
-								entry.path,
-								dest,
-								{
-									noOverwrite: options
-										&& options.noOverwrite
-										&& options.noOverwrite(entry.path)
-								}
-							);
+							await Zotero.Utilities.Internal.exec(cmd, args);
+							moved = true;
 						}
 						catch (e) {
 							checkError(e);
-							Zotero.debug("Error moving " + entry.path);
-							addError(e);
+							Zotero.debug(e, 1);
 						}
 					}
-					else {
-						// Move directory with external command if possible and the directory doesn't
-						// already exist in target
-						let moved = false;
-						
-						if (useCmd && !(yield OS.File.exists(dest))) {
-							Zotero.debug(`Moving ${entry.path} with ${cmd}`);
-							let args = [entry.path, dest];
-							try {
-								yield Zotero.Utilities.Internal.exec(cmd, args);
-								moved = true;
-							}
-							catch (e) {
-								checkError(e);
-								Zotero.debug(e, 1);
-							}
+					
+					
+					// If can't use command, try moving with OS.File.move(). Technically this is
+					// unsupported for directories, but it works on all platforms as long as noCopy
+					// is set (and on some platforms regardless)
+					if (!moved && useFunction) {
+						Zotero.debug(`Moving ${entry.path} with OS.File`);
+						try {
+							await OS.File.move(
+								entry.path,
+								dest,
+								{
+									noCopy: true
+								}
+							);
+							moved = true;
 						}
-						
-						
-						// If can't use command, try moving with OS.File.move(). Technically this is
-						// unsupported for directories, but it works on all platforms as long as noCopy
-						// is set (and on some platforms regardless)
-						if (!moved && useFunction) {
-							Zotero.debug(`Moving ${entry.path} with OS.File`);
-							try {
-								yield OS.File.move(
-									entry.path,
-									dest,
-									{
-										noCopy: true
-									}
-								);
-								moved = true;
-							}
-							catch (e) {
-								checkError(e);
-								Zotero.debug(e, 1);
-							}
+						catch (e) {
+							checkError(e);
+							Zotero.debug(e, 1);
 						}
-						
-						// Otherwise, recurse into subdirectories to copy files individually
-						if (!moved) {
-							try {
-								yield moveSubdirs(entry.path, depth - 1);
-							}
-							catch (e) {
-								checkError(e);
-								addError(e);
-							}
+					}
+					
+					// Otherwise, recurse into subdirectories to copy files individually
+					if (!moved) {
+						try {
+							await moveSubdirs(entry.path, depth - 1);
+						}
+						catch (e) {
+							checkError(e);
+							addError(e);
 						}
 					}
 				}
@@ -786,23 +778,25 @@ Zotero.File = new function(){
 	
 	
 	/**
-	 * Generate a data: URI from an nsIFile
+	 * Generate a data: URI from a file path
 	 *
-	 * From https://developer.mozilla.org/en-US/docs/data_URIs
+	 * @param {String} path
+	 * @param {String} contentType
 	 */
-	this.generateDataURI = function (file) {
-		var contentType = Components.classes["@mozilla.org/mime;1"]
-			.getService(Components.interfaces.nsIMIMEService)
-			.getTypeFromFile(file);
-		var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
-			.createInstance(Components.interfaces.nsIFileInputStream);
-		inputStream.init(file, 0x01, 0o600, 0);
-		var stream = Components.classes["@mozilla.org/binaryinputstream;1"]
-			.createInstance(Components.interfaces.nsIBinaryInputStream);
-		stream.setInputStream(inputStream);
-		var encoded = btoa(stream.readBytes(stream.available()));
-		return "data:" + contentType + ";base64," + encoded;
-	}
+	this.generateDataURI = async function (file, contentType) {
+		if (!contentType) {
+			throw new Error("contentType not provided");
+		}
+		
+		var buf = await OS.File.read(file, {});
+		var bytes = new Uint8Array(buf);
+		var binary = '';
+		var len = bytes.byteLength;
+		for (let i = 0; i < len; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return 'data:' + contentType + ';base64,' + btoa(binary);
+	};
 	
 	
 	this.setNormalFilePermissions = function (file) {
@@ -914,7 +908,9 @@ Zotero.File = new function(){
 				}
 				catch (e) {
 					// On Linux, try 143, which is the max filename length with eCryptfs
-					if (e.name == "NS_ERROR_FILE_NAME_TOO_LONG" && Zotero.isLinux && uniqueFile.leafName.length > 143) {
+					if (e.name == "NS_ERROR_FILE_NAME_TOO_LONG"
+							&& Zotero.isLinux
+							&& Zotero.Utilities.Internal.byteLength(uniqueFile.leafName) > 143) {
 						Zotero.debug("Trying shorter filename in case of filesystem encryption", 2);
 						maxBytes = 143;
 						continue;
@@ -981,36 +977,73 @@ Zotero.File = new function(){
 			unixMode: 0o755
 		});
 		
-		return this.iterateDirectory(source, function* (iterator) {
-			while (true) {
-				let entry = yield iterator.next();
-				yield OS.File.copy(entry.path, OS.Path.join(target, entry.name));
-			}
-		})
+		return this.iterateDirectory(source, function (entry) {
+			return entry.isDir
+				? this.copyDirectory(entry.path, OS.Path.join(target, entry.name))
+				: OS.File.copy(entry.path, OS.Path.join(target, entry.name));
+		}.bind(this))
 	});
 	
 	
 	this.createDirectoryIfMissing = function (dir) {
 		dir = this.pathToFile(dir);
 		if (!dir.exists() || !dir.isDirectory()) {
-			if (dir.exists() && !dir.isDirectory()) {
-				dir.remove(null);
+			if (dir.exists()) {
+				if (!dir.isDirectory()) {
+					dir.remove(null);
+				}
+			}
+			else {
+				let isSymlink = false;
+				// isSymlink() fails if the directory doesn't exist, but is true if it's a broken
+				// symlink, in which case exists() returns false
+				try {
+					isSymlink = dir.isSymlink();
+				}
+				catch (e) {}
+				if (isSymlink) {
+					throw new Error(`Broken symlink at ${dir.path}`);
+				}
 			}
 			dir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0o755);
 		}
 	}
 	
 	
-	this.createDirectoryIfMissingAsync = function (path) {
-		return Zotero.Promise.resolve(
-			OS.File.makeDir(
+	this.createDirectoryIfMissingAsync = async function (path, options = {}) {
+		try {
+			await OS.File.makeDir(
 				path,
-				{
-					ignoreExisting: true,
-					unixMode: 0o755
-				}
+				Object.assign(
+					{
+						ignoreExisting: false,
+						unixMode: 0o755
+					},
+					options
+				)
 			)
-		);
+		}
+		catch (e) {
+			// If there's a broken symlink at the given path, makeDir() will throw becauseExists,
+			// but exists() will return false
+			if (e.becauseExists) {
+				if (await OS.File.exists(path)) {
+					return;
+				}
+				let isSymlink = false;
+				// Confirm with nsIFile that it's a symlink
+				try {
+					isSymlink = this.pathToFile(path).isSymlink();
+				}
+				catch (e) {
+					Zotero.logError(e);
+				}
+				if (isSymlink) {
+					throw new Error(`Broken symlink at ${path}`);
+				}
+			}
+			throw e;
+		}
 	}
 	
 	
@@ -1335,7 +1368,6 @@ Zotero.File = new function(){
 					dialogButtonText: Zotero.getString('file.accessError.showParentDir'),
 					dialogButtonCallback: function () {
 						try {
-							file.parent.QueryInterface(Components.interfaces.nsILocalFile);
 							file.parent.reveal();
 						}
 						// Unsupported on some platforms
@@ -1356,9 +1388,20 @@ Zotero.File = new function(){
 	};
 	
 	
-	this.isDropboxDirectory = function(path) {
-		return path.toLowerCase().indexOf('dropbox') != -1;
-	}
+	this.isCloudStorageFolder = function (path) {
+		// Dropbox
+		return path.toLowerCase().includes('dropbox')
+			// Google Drive
+			|| path.includes('Google Drive')
+			// OneDrive
+			|| path.toLowerCase().includes('onedrive')
+			// pCloud
+			|| path.toLowerCase().includes('pcloud')
+			// iCloud Drive (~/Library/Mobile Documents/com~apple~CloudDocs)
+			|| path.includes('Mobile Documents')
+			// Box
+			|| path.includes('Box');
+	};
 	
 	
 	this.reveal = Zotero.Promise.coroutine(function* (file) {
@@ -1369,13 +1412,12 @@ Zotero.File = new function(){
 		Zotero.debug("Revealing " + file);
 		
 		var nsIFile = this.pathToFile(file);
-		nsIFile.QueryInterface(Components.interfaces.nsILocalFile);
 		try {
 			nsIFile.reveal();
 		}
 		catch (e) {
 			Zotero.logError(e);
-			// On platforms that don't support nsILocalFile.reveal() (e.g. Linux),
+			// On platforms that don't support nsIFile.reveal() (e.g. Linux),
 			// launch the directory
 			let zp = Zotero.getActiveZoteroPane();
 			if (zp) {

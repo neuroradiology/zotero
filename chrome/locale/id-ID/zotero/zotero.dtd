@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Hilangkan Semua Pilihan">
 <!ENTITY zotero.general.edit "Edit">
 <!ENTITY zotero.general.delete "Hapus">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancel">
 <!ENTITY zotero.general.refresh "Refresh">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Close">
 <!ENTITY zotero.general.minimize "Minimize">
 <!ENTITY zotero.general.other "Other…">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "Zotero Error Report">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "Tunjukkan Duplikat">
 <!ENTITY zotero.collections.showUnfiledItems "Tunjukkan Item-Item yang Belum Diisikan">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "Jenis Item">
 <!ENTITY zotero.items.type_column "Item Type">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "Tunjukkan dalam Perpustakaan">
 <!ENTITY zotero.items.menu.attach.note "Tambahkan Catatan">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Tambahkan Lampiran">
 <!ENTITY zotero.items.menu.attach.link.uri "Lampirkan Tautan ke URL...">
 <!ENTITY zotero.items.menu.attach.file "Lampirkan Salinan Berkas Tersimpan">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "Impor...">
 <!ENTITY zotero.toolbar.importFromClipboard "Impor dari Clipboard">
 <!ENTITY zotero.toolbar.export.label "Ekspor Perpustakaan...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "Buat Garis Waktu">
 <!ENTITY zotero.toolbar.preferences.label "Preferensi...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Dukungan dan Dokuementasi">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Simpan Salinan Berkas">
 <!ENTITY zotero.toolbar.attachment.weblink "Simpan Tautan ke Laman Ini">
 <!ENTITY zotero.toolbar.attachment.snapshot "Ambil Snapshot Laman Ini">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Tidak ada tag untuk ditampilkan">
 <!ENTITY zotero.tagSelector.loadingTags "Loading tags…">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
 <!ENTITY zotero.lookup.button.search "Search">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "Pilih item">
 <!ENTITY zotero.selectitems.intro.label "Pilihlah item-item mana yang ingin Anda tambahkan ke dalam perpustakaan Anda">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Citations with pending updates will be highlighted in the document">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Disabling updates can speed up citation insertion in large documents. Click Refresh to update citations manually.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Use MEDLINE journal abbreviations">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "The “Journal Abbr” field will be ignored.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "Tunjukkan Editor">
 <!ENTITY zotero.integration.classicView.label "Tampilan Klasik">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Attach Link to URI">
 <!ENTITY zotero.attachLink.label.link "Link:">
 <!ENTITY zotero.attachLink.label.title "Title:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

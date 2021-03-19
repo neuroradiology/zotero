@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "ไม่เลือกทั้งหมด">
 <!ENTITY zotero.general.edit "แก้ไข">
 <!ENTITY zotero.general.delete "ลบ">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancel">
 <!ENTITY zotero.general.refresh "Refresh">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Close">
 <!ENTITY zotero.general.minimize "Minimize">
 <!ENTITY zotero.general.other "Other…">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "Zotero Error Report">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "แสดงรายการซ้ำ">
 <!ENTITY zotero.collections.showUnfiledItems "แสดงรายการที่ไม่ได้จัดกลุ่ม">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "ประเภทรายการ">
 <!ENTITY zotero.items.type_column "Item Type">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "แสดงในไลบรารี่">
 <!ENTITY zotero.items.menu.attach.note "เพิ่มหมายเหตุ">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "เพิ่มแฟ้มแนบ">
 <!ENTITY zotero.items.menu.attach.link.uri "แนบลิงค์ไปยัง URI…">
 <!ENTITY zotero.items.menu.attach.file "แนบแฟ้มพร้อมสำเนาจัดเก็บไว้...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "นำเข้า...">
 <!ENTITY zotero.toolbar.importFromClipboard "นำเข้าจากคลิปบอร์ด">
 <!ENTITY zotero.toolbar.export.label "ส่งออกไลบรารี่...">
-<!ENTITY zotero.toolbar.rtfScan.label "กราดตรวจ RTF...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "สร้างไทม์ไลน์">
 <!ENTITY zotero.toolbar.preferences.label "ค่าตั้งพึงใจ...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "การสนับสนุนและเอกสาร">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "จัดเก็บสำเนาของแฟ้มข้อมูล...">
 <!ENTITY zotero.toolbar.attachment.weblink "บันทึกลิงค์ไปยังหน้าเว็บปัจจุบัน">
 <!ENTITY zotero.toolbar.attachment.snapshot "จับภาพหน้าเว็บปัจจุบัน">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "ไม่มีแท็กให้แสดง">
 <!ENTITY zotero.tagSelector.loadingTags "Loading tags…">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
 <!ENTITY zotero.lookup.button.search "Search">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "เลือกรายการ">
 <!ENTITY zotero.selectitems.intro.label "เลือกรายการที่ต้องการเพิ่มเข้าไลบรารี่ของคุณ">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Citations with pending updates will be highlighted in the document">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Disabling updates can speed up citation insertion in large documents. Click Refresh to update citations manually.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Use MEDLINE journal abbreviations">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "The “Journal Abbr” field will be ignored.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "แสดงโปรแกรมจัดการข้อมูล">
 <!ENTITY zotero.integration.classicView.label "มุมมองแบบคลาสสิก">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Attach Link to URI">
 <!ENTITY zotero.attachLink.label.link "Link:">
 <!ENTITY zotero.attachLink.label.title "Title:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

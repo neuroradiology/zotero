@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Splošno">
 
-<!ENTITY zotero.preferences.userInterface "Uporabniški vmesnik">
-<!ENTITY zotero.preferences.layout "Postavitev:">
-<!ENTITY zotero.preferences.layout.standard "Standardno">
-<!ENTITY zotero.preferences.layout.stacked "Naloženo">
-<!ENTITY zotero.preferences.fontSize "Velikost pisave:">
-<!ENTITY zotero.preferences.fontSize.small "majhna">
-<!ENTITY zotero.preferences.fontSize.medium "srednja">
-<!ENTITY zotero.preferences.fontSize.large "velika">
-<!ENTITY zotero.preferences.fontSize.xlarge "ogromna">
-<!ENTITY zotero.preferences.fontSize.notes "Velikost pisave opomb:">
-
 <!ENTITY zotero.preferences.fileHandling "Ravnanje z datotekami">
 <!ENTITY zotero.preferences.automaticSnapshots "Samodejno naredi posnetek pri ustvarjanju vnosov s spletnih strani">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Samodejno pripni pridružene PDF-je in druge datoteke pri shranjevanju vnosov">
 <!ENTITY zotero.preferences.autoRecognizeFiles "Samodejno pridobi metapodatke za PDF-je">
 <!ENTITY zotero.preferences.autoRenameFiles "Samodejno preimenuj datoteke priponk z uporabo metapodatkov nadrejenih">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Preimenuj povezane datoteke">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Dokumente PDF odpri s/z">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Sistemsko privzeto">
 
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Spoji krajevne podatke s podatki s strežnika, pri čemer prezri zgodovino usklajevanja.">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Obnovi iz spletne knjižnice">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Spoji krajevne podatke Zotero s podatki iz spletne knjižnice.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Obnovi v spletno knjižnico">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Zamenjaj spletno knjižnico">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Prepiši spletno knjižnico s krajevnimi podatki Zotero">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Ponastavi zgodovino usklajevanja datotek">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Primerjaj vse pripete datoteke s storitvijo hrambe">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Dobi dodatne sloge ...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Odpri/zapri podokno Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Shrani v Zotero (ikona v naslovni vrstici)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Vključi/izključi celozaslonski način">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Pozornost na podokno knjižnic">

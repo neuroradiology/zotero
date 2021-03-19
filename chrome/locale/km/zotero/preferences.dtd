@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "ទូទៅ">
 
-<!ENTITY zotero.preferences.userInterface "ចំណុចប្រទាក់ក្រឡាអ្នកប្រើប្រាស់">
-<!ENTITY zotero.preferences.layout "Layout:">
-<!ENTITY zotero.preferences.layout.standard "Standard">
-<!ENTITY zotero.preferences.layout.stacked "Stacked">
-<!ENTITY zotero.preferences.fontSize "ទំហំអក្សរៈ">
-<!ENTITY zotero.preferences.fontSize.small "តូច">
-<!ENTITY zotero.preferences.fontSize.medium "មធ្យម">
-<!ENTITY zotero.preferences.fontSize.large "ធំ">
-<!ENTITY zotero.preferences.fontSize.xlarge "ទំហំអក្សរអ៊ិចស៏">
-<!ENTITY zotero.preferences.fontSize.notes "ទំហំអក្សរកំណត់ចំណាំៈ">
-
 <!ENTITY zotero.preferences.fileHandling "File Handling">
 <!ENTITY zotero.preferences.automaticSnapshots "ថតយកអត្ថបទចេញពីគេហទំព័រដោយស្វ័យប្រវត្តិ">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "ភ្ជាប់មកជាមួយដោយស្វ័យប្រវត្តិនូវឯកសារភីឌីអែហ្វ និង ឯកសារដទៃទៀត ខណៈពេលទាញរក្សាឯកសារទុក">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Merge local data with remote data, ignoring sync history">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Restore from Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Overwrite local Zotero data with data from the online library.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Restore to Online Library">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Replace Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Overwrite online library with local Zotero data">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "កំណត់រៀបចំប្រវត្តិឯកសារសមកាលកម្ម">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Compare all attachment files with the storage service">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "ស៊ីអេសអិល">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Get additional styles…">
 
-<!ENTITY zotero.preferences.keys.openZotero "បើក/បិទផ្ទាំងហ្ស៊ូតេរ៉ូ">
 <!ENTITY zotero.preferences.keys.saveToZotero "Save to Zotero (address bar icon)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "បើកពេញអេក្រង់">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Focus Libraries Pane">

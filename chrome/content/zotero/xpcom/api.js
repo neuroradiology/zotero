@@ -36,7 +36,7 @@ Zotero.API = {
 	
 	
 	/**
-	 * @return {(Zotero.Collection|Zotero.Item)[]}
+	 * @return {(Zotero.Collection|Zotero.Search|Zotero.Item)[]}
 	 */
 	getResultsFromParams: Zotero.Promise.coroutine(function* (params) {
 		if (!params.objectType) {
@@ -49,6 +49,12 @@ Zotero.API = {
 			let col = Zotero.Collections.getByLibraryAndKey(params.libraryID, params.objectKey);
 			if (col) {
 				results = [col];
+			}
+		}
+		else if (params.objectType == 'search') {
+			let s = Zotero.Searches.getByLibraryAndKey(params.libraryID, params.objectKey);
+			if (s) {
+				results = [s];
 			}
 		}
 		else if (params.objectType == 'item') {
@@ -66,6 +72,10 @@ Zotero.API = {
 						throw new Error('Invalid collection ID or key');
 					}
 					results = col.getChildItems();
+					if (params.objectKey) {
+						let item = results.find(item => item.key == params.objectKey);
+						results = item ? [item] : [];
+					}
 					break;
 				
 				case 'searches':
@@ -81,14 +91,13 @@ Zotero.API = {
 						throw new Error('Invalid search ID or key');
 					}
 					
-					// FIXME: Hack to exclude group libraries for now
 					var s2 = new Zotero.Search();
 					s2.setScope(s);
-					var groups = Zotero.Groups.getAll();
-					for (let group of groups) {
-						s2.addCondition('libraryID', 'isNot', group.libraryID);
-					}
 					var ids = yield s2.search();
+					if (params.objectKey) {
+						let id = Zotero.Items.getIDFromLibraryAndKey(s.libraryID, params.objectKey);
+						ids = ids.includes(id) ? [id] : [];
+					}
 					break;
 				
 				default:
@@ -126,7 +135,7 @@ Zotero.API = {
 			if (results) {
 				// Filter results by item key
 				if (params.itemKey) {
-					results = results.filter(key => itemKeys.has(key));
+					results = results.filter(item => itemKeys.has(item.key));
 				}
 			}
 			else if (ids) {

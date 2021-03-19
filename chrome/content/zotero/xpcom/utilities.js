@@ -26,121 +26,6 @@
     ***** END LICENSE BLOCK *****
 */
 
-/*
- * Mappings for names
- * Note that this is the reverse of the text variable map, since all mappings should be one to one
- * and it makes the code cleaner
- */
-var CSL_NAMES_MAPPINGS = {
-	"author":"author",
-	"editor":"editor",
-	"bookAuthor":"container-author",
-	"composer":"composer",
-	"director":"director",
-	"interviewer":"interviewer",
-	"recipient":"recipient",
-	"reviewedAuthor":"reviewed-author",
-	"seriesEditor":"collection-editor",
-	"translator":"translator"
-}
-
-/*
- * Mappings for text variables
- */
-var CSL_TEXT_MAPPINGS = {
-	"title":["title"],
-	"container-title":["publicationTitle",  "reporter", "code"], /* reporter and code should move to SQL mapping tables */
-	"collection-title":["seriesTitle", "series"],
-	"collection-number":["seriesNumber"],
-	"publisher":["publisher", "distributor"], /* distributor should move to SQL mapping tables */
-	"publisher-place":["place"],
-	"authority":["court","legislativeBody", "issuingAuthority"],
-	"page":["pages"],
-	"volume":["volume", "codeNumber"],
-	"issue":["issue", "priorityNumbers"],
-	"number-of-volumes":["numberOfVolumes"],
-	"number-of-pages":["numPages"],	
-	"edition":["edition"],
-	"version":["versionNumber"],
-	"section":["section", "committee"],
-	"genre":["type", "programmingLanguage"],
-	"source":["libraryCatalog"],
-	"dimensions": ["artworkSize", "runningTime"],
-	"medium":["medium", "system"],
-	"scale":["scale"],
-	"archive":["archive"],
-	"archive_location":["archiveLocation"],
-	"event":["meetingName", "conferenceName"], /* these should be mapped to the same base field in SQL mapping tables */
-	"event-place":["place"],
-	"abstract":["abstractNote"],
-	"URL":["url"],
-	"DOI":["DOI"],
-	"ISBN":["ISBN"],
-	"ISSN":["ISSN"],
-	"call-number":["callNumber", "applicationNumber"],
-	"note":["extra"],
-	"number":["number"],
-	"chapter-number":["session"],
-	"references":["history", "references"],
-	"shortTitle":["shortTitle"], /* preserved to read legacy data */
-	"title-short":["shortTitle"],
-	"journalAbbreviation":["journalAbbreviation"],
-	"status":["legalStatus"],
-	"language":["language"]
-}
-
-/*
- * Mappings for dates
- */
-var CSL_DATE_MAPPINGS = {
-	"issued":"date",
-	"accessed":"accessDate",
-	"submitted":"filingDate"
-}
-
-/*
- * Mappings for types
- * Also see itemFromCSLJSON
- */
-var CSL_TYPE_MAPPINGS = {
-	'book':"book",
-	'bookSection':'chapter',
-	'journalArticle':"article-journal",
-	'magazineArticle':"article-magazine",
-	'newspaperArticle':"article-newspaper",
-	'thesis':"thesis",
-	'encyclopediaArticle':"entry-encyclopedia",
-	'dictionaryEntry':"entry-dictionary",
-	'conferencePaper':"paper-conference",
-	'letter':"personal_communication",
-	'manuscript':"manuscript",
-	'interview':"interview",
-	'film':"motion_picture",
-	'artwork':"graphic",
-	'webpage':"webpage",
-	'report':"report",
-	'bill':"bill",
-	'case':"legal_case",
-	'hearing':"bill",				// ??
-	'patent':"patent",
-	'statute':"legislation",		// ??
-	'email':"personal_communication",
-	'map':"map",
-	'blogPost':"post-weblog",
-	'instantMessage':"personal_communication",
-	'forumPost':"post",
-	'audioRecording':"song",		// ??
-	'presentation':"speech",
-	'videoRecording':"motion_picture",
-	'tvBroadcast':"broadcast",
-	'radioBroadcast':"broadcast",
-	'podcast':"broadcast",
-	'computerProgram':"book",		// ??
-	'document':"article",
-	'note':"article",
-	'attachment':"article"
-};
-
 /**
  * @class Functions for text manipulation and other miscellaneous purposes
  */
@@ -161,6 +46,62 @@ Zotero.Utilities = {
 			timer = setTimeout(function () {
 				fn.apply(this, args);
 			}.bind(this), delay);
+		};
+	},
+
+	/**
+	 *  Creates and returns a new, throttled version of the
+	 *  passed function, that, when invoked repeatedly,
+	 *  will only actually call the original function at most
+	 *  once per every wait milliseconds
+	 *
+	 *  By default, throttle will execute the function as soon
+	 *  as you call it for the first time, and, if you call it
+	 *  again any number of times during the wait period, as soon
+	 *  as that period is over. If you'd like to disable the
+	 *  leading-edge call, pass {leading: false}, and if you'd
+	 *  like to disable the execution on the trailing-edge,
+	 *  pass {trailing: false}. See
+	 *  https://underscorejs.org/#throttle
+	 *  https://github.com/jashkenas/underscore/blob/master/underscore.js
+	 *  (c) 2009-2018 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+	 *  Underscore may be freely distributed under the MIT license.
+	 *
+	 *  @param {Function} func Function to throttle
+	 *  @param {Integer} wait Wait period in milliseconds
+	 *  @param {Boolean} [options.leading] Call at the beginning of the wait period
+	 *  @param {Boolean} [options.trailing] Call at the end of the wait period
+	 */
+	throttle: function (func, wait, options) {
+		var context, args, result;
+		var timeout = null;
+		var previous = 0;
+		if (!options) options = {};
+		var later = function () {
+			previous = options.leading === false ? 0 : Date.now();
+			timeout = null;
+			result = func.apply(context, args);
+			if (!timeout) context = args = null;
+		};
+		return function () {
+			var now = Date.now();
+			if (!previous && options.leading === false) previous = now;
+			var remaining = wait - (now - previous);
+			context = this;
+			args = arguments;
+			if (remaining <= 0 || remaining > wait) {
+				if (timeout) {
+					clearTimeout(timeout);
+					timeout = null;
+				}
+				previous = now;
+				result = func.apply(context, args);
+				if (!timeout) context = args = null;
+			}
+			else if (!timeout && options.trailing !== false) {
+				timeout = setTimeout(later, remaining);
+			}
+			return result;
 		};
 	},
 
@@ -298,7 +239,14 @@ Zotero.Utilities = {
 		var x = x.replace(/^[\x00-\x27\x29-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F\s]+/, "");
 		return x.replace(/[\x00-\x28\x2A-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F\s]+$/, "");
 	},
-
+	
+	isHTTPURL: function (url, allowNoScheme = false) {
+		// From https://stackoverflow.com/a/3809435
+		var noSchemeRE = /^[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+		return /^https?:\/\//.test(url)
+			|| (allowNoScheme && !url.startsWith('mailto:') && noSchemeRE.test(url));
+	},
+	
 	/**
 	 * Cleans a http url string
 	 * @param url {String}
@@ -883,6 +831,7 @@ Zotero.Utilities = {
 		if (str.length <= len) {
 			return str;
 		}
+		var origLen = str.length;
 		let radius = Math.min(len, 5);
 		if (wordBoundary) {
 			let min = len - radius;
@@ -896,7 +845,7 @@ Zotero.Utilities = {
 		else {
 			str = str.substr(0, len)
 		}
-		return str + '\u2026' + (countChars ? ' (' + str.length + ' chars)' : '');
+		return str + '\u2026' + (countChars ? ' (' + origLen + ' chars)' : '');
 	},
 	
 	
@@ -1414,8 +1363,8 @@ Zotero.Utilities = {
 				return '' + obj;
 			}
 		}
-		else if (type == 'string') {
-			return JSON.stringify(obj);
+		else if (type == 'string' || typeof obj.toJSON == 'function') {
+			return JSON.stringify(obj, false, '    ');
 		}
 		else if (type == 'function') {
 			var funcStr = ('' + obj).trim();
@@ -1575,7 +1524,7 @@ Zotero.Utilities = {
 			);
 		}
 		
-		var cslType = CSL_TYPE_MAPPINGS[zoteroItem.itemType];
+		var cslType = Zotero.Schema.CSL_TYPE_MAPPINGS[zoteroItem.itemType];
 		if (!cslType) {
 			throw new Error('Unexpected Zotero Item type "' + zoteroItem.itemType + '"');
 		}
@@ -1588,9 +1537,9 @@ Zotero.Utilities = {
 		};
 		
 		// get all text variables (there must be a better way)
-		for(var variable in CSL_TEXT_MAPPINGS) {
+		for(var variable in Zotero.Schema.CSL_TEXT_MAPPINGS) {
 			if (variable === "shortTitle") continue; // read both title-short and shortTitle, but write only title-short
-			var fields = CSL_TEXT_MAPPINGS[variable];
+			var fields = Zotero.Schema.CSL_TEXT_MAPPINGS[variable];
 			for(var i=0, n=fields.length; i<n; i++) {
 				var field = fields[i],
 					value = null;
@@ -1641,7 +1590,7 @@ Zotero.Utilities = {
 					creatorType = "author";
 				}
 				
-				creatorType = CSL_NAMES_MAPPINGS[creatorType];
+				creatorType = Zotero.Schema.CSL_NAME_MAPPINGS[creatorType];
 				if(!creatorType) continue;
 				
 				var nameObj;
@@ -1678,10 +1627,10 @@ Zotero.Utilities = {
 		}
 		
 		// get date variables
-		for(var variable in CSL_DATE_MAPPINGS) {
-			var date = zoteroItem[CSL_DATE_MAPPINGS[variable]];
+		for(var variable in Zotero.Schema.CSL_DATE_MAPPINGS) {
+			var date = zoteroItem[Zotero.Schema.CSL_DATE_MAPPINGS[variable]];
 			if (!date) {
-				var typeSpecificFieldID = Zotero.ItemFields.getFieldIDFromTypeAndBase(itemTypeID, CSL_DATE_MAPPINGS[variable]);
+				var typeSpecificFieldID = Zotero.ItemFields.getFieldIDFromTypeAndBase(itemTypeID, Zotero.Schema.CSL_DATE_MAPPINGS[variable]);
 				if (typeSpecificFieldID) {
 					date = zoteroItem[Zotero.ItemFields.getName(typeSpecificFieldID)];
 				}
@@ -1689,7 +1638,7 @@ Zotero.Utilities = {
 			
 			if(date) {
 				// Convert UTC timestamp to local timestamp for access date
-				if (CSL_DATE_MAPPINGS[variable] == 'accessDate' && !Zotero.Date.isSQLDate(date)) {
+				if (Zotero.Schema.CSL_DATE_MAPPINGS[variable] == 'accessDate' && !Zotero.Date.isSQLDate(date)) {
 					// Accept ISO date
 					if (Zotero.Date.isISODate(date)) {
 						let d = Zotero.Date.isoToDate(date);
@@ -1742,42 +1691,46 @@ Zotero.Utilities = {
 		var isZoteroItem = !!item.setType,
 			zoteroType;
 		
+		if (!cslItem.type) {
+			Zotero.debug(cslItem, 1);
+			throw new Error("No 'type' provided in CSL-JSON");
+		}
+		
 		// Some special cases to help us map item types correctly
 		// This ensures that we don't lose data on import. The fields
 		// we check are incompatible with the alternative item types
-		if (cslItem.type == 'book') {
-			zoteroType = 'book';
-			if (cslItem.version) {
-				zoteroType = 'computerProgram';
-			}
-		} else if (cslItem.type == 'bill') {
-			zoteroType = 'bill';
-			if (cslItem.publisher || cslItem['number-of-volumes']) {
-				zoteroType = 'hearing';
-			}
-		} else if (cslItem.type == 'song') {
-			zoteroType = 'audioRecording';
-			if (cslItem.number) {
-				zoteroType = 'podcast';
-			}
-		} else if (cslItem.type == 'motion_picture') {
-			zoteroType = 'film';
-			if (cslItem['collection-title'] || cslItem['publisher-place']
-				|| cslItem['event-place'] || cslItem.volume
-				|| cslItem['number-of-volumes'] || cslItem.ISBN
-			) {
-				zoteroType = 'videoRecording';
-			}
-		} else {
-			for(var type in CSL_TYPE_MAPPINGS) {
-				if(CSL_TYPE_MAPPINGS[type] == cslItem.type) {
-					zoteroType = type;
-					break;
-				}
-			}
+		if (cslItem.type == 'bill' && (cslItem.publisher || cslItem['number-of-volumes'])) {
+			zoteroType = 'hearing';
 		}
-		
-		if(!zoteroType) zoteroType = "document";
+		else if (cslItem.type == 'broadcast'
+				&& (cslItem['archive']
+					|| cslItem['archive_location']
+					|| cslItem['container-title']
+					|| cslItem['event-place']
+					|| cslItem['publisher']
+					|| cslItem['publisher-place']
+					|| cslItem['source'])) {
+			zoteroType = 'tvBroadcast';
+		}
+		else if (cslItem.type == 'book' && cslItem.version) {
+			zoteroType = 'computerProgram';
+		}
+		else if (cslItem.type == 'song' && cslItem.number) {
+			zoteroType = 'podcast';
+		}
+		else if (cslItem.type == 'motion_picture'
+				&& (cslItem['collection-title'] || cslItem['publisher-place']
+					|| cslItem['event-place'] || cslItem.volume
+					|| cslItem['number-of-volumes'] || cslItem.ISBN)) {
+			zoteroType = 'videoRecording';
+		}
+		else if (Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE[cslItem.type]) {
+			zoteroType = Zotero.Schema.CSL_TYPE_MAPPINGS_REVERSE[cslItem.type][0];
+		}
+		else {
+			Zotero.debug(`Unknown CSL type '${cslItem.type}' -- using 'document'`, 2);
+			zoteroType = "document"
+		}
 		
 		var itemTypeID = Zotero.ItemTypes.getID(zoteroType);
 		if(isZoteroItem) {
@@ -1788,9 +1741,9 @@ Zotero.Utilities = {
 		}
 		
 		// map text fields
-		for(var variable in CSL_TEXT_MAPPINGS) {
+		for (let variable in Zotero.Schema.CSL_TEXT_MAPPINGS) {
 			if(variable in cslItem) {
-				var textMappings = CSL_TEXT_MAPPINGS[variable];
+				let textMappings = Zotero.Schema.CSL_TEXT_MAPPINGS[variable];
 				for(var i=0; i<textMappings.length; i++) {
 					var field = textMappings[i];
 					var fieldID = Zotero.ItemFields.getID(field);
@@ -1817,14 +1770,14 @@ Zotero.Utilities = {
 		}
 		
 		// separate name variables
-		for(var field in CSL_NAMES_MAPPINGS) {
-			if(CSL_NAMES_MAPPINGS[field] in cslItem) {
+		for (let field in Zotero.Schema.CSL_NAME_MAPPINGS) {
+			if (Zotero.Schema.CSL_NAME_MAPPINGS[field] in cslItem) {
 				var creatorTypeID = Zotero.CreatorTypes.getID(field);
 				if(!Zotero.CreatorTypes.isValidForItemType(creatorTypeID, itemTypeID)) {
 					creatorTypeID = Zotero.CreatorTypes.getPrimaryIDForType(itemTypeID);
 				}
 				
-				var nameMappings = cslItem[CSL_NAMES_MAPPINGS[field]];
+				let nameMappings = cslItem[Zotero.Schema.CSL_NAME_MAPPINGS[field]];
 				for(var i in nameMappings) {
 					var cslAuthor = nameMappings[i];
 					let creator = {};
@@ -1853,12 +1806,11 @@ Zotero.Utilities = {
 		}
 		
 		// get date variables
-		for(var variable in CSL_DATE_MAPPINGS) {
+		for (let variable in Zotero.Schema.CSL_DATE_MAPPINGS) {
 			if(variable in cslItem) {
-				var field = CSL_DATE_MAPPINGS[variable],
-					fieldID = Zotero.ItemFields.getID(field),
-					cslDate = cslItem[variable];
-				var fieldID = Zotero.ItemFields.getID(field);
+				let field = Zotero.Schema.CSL_DATE_MAPPINGS[variable];
+				let fieldID = Zotero.ItemFields.getID(field);
+				let cslDate = cslItem[variable];
 				if(Zotero.ItemFields.isBaseField(fieldID)) {
 					var newFieldID = Zotero.ItemFields.getFieldIDFromTypeAndBase(itemTypeID, fieldID);
 					if(newFieldID) fieldID = newFieldID;
@@ -1910,6 +1862,21 @@ Zotero.Utilities = {
 				}
 			}
 		}
+	},
+	
+	
+	parseURL: function (url) {
+		var parts = require('url').parse(url);
+		// fileName
+		parts.fileName = parts.pathname.split('/').pop();
+		// fileExtension
+		var pos = parts.fileName.lastIndexOf('.');
+		parts.fileExtension = pos == -1 ? '' : parts.fileName.substr(pos + 1);
+		// fileBaseName
+		parts.fileBaseName = parts.fileName
+			 // filename up to the period before the file extension, if there is one
+			.substr(0, parts.fileName.length - (parts.fileExtension ? parts.fileExtension.length + 1 : 0));
+		return parts;
 	},
 	
 	/**

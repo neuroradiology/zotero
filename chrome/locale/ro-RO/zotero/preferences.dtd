@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Generale">
 
-<!ENTITY zotero.preferences.userInterface "Interfață utilizator">
-<!ENTITY zotero.preferences.layout "Machetă:">
-<!ENTITY zotero.preferences.layout.standard "Standard">
-<!ENTITY zotero.preferences.layout.stacked "Stivuite">
-<!ENTITY zotero.preferences.fontSize "Mărime caractere:">
-<!ENTITY zotero.preferences.fontSize.small "Mici">
-<!ENTITY zotero.preferences.fontSize.medium "Medii">
-<!ENTITY zotero.preferences.fontSize.large "Mari">
-<!ENTITY zotero.preferences.fontSize.xlarge "X-Mare">
-<!ENTITY zotero.preferences.fontSize.notes "Mărimea fontului pentru notă:">
-
 <!ENTITY zotero.preferences.fileHandling "Operațiuni fișier">
 <!ENTITY zotero.preferences.automaticSnapshots "Creează automat instantanee, atunci când sunt create înregistrări din paginile web">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Anexează automat fișierele PDF asociate, precum și alte fișiere, atunci când sunt salvate înregistrările">
 <!ENTITY zotero.preferences.autoRecognizeFiles "Extrage automat metadatele pentru PDF-uri">
 <!ENTITY zotero.preferences.autoRenameFiles "Redenumește automat fișierele anexate folosind metadatele părinte">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Redenumește fișierele legate">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Deschide PDF-urile folosind">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Sistem implicit">
 
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Unește datele locale cu datele la distanță, ignorând istoria sincronizărilor">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Restaurează din biblioteca online">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Suprascrie datele locale din Zotero cu datele din biblioteca online.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Restaurează la biblioteca online">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Înlocuiește biblioteca online">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Suprascrie datele din biblioteca online cu datele locale din Zotero">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Resetează istoria sincronizării fișierelor">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Compară toate fișierele anexate cu serviciul de stocare">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Obține stiluri adiționale...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Deschide/Închide panoul Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Salvează în Zotero (iconița din bara de adrese)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Extinde pe tot ecranul">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Panou de focalizare biblioteci">

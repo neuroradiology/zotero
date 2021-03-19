@@ -59,12 +59,18 @@ Zotero.HTTPIntegrationClient.Application = function() {
 	this.secondaryFieldType = "Http";
 	this.outputFormat = 'html';
 	this.supportedNotes = ['footnotes'];
+	this.supportsImportExport = false;
+	this.supportsTextInsertion = false;
+	this.processorName = "HTTP Integration";
 };
 Zotero.HTTPIntegrationClient.Application.prototype = {
 	getActiveDocument: async function() {
 		let result = await Zotero.HTTPIntegrationClient.sendCommand('Application.getActiveDocument');
 		this.outputFormat = result.outputFormat || this.outputFormat;
 		this.supportedNotes = result.supportedNotes || this.supportedNotes;
+		this.supportsImportExport = result.supportsImportExport || this.supportsImportExport;
+		this.supportsTextInsertion = result.supportsTextInsertion || this.supportsTextInsertion;
+		this.processorName = result.processorName || this.processorName;
 		return new Zotero.HTTPIntegrationClient.Document(result.documentID);
 	}
 };
@@ -76,7 +82,8 @@ Zotero.HTTPIntegrationClient.Document = function(documentID) {
 	this._documentID = documentID;
 };
 for (let method of ["activate", "canInsertField", "displayAlert", "getDocumentData",
-	"setDocumentData", "setBibliographyStyle"]) {
+	"setDocumentData", "setBibliographyStyle", "importDocument", "exportDocument",
+	"insertText"]) {
 	Zotero.HTTPIntegrationClient.Document.prototype[method] = async function() {
 		return Zotero.HTTPIntegrationClient.sendCommand("Document."+method,
 			[this._documentID].concat(Array.prototype.slice.call(arguments)));
@@ -142,6 +149,10 @@ Zotero.HTTPIntegrationClient.Document.prototype.convert = async function(fields,
 	fields = fields.map((f) => f._id);
 	await Zotero.HTTPIntegrationClient.sendCommand("Document.convert", [this._documentID, fields, fieldType, noteTypes]);
 };
+Zotero.HTTPIntegrationClient.Document.prototype.convertPlaceholdersToFields = async function(codes, placeholderIDs, noteType) {
+	var retVal = await Zotero.HTTPIntegrationClient.sendCommand("Document.convertPlaceholdersToFields", [this._documentID, codes, placeholderIDs, noteType]);
+	return retVal.map(field => new Zotero.HTTPIntegrationClient.Field(this._documentID, field));
+}
 Zotero.HTTPIntegrationClient.Document.prototype.complete = async function() {
 	Zotero.HTTPIntegrationClient.inProgress = false;
 	Zotero.HTTPIntegrationClient.sendCommand("Document.complete", [this._documentID]);

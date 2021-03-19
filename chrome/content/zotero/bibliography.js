@@ -32,6 +32,7 @@
 // Class to provide options for bibliography
 // Used by rtfScan.xul, integrationDocPrefs.xul, and bibliography.xul
 
+Components.utils.import("resource://gre/modules/Services.jsm");
 var Zotero_File_Interface_Bibliography = new function() {
 	var _io;
 	
@@ -40,12 +41,15 @@ var Zotero_File_Interface_Bibliography = new function() {
 		lastSelectedLocale;
 	
 	var isDocPrefs = false;
+	var isRTFScan = false;
 	
-	/*
+	/**
 	 * Initialize some variables and prepare event listeners for when chrome is done
 	 * loading
+	 *
+	 * @param {Object} [args] - Explicit arguments in place of window arguments
 	 */
-	this.init = Zotero.Promise.coroutine(function* () {
+	this.init = Zotero.Promise.coroutine(function* (args = {}) {
 		// Set font size from pref
 		// Affects bibliography.xul and integrationDocPrefs.xul
 		var bibContainer = document.getElementById("zotero-bibliography-container");
@@ -56,7 +60,11 @@ var Zotero_File_Interface_Bibliography = new function() {
 		if(window.arguments && window.arguments.length) {
 			_io = window.arguments[0];
 			if(_io.wrappedJSObject) _io = _io.wrappedJSObject;
-		} else {
+		}
+		else if (args) {
+			_io = args;
+		}
+		else {
 			_io = {};
 		}
 		
@@ -80,7 +88,13 @@ var Zotero_File_Interface_Bibliography = new function() {
 		for (let i=0; i < styles.length; i++) {
 			var itemNode = document.createElement("listitem");
 			itemNode.setAttribute("value", styles[i].styleID);
-			itemNode.setAttribute("label", styles[i].title);
+			let title = styles[i].title;
+			// Add acronyms to APA and ASA to avoid confusion
+			// https://forums.zotero.org/discussion/comment/357135/#Comment_357135
+			title = title
+				.replace(/^American Psychological Association/, "American Psychological Association (APA)")
+				.replace(/^American Sociological Association/, "American Sociological Association (ASA)");
+			itemNode.setAttribute("label", title);
 			listbox.appendChild(itemNode);
 			
 			if(styles[i].styleID == _io.style) {
@@ -142,8 +156,10 @@ var Zotero_File_Interface_Bibliography = new function() {
 		
 		// ONLY FOR integrationDocPrefs.xul: set selected endnotes/footnotes
 		isDocPrefs = !!document.getElementById("displayAs");
-		if (isDocPrefs) {
+		isRTFScan = !document.getElementById("formatUsing");
+		if (isDocPrefs && !isRTFScan) {
 			if(_io.useEndnotes && _io.useEndnotes == 1) document.getElementById("displayAs").selectedIndex = 1;
+			
 			let dialog = document.getElementById("zotero-doc-prefs-dialog");
 			dialog.setAttribute('title', `${Zotero.clientName} - ${dialog.getAttribute('title')}`);
 			
@@ -174,6 +190,10 @@ var Zotero_File_Interface_Bibliography = new function() {
 				
 				document.getElementById("automaticCitationUpdates-checkbox").checked = !_io.delayCitationUpdates;
 			}
+			
+			if (_io.showImportExport) {
+				document.querySelector('#exportImport').hidden = false;
+			}
 		}
 		
 		// set style to false, in case this is cancelled
@@ -202,7 +222,7 @@ var Zotero_File_Interface_Bibliography = new function() {
 		updateLocaleMenu(selectedStyleObj);
 		
 		//
-		// For integrationDocPrefs.xul
+		// For integrationDocPrefs.xul and rtfScan.xul
 		//
 		if (isDocPrefs) {
 			// update status of displayAs box based on style class
@@ -211,13 +231,17 @@ var Zotero_File_Interface_Bibliography = new function() {
 			document.getElementById("displayAs-groupbox").hidden = !isNote || !multipleNotesSupported;
 			
 			// update status of formatUsing box based on style class
-			if(isNote) document.getElementById("formatUsing").selectedIndex = 0;
-			document.getElementById("bookmarks").disabled = isNote;
-			document.getElementById("bookmarks-caption").disabled = isNote;
-	
+			if (document.getElementById("formatUsing")) {
+				if(isNote) document.getElementById("formatUsing").selectedIndex = 0;
+				document.getElementById("bookmarks").disabled = isNote;
+				document.getElementById("bookmarks-caption").disabled = isNote;
+			}
+			
 			// update status of displayAs box based on style class
-			document.getElementById("automaticJournalAbbreviations-vbox").hidden =
-				!selectedStyleObj.usesAbbreviation;
+			if (document.getElementById("automaticJournalAbbreviations-vbox")) {
+				document.getElementById("automaticJournalAbbreviations-vbox").hidden =
+					!selectedStyleObj.usesAbbreviation;
+			}
 		}
 		
 		//
@@ -237,7 +261,14 @@ var Zotero_File_Interface_Bibliography = new function() {
 
 		window.sizeToContent();
 	};
-
+	
+	this.exportDocument = function () {
+		if (Zotero.Integration.confirmExportDocument()) {
+			_io.exportDocument = true;
+			document.documentElement.acceptDialog();
+		}
+	}
+	
 	/*
 	 * Update locale menulist when style is changed
 	 */

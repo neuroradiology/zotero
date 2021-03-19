@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "常规">
 
-<!ENTITY zotero.preferences.userInterface "用户界面">
-<!ENTITY zotero.preferences.layout "布局:">
-<!ENTITY zotero.preferences.layout.standard "标准">
-<!ENTITY zotero.preferences.layout.stacked "堆叠">
-<!ENTITY zotero.preferences.fontSize "字体大小:">
-<!ENTITY zotero.preferences.fontSize.small "小">
-<!ENTITY zotero.preferences.fontSize.medium "中">
-<!ENTITY zotero.preferences.fontSize.large "大">
-<!ENTITY zotero.preferences.fontSize.xlarge "超大">
-<!ENTITY zotero.preferences.fontSize.notes "笔记字体大小:">
-
 <!ENTITY zotero.preferences.fileHandling "文件处理">
 <!ENTITY zotero.preferences.automaticSnapshots "从 Web 页面创建条目时自动生成快照">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "保存条目时自动附加相关的 PDF 文档及其它文件">
 <!ENTITY zotero.preferences.autoRecognizeFiles "自动检索 PDF 的元数据">
 <!ENTITY zotero.preferences.autoRenameFiles "使用父类元数据自动重命名附件文件">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "重命名链接的文件">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "打开 PDF 使用">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "系统默认">
 
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "将本地数据与远程数据合并，忽略同步历史">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "从在线文献库恢复">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "用在线文献库中的数据覆盖本地 Zotero 数据。">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "恢复到在线文献库">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "替换在线文库">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "使用本地 Zotero 数据覆盖在线文献库">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "重置文件同步历史">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "将所有附件文件与存储服务中的进行比较">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "获取更多样式……">
 
-<!ENTITY zotero.preferences.keys.openZotero "开/关 Zotero 面板">
 <!ENTITY zotero.preferences.keys.saveToZotero "保存到Zotero (地址栏图标)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "切换全屏模式">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "聚焦文献库面板">

@@ -23,6 +23,10 @@
     ***** END LICENSE BLOCK *****
 */
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+import TagsBoxContainer from 'containers/tagsBoxContainer';
+
 var ZoteroItemPane = new function() {
 	var _lastItem, _itemBox, _notesLabel, _notesButton, _notesList, _tagsBox, _relatedBox;
 	var _selectedNoteID;
@@ -45,7 +49,10 @@ var ZoteroItemPane = new function() {
 		_notesLabel = document.getElementById('zotero-editpane-notes-label');
 		_notesButton = document.getElementById('zotero-editpane-notes-add');
 		_notesList = document.getElementById('zotero-editpane-dynamic-notes');
-		_tagsBox = document.getElementById('zotero-editpane-tags');
+		// Fake a ref
+		_tagsBox = {
+			current: null
+		};
 		_relatedBox = document.getElementById('zotero-editpane-related');
 		
 		this._unregisterID = Zotero.Notifier.registerObserver(this, ['item'], 'itemPane');
@@ -72,10 +79,6 @@ var ZoteroItemPane = new function() {
 				var box = _itemBox;
 				break;
 			
-			case 2:
-				var box = _tagsBox;
-				break;
-			
 			case 3:
 				var box = _relatedBox;
 				break;
@@ -86,10 +89,13 @@ var ZoteroItemPane = new function() {
 		if (_lastItem && _lastItem != item) {
 			switch (index) {
 				case 0:
-				case 2:
 					yield box.blurOpenField();
 					// DEBUG: Currently broken
 					//box.scrollToTop();
+					break;
+				
+				case 2:
+					_tagsBox.current.blurOpenField();
 					break;
 			}
 		}
@@ -175,19 +181,34 @@ var ZoteroItemPane = new function() {
 			_updateNoteCount();
 			return;
 		}
+		else if (index == 2) {
+			ReactDOM.render(
+				<TagsBoxContainer
+					key={"tagsBox-" + item.id}
+					item={item}
+					editable={mode != 'view'}
+					ref={_tagsBox}
+					onResetSelection={focusItemsList}
+				/>,
+				document.getElementById('tags-box-container'),
+				() => ZoteroPane.updateTagsBoxSize()
+			);
+		}
 		
-		if (mode) {
-			box.mode = mode;
-			
-			if (box.mode == 'view') {
-				box.hideEmptyFields = true;
+		if (box) {
+			if (mode) {
+				box.mode = mode;
+				
+				if (box.mode == 'view') {
+					box.hideEmptyFields = true;
+				}
 			}
+			else {
+				box.mode = 'edit';
+			}
+			
+			box.item = item;
 		}
-		else {
-			box.mode = 'edit';
-		}
-		
-		box.item = item;
 	});
 	
 	
@@ -211,43 +232,70 @@ var ZoteroItemPane = new function() {
 		switch (tabBox.selectedIndex) {
 		case 0:
 			var box = _itemBox;
+			if (box) {
+				yield box.blurOpenField();
+			}
 			break;
 			
 		case 2:
-			var box = _tagsBox;
+			var box = _tagsBox.current;
+			if (box) {
+				box.blurOpenField();
+			}
 			break;
 		}
-		if (box) {
-			yield box.blurOpenField();
-		}
 	});
+	
+	
+	function focusItemsList() {
+		var tree = document.getElementById('zotero-items-tree');
+		if (tree) {
+			tree.focus();
+		}
+	}
+
+
+	this.switchEditorEngine = function (useOld) {
+		var switherDeck = document.getElementById('zotero-note-editor-switcher');
+		switherDeck.selectedIndex = useOld ? 0 : 1;
+	};
 	
 	
 	this.onNoteSelected = function (item, editable) {
 		_selectedNoteID = item.id;
 		
-		// If an external note window is open for this item, don't show the editor
-		if (ZoteroPane.findNoteWindow(item.id)) {
-			this.showNoteWindowMessage();
-			return;
+		var type = Zotero.Libraries.get(item.libraryID).libraryType;
+		if (type == 'group' || !Zotero.isPDFBuild) {
+			// If an external note window is open for this item, don't show the editor
+			if (ZoteroPane.findNoteWindow(item.id)) {
+				this.showNoteWindowMessage();
+				return;
+			}
+
+			var noteEditor = document.getElementById('zotero-note-editor-old');
+
+			// If loading new or different note, disable undo while we repopulate the text field
+			// so Undo doesn't end up clearing the field. This also ensures that Undo doesn't
+			// undo content from another note into the current one.
+			var clearUndo = noteEditor.item ? noteEditor.item.id != item.id : false;
+
+			noteEditor.mode = editable ? 'edit' : 'view';
+			noteEditor.parent = null;
+			noteEditor.item = item;
+
+			if (clearUndo) {
+				noteEditor.clearUndo();
+			}
+		}
+		else {
+			var noteEditor = document.getElementById('zotero-note-editor');
+			noteEditor.mode = editable ? 'edit' : 'view';
+			noteEditor.viewMode = 'library';
+			noteEditor.parent = null;
+			noteEditor.item = item;
 		}
 		
-		var noteEditor = document.getElementById('zotero-note-editor');
-		
-		// If loading new or different note, disable undo while we repopulate the text field
-		// so Undo doesn't end up clearing the field. This also ensures that Undo doesn't
-		// undo content from another note into the current one.
-		var clearUndo = noteEditor.item ? noteEditor.item.id != item.id : false;
-		
-		noteEditor.mode = editable ? 'edit' : 'view';
-		noteEditor.parent = null;
-		noteEditor.item = item;
-		
-		if (clearUndo) {
-			noteEditor.clearUndo();
-		}
-		
-		document.getElementById('zotero-view-note-button').hidden = !editable;
+		document.getElementById('zotero-view-note-button').hidden = !editable || type != 'group' && Zotero.isPDFBuild;
 		document.getElementById('zotero-item-pane-content').selectedIndex = 2;
 	};
 	
@@ -263,16 +311,19 @@ var ZoteroItemPane = new function() {
 	this.openNoteWindow = async function () {
 		var selectedNote = Zotero.Items.get(_selectedNoteID);
 		
-		// We don't want to show the note in two places, since it causes unnecessary UI updates
-		// and can result in weird bugs where note content gets lost.
-		//
-		// If this is a child note, select the parent
-		if (selectedNote.parentID) {
-			await ZoteroPane.selectItem(selectedNote.parentID);
-		}
-		// Otherwise, hide note and replace with a message that we're editing externally
-		else {
-			this.showNoteWindowMessage();
+		var type = Zotero.Libraries.get(selectedNote.libraryID).libraryType;
+		if (type == 'group' || !Zotero.isPDFBuild) {
+			// We don't want to show the note in two places, since it causes unnecessary UI updates
+			// and can result in weird bugs where note content gets lost.
+			//
+			// If this is a child note, select the parent
+			if (selectedNote.parentID) {
+				await ZoteroPane.selectItem(selectedNote.parentID);
+			}
+			// Otherwise, hide note and replace with a message that we're editing externally
+			else {
+				this.showNoteWindowMessage();
+			}
 		}
 		ZoteroPane.openNoteWindow(selectedNote.id);
 	};
@@ -288,6 +339,21 @@ var ZoteroItemPane = new function() {
 								.getService(Components.interfaces.nsIPromptService);
 		if (ps.confirm(null, '', Zotero.getString('pane.item.notes.delete.confirm'))) {
 			Zotero.Items.trashTx(id);
+		}
+	}
+	
+	
+	this.onTagsContextPopupShowing = function () {
+		if (!_lastItem.isEditable()) {
+			return false;
+		}
+	}
+	
+	
+	this.removeAllTags = async function () {
+		if (Services.prompt.confirm(null, "", Zotero.getString('pane.item.tags.removeAll'))) {
+			_lastItem.setTags([]);
+			await _lastItem.saveTx();
 		}
 	}
 	
@@ -391,21 +457,7 @@ var ZoteroItemPane = new function() {
 	
 	function _updateNoteCount() {
 		var c = _notesList.childNodes.length;
-		
-		var str = 'pane.item.notes.count.';
-		switch (c){
-		case 0:
-			str += 'zero';
-			break;
-		case 1:
-			str += 'singular';
-			break;
-		default:
-			str += 'plural';
-			break;
-		}
-		
-		_notesLabel.value = Zotero.getString(str, [c]);
+		_notesLabel.value = Zotero.getString('pane.item.notes.count', c, c);
 	}
 }   
 

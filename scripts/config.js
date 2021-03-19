@@ -32,12 +32,44 @@ const symlinkFiles = [
 	'!resource/react.js',
 	'!resource/react-dom.js',
 	'!resource/react-virtualized.js',
+	// Only include lib directory of singleFile
+	// Also do a little bit of manipulation similar to React
+	'!resource/SingleFile/**/*',
+	'resource/SingleFile/lib/**/*',
+	'resource/SingleFile/extension/lib/single-file/fetch/content/content-fetch.js',
+	'!resource/SingleFile/lib/single-file/single-file.js',
+	// We only need a couple Ace Editor files
+	'!resource/ace/**/*',
+	'resource/ace/ace.js',
+	// Enable for autocomplete
+	//'resource/ace/ext-language_tools.js',
+	'resource/ace/ext-searchbox.js',
+	'resource/ace/keybinding-emacs.js',
+	'resource/ace/keybinding-vim.js',
+	'resource/ace/mode-javascript.js',
+	'resource/ace/theme-chrome.js',
+	'resource/ace/theme-monokai.js',
+	'resource/ace/worker-javascript.js',
 	'update.rdf'
 ];
 
 
 // these files will be browserified during the build
 const browserifyConfigs = [
+	{
+		src: 'node_modules/react-select/dist/react-select.cjs.prod.js',
+		dest: 'resource/react-select.js',
+		config: {
+			standalone: 'react-select'
+		}
+	},
+	{
+		src: 'node_modules/url/url.js',
+		dest: 'resource/url.js',
+		config: {
+			standalone: 'url'
+		}
+	},
 	{
 		src: 'node_modules/sinon/lib/sinon.js',
 		dest: 'test/resource/sinon.js',
@@ -55,7 +87,11 @@ const browserifyConfigs = [
 ];
 
 // exclude mask used for js, copy, symlink and sass tasks
-const ignoreMask = ['**/#*', '**/_*.scss'];
+const ignoreMask = [
+	'**/#*',
+	'**/_*.scss',
+	'resource/schema/global/schema.json.gz'
+];
 
 const jsFiles = [
 	`{${dirs.join(',')}}/**/*.js`,
@@ -66,6 +102,7 @@ const jsFiles = [
 	'resource/react.js',
 	'resource/react-dom.js',
 	'resource/react-virtualized.js',
+	'resource/SingleFile/lib/single-file/single-file.js'
 ];
 
 const scssFiles = [
@@ -73,6 +110,8 @@ const scssFiles = [
 	'chrome/skin/default/zotero/**/*.scss'
 ];
 
+const buildsURL = 'https://zotero-download.s3.amazonaws.com/ci/';
+
 module.exports = {
-	dirs, symlinkDirs, copyDirs, symlinkFiles, browserifyConfigs, jsFiles, scssFiles, ignoreMask
+	dirs, symlinkDirs, copyDirs, symlinkFiles, browserifyConfigs, jsFiles, scssFiles, ignoreMask, buildsURL
 };

@@ -11,8 +11,33 @@ Zotero.Sync.Storage.Local = {
 	
 	lastFullFileCheck: {},
 	uploadCheckFiles: [],
+	storageRemainingForLibrary: new Map(),
+	
+	init: function () {
+		Zotero.Notifier.registerObserver(this, ['group'], 'storageLocal');
+	},
+	
+	notify: async function (action, type, ids, _extraData) {
+		// Clean up cache on group deletion
+		if (action == 'delete' && type == 'group') {
+			for (let libraryID of ids) {
+				if (this.lastFullFileCheck[libraryID]) {
+					delete this.lastFullFileCheck[libraryID];
+				}
+				if (this.storageRemainingForLibrary.has(libraryID)) {
+					this.storageRemainingForLibrary.delete(libraryID);
+				}
+			}
+		}
+	},
 	
 	getEnabledForLibrary: function (libraryID) {
+		// The user must have synced for the first time before we allow storage requests.
+		// This is relevant if an account is set up for syncing but the DB file is cleared and the
+		// user double-clicks on a missing file in download-as-needed mode.
+		if (!Zotero.Users.getCurrentUserID()) {
+			return false;
+		}
 		var libraryType = Zotero.Libraries.get(libraryID).libraryType;
 		switch (libraryType) {
 		case 'user':
@@ -289,7 +314,7 @@ Zotero.Sync.Storage.Local = {
 	}),
 	
 	
-	_checkForUpdatedFile: Zotero.Promise.coroutine(function* (item, attachmentData, remoteModTime) {
+	_checkForUpdatedFile: Zotero.Promise.coroutine(function* (item, attachmentData) {
 		var lk = item.libraryKey;
 		Zotero.debug("Checking attachment file for item " + lk, 4);
 		
@@ -325,25 +350,7 @@ Zotero.Sync.Storage.Local = {
 			//Zotero.debug("Stored mtime is " + attachmentData.mtime);
 			//Zotero.debug("File mtime is " + fmtime);
 			
-			//BAIL AFTER DOWNLOAD MARKING MODE, OR CHECK LOCAL?
 			let mtime = attachmentData ? attachmentData.mtime : false;
-			
-			// Download-marking mode
-			if (remoteModTime) {
-				Zotero.debug(`Remote mod time for item ${lk} is ${remoteModTime}`);
-				
-				// Ignore attachments whose stored mod times haven't changed
-				mtime = mtime !== false ? mtime : item.attachmentSyncedModificationTime;
-				if (mtime == remoteModTime) {
-					Zotero.debug(`Synced mod time (${mtime}) hasn't changed for item ${lk}`);
-					return false;
-				}
-				
-				Zotero.debug(`Marking attachment ${lk} for download (stored mtime: ${mtime})`);
-				// DEBUG: Always set here, or allow further steps?
-				return this.SYNC_STATE_FORCE_DOWNLOAD;
-			}
-			
 			var same = !this.checkFileModTime(item, fmtime, mtime);
 			if (same) {
 				Zotero.debug("File has not changed");
@@ -495,13 +502,14 @@ Zotero.Sync.Storage.Local = {
 	 */
 	getFilesToUpload: function (libraryID) {
 		var sql = "SELECT itemID FROM itemAttachments JOIN items USING (itemID) "
-			+ "WHERE libraryID=? AND syncState IN (?,?) AND linkMode IN (?,?)";
+			+ "WHERE libraryID=? AND syncState IN (?,?) AND linkMode IN (?,?,?)";
 		var params = [
 			libraryID,
 			this.SYNC_STATE_TO_UPLOAD,
 			this.SYNC_STATE_FORCE_UPLOAD,
 			Zotero.Attachments.LINK_MODE_IMPORTED_FILE,
-			Zotero.Attachments.LINK_MODE_IMPORTED_URL
+			Zotero.Attachments.LINK_MODE_IMPORTED_URL,
+			Zotero.Attachments.LINK_MODE_EMBEDDED_IMAGE,
 		];
 		return Zotero.DB.columnQueryAsync(sql, params);
 	},
@@ -559,12 +567,13 @@ Zotero.Sync.Storage.Local = {
 		
 		return Zotero.DB.executeTransaction(async function () {
 			var sql = "SELECT itemID FROM items JOIN itemAttachments USING (itemID) "
-				+ "WHERE libraryID=? AND itemTypeID=? AND linkMode IN (?, ?)";
+				+ "WHERE libraryID=? AND itemTypeID=? AND linkMode IN (?, ?, ?)";
 			var params = [
 				libraryID,
 				Zotero.ItemTypes.getID('attachment'),
 				Zotero.Attachments.LINK_MODE_IMPORTED_FILE,
 				Zotero.Attachments.LINK_MODE_IMPORTED_URL,
+				Zotero.Attachments.LINK_MODE_EMBEDDED_IMAGE,
 			];
 			var itemIDs = await Zotero.DB.columnQueryAsync(sql, params);
 			for (let itemID of itemIDs) {
@@ -1039,15 +1048,25 @@ Zotero.Sync.Storage.Local = {
 		yield Zotero.DB.executeTransaction(function* () {
 			for (let i = 0; i < conflicts.length; i++) {
 				let conflict = conflicts[i];
+				// TEMP
+				Zotero.debug(conflict);
 				let item = Zotero.Items.getByLibraryAndKey(libraryID, conflict.left.key);
 				let mtime = io.dataOut[i].data.dateModified;
 				// Local
 				if (mtime == conflict.left.dateModified) {
 					syncState = this.SYNC_STATE_FORCE_UPLOAD;
-					// When local version is chosen, update stored hash (and mtime) to remote values so
-					// that upload goes through without 412
-					item.attachmentSyncedModificationTime = conflict.right.mtime;
-					item.attachmentSyncedHash = conflict.right.md5;
+					// When local version is chosen, update stored mtime and hash to remote values
+					// so that upload goes through without a 412.
+					//
+					// These sometimes might not be set in the cached JSON (for unclear reasons, but
+					// see https://forums.zotero.org/discussion/79011/zotero-error-report), in which
+					// case we just ignore them and hope that the local version has null values too.
+					if (conflict.right.mtime) {
+						item.attachmentSyncedModificationTime = conflict.right.mtime;
+					}
+					if (conflict.right.md5) {
+						item.attachmentSyncedHash = conflict.right.md5;
+					}
 				}
 				// Remote
 				else {

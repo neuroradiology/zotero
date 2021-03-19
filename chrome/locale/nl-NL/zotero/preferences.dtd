@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Algemeen">
 
-<!ENTITY zotero.preferences.userInterface "Gebruikersinterface">
-<!ENTITY zotero.preferences.layout "Lay-out:">
-<!ENTITY zotero.preferences.layout.standard "Standaard">
-<!ENTITY zotero.preferences.layout.stacked "Gelaagd">
-<!ENTITY zotero.preferences.fontSize "Lettergrootte:">
-<!ENTITY zotero.preferences.fontSize.small "Klein">
-<!ENTITY zotero.preferences.fontSize.medium "Middelgroot">
-<!ENTITY zotero.preferences.fontSize.large "Groot">
-<!ENTITY zotero.preferences.fontSize.xlarge "Extra groot">
-<!ENTITY zotero.preferences.fontSize.notes "Tekengrootte aantekeningen:">
-
 <!ENTITY zotero.preferences.fileHandling "Verwerking van bestanden">
 <!ENTITY zotero.preferences.automaticSnapshots "Automatisch snapshots nemen bij het aanmaken van items vanaf webpagina's">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Automatisch gekoppelde PDF's en andere bestanden toevoegen bij het opslaan van items">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Lokale Zotero-gegevens samenvoegen met de gegevens op de Zotero Server (houdt geen rekening met synchronisatiegeschiedenis).">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Herstellen vanuit online-bibliotheek">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Lokale Zoterogegevens overschrijven met data uit de online-bibliotheek">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Herstellen naar Zotero-server">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Online Bibliotheek Vervangen">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Alle gegevens op de server wissen en vervangen door de lokale Zotero-gegevens.">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Wis bestandssynchronisatiegeschiedenis">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Controleren of alle lokale bestanden op de server aanwezig zijn.">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Meer stijlen ophalen">
 
-<!ENTITY zotero.preferences.keys.openZotero "Openen/Sluiten van Zotero-venster">
 <!ENTITY zotero.preferences.keys.saveToZotero "Sla op naar Zotero (adresbalk icoon)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Volledige schermweergave">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Breng venster Bibliotheken naar voren">

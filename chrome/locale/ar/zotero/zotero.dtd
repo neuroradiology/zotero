@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "إلغاء تحديد الكل">
 <!ENTITY zotero.general.edit "تحرير">
 <!ENTITY zotero.general.delete "حذف">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "موافق">
 <!ENTITY zotero.general.cancel "الغاء">
 <!ENTITY zotero.general.refresh "اعادة تحميل">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "أغلق">
 <!ENTITY zotero.general.minimize "تصغير">
 <!ENTITY zotero.general.other "غير ذلك...">
+<!ENTITY zotero.general.bigger "أكبر">
+<!ENTITY zotero.general.smaller "أصغر">
+<!ENTITY zotero.general.reset "اعادة ضبط">
 
 
 <!ENTITY zotero.errorReport.title "تقرير خطأ لزوتيرو">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "عرض التكرارات">
 <!ENTITY zotero.collections.showUnfiledItems "عرض العناصر غير المصنفة">
+<!ENTITY zotero.collections.showRetractedItems "إظهار العناصر المستردة">
 
 <!ENTITY zotero.items.itemType "نوع العنصر">
 <!ENTITY zotero.items.type_column "نوع العنصر">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "عرض في المكتبة">
 <!ENTITY zotero.items.menu.attach.note "اضافة ملاحظة">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "اضافة مرفق">
 <!ENTITY zotero.items.menu.attach.link.uri "ربط الرابط بالمسار...">
 <!ENTITY zotero.items.menu.attach.file "إرفاق نسخة من ملف مخزن...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "استيراد...">
 <!ENTITY zotero.toolbar.importFromClipboard "استيراد من الحافظة">
 <!ENTITY zotero.toolbar.export.label "تصدير المكتبة...">
-<!ENTITY zotero.toolbar.rtfScan.label "فحص ملف RTF...">
+<!ENTITY zotero.toolbar.rtfScan.label "فحص ملف RTF">
 <!ENTITY zotero.toolbar.timeline.label "إنشاء خط زمني">
 <!ENTITY zotero.toolbar.preferences.label "التفضيلات...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "الدعم و الوثائق">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "تخزين نسخة من ملف...">
 <!ENTITY zotero.toolbar.attachment.weblink "حفظ رابط للصفحة الحالية">
 <!ENTITY zotero.toolbar.attachment.snapshot "اخذ لقطة من الصفحة الحالية">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "لاتوجد اوسمة لعرضها">
 <!ENTITY zotero.tagSelector.loadingTags "تحميل الوسوم...">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "أدخل ردمك أو معرف الوثيقة الرقمي أو  بميد أو معرف الأرشيف للإضافة لممكتبتك">
 <!ENTITY zotero.lookup.button.search "بحث">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "تحديد العناصر">
 <!ENTITY zotero.selectitems.intro.label "حدد العناصر التي تريد إضافتها لمكتبتك">
@@ -203,7 +214,7 @@
 <!ENTITY zotero.import.lastModified "آخر تعديل">
 <!ENTITY zotero.import.size "حجم">
 <!ENTITY zotero.import.createCollection "ضع المجموعات المستوردة والمواد في مجموعة جديدة">
-<!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.fileHandling "معاملة الملف">
 
 <!ENTITY zotero.exportOptions.title "تصدير...">
 <!ENTITY zotero.exportOptions.format.label "الصياغة:">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "سيتم تمييز الاستشهادات ذات التحديثات المعلقة في المستند">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "يمكن أن يؤدي تعطيل التحديثات إلى تسريع إدراج الاستشهادات في المستندات الكبيرة. انقر على تحديث لتحديث الاستشهادات يدويًا.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "استخدام اختصارات دورية ميدلين">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "سيتم تجاهل حقل &quot;اختصار المجلة&quot;.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "التبديل إلى معالج نصوص آخر ...">
 
 <!ENTITY zotero.integration.showEditor.label "عرض المحرر">
 <!ENTITY zotero.integration.classicView.label "عرض تقليدي">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "ارفاق رابط لمحتوى على الانترنت">
 <!ENTITY zotero.attachLink.label.link "رابط:">
 <!ENTITY zotero.attachLink.label.title "عنوان:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

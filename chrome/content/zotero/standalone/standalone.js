@@ -29,6 +29,10 @@ Components.utils.import("resource://gre/modules/Services.jsm");
  * This object contains the various functions for the interface
  */
 const ZoteroStandalone = new function() {
+	const FONT_SIZES = ["1.0", "1.15", "1.3", "1.5", "1.7", "1.9", "2.1"];
+	//const NOTE_FONT_SIZES = ["11", "12", "13", "14", "18", "24", "36", "48", "64", "72", "96"];
+	const NOTE_FONT_SIZE_DEFAULT = "12";
+	
 	/**
 	 * Run when standalone window first opens
 	 */
@@ -37,6 +41,28 @@ const ZoteroStandalone = new function() {
 		if (Zotero.isMac && window.document.documentElement.getAttribute('sizemode') == 'fullscreen') {
 			window.document.documentElement.setAttribute('sizemode', 'normal');
 		}
+		
+		// Create tab bar by default
+		if (Zotero.isMac) {
+			document.documentElement.setAttribute('drawintitlebar', true);
+			document.documentElement.setAttribute('tabsintitlebar', true);
+			document.documentElement.setAttribute('chromemargin', '0,-1,-1,-1');
+		}
+		
+		this.switchMenuType('library');
+		this._notifierID = Zotero.Notifier.registerObserver(
+			{
+				notify: async (action, type, ids, extraData) => {
+					if (action == 'select') {
+						// "library" or "reader"
+						this.switchMenuType(extraData[ids[0]].type);
+						setTimeout(() => ZoteroPane.updateToolbarPosition(), 0);
+					}
+				}
+			},
+			['tab'],
+			'tab'
+		);
 		
 		Zotero.Promise.try(function () {
 			if(!Zotero) {
@@ -48,14 +74,6 @@ const ZoteroStandalone = new function() {
 			return Zotero.initializationPromise;
 		})
 		.then(async function () {
-			if (Zotero.Prefs.get('devtools.errorconsole.enabled', true)) {
-				document.getElementById('menu_errorConsole').hidden = false;
-			}
-			if (Zotero.Prefs.get('devtools.chrome.enabled', true)) {
-				document.getElementById('menu_errorConsole').hidden = false;
-				document.getElementById('menu_runJS').hidden = false;
-			}
-			
 			document.getElementById('key_copyCitation')
 				.setAttribute('key', Zotero.Keys.getKeyForCommand('copySelectedItemCitationsToClipboard'));
 			document.getElementById('key_copyBibliography')
@@ -63,6 +81,13 @@ const ZoteroStandalone = new function() {
 			
 			ZoteroStandalone.DebugOutput.init();
 			
+			// TEMP: Remove tab bar if not PDF build
+			if (Zotero.isMac && !Zotero.isPDFBuild) {
+				document.documentElement.removeAttribute('drawintitlebar');
+				document.documentElement.removeAttribute('tabsintitlebar');
+				document.documentElement.removeAttribute('chromemargin');
+			}
+
 			Zotero.hideZoteroPaneOverlays();
 			ZoteroPane.init();
 			ZoteroPane.makeVisible();
@@ -94,6 +119,72 @@ const ZoteroStandalone = new function() {
 			return;
 		});
 	}
+
+	this.switchMenuType = function (type) {
+		document.querySelectorAll('.menu-type-library, .menu-type-reader').forEach(el => el.collapsed = true);
+		document.querySelectorAll('.menu-type-' + type).forEach(el => el.collapsed = false);
+	};
+
+	this.onReaderCmd = function (cmd) {
+		let reader = Zotero.Reader.getByTabID(Zotero_Tabs.selectedID);
+		reader.menuCmd(cmd);
+	};
+	
+	this.onFileMenuOpen = function () {
+		var active = false;
+		try {
+			let zp = Zotero.getActiveZoteroPane();
+			if (zp) {
+				active = !!zp.getSelectedItems().filter((item) => {
+					return item.isAttachment()
+						|| (item.isRegularItem() && item.getAttachments().length);
+				}).length;
+			}
+		}
+		catch (e) {}
+		this.updateMenuItemEnabled('manage-attachments-menu', active);
+		
+		// TEMP: Quick implementation
+		try {
+			let menuitem = document.getElementById('menu_export_files');
+			let sep = menuitem.nextSibling;
+			
+			let zp = Zotero.getActiveZoteroPane();
+			if (zp) {
+				let numFiles = zp.getSelectedItems().reduce((num, item) => {
+					if (item.isPDFAttachment()) {
+						return num + 1;
+					}
+					if (item.isRegularItem()) {
+						return num + item.numPDFAttachments();
+					}
+					return num;
+				}, 0);
+				if (numFiles) {
+					menuitem.hidden = false;
+					sep.hidden = false;
+					if (numFiles == 1) {
+						menuitem.label = 'Export PDF…';
+					}
+					else {
+						menuitem.label = 'Export PDFs…';
+					}
+				}
+				else {
+					menuitem.hidden = true;
+					sep.hidden = true;
+				}
+			}
+			else {
+				menuitem.hidden = true;
+				sep.hidden = true;
+			}
+		}
+		catch (e) {
+			Zotero.logError(e);
+		}
+	};
+	
 	
 	/**
 	 * Builds new item menu
@@ -142,6 +233,43 @@ const ZoteroStandalone = new function() {
 	}
 	
 	
+	this.onManageAttachmentsMenuOpen = function () {
+		// Convert Linked Files to Stored Files
+		var active = false;
+		try {
+			let zp = Zotero.getActiveZoteroPane();
+			if (zp) {
+				active = !!zp.getSelectedItems().filter((item) => {
+					return item.isLinkedFileAttachment()
+						|| (item.isRegularItem()
+							&& item.getAttachments()
+								.map(id => Zotero.Items.get(id))
+								.some(att => att.isLinkedFileAttachment()));
+				}).length;
+			}
+		}
+		catch (e) {}
+		this.updateMenuItemEnabled('file-menuitem-convert-to-stored', active);
+	};
+	
+	
+	this.onManageAttachmentsMenuItemClick = function (event) {
+		var menuitem = event.originalTarget;
+		var id = menuitem.id;
+		var prefix = 'file-menuitem-';
+		if (menuitem.disabled || !id.startsWith(prefix)) {
+			return;
+		}
+		id = id.substr(prefix.length);
+		
+		switch (id) {
+			case 'convert-to-stored':
+				ZoteroPane.convertLinkedFilesToStoredFiles();
+				break;
+		}
+	};
+	
+	
 	this.updateQuickCopyOptions = function () {
 		var selected = false;
 		try {
@@ -182,15 +310,226 @@ const ZoteroStandalone = new function() {
 	};
 	
 	
+	this.onViewMenuOpen = function () {
+		// Layout mode
+		var mode = Zotero.Prefs.get('layout');
+		this.updateMenuItemCheckmark('view-menuitem-standard', mode != 'stacked');
+		this.updateMenuItemCheckmark('view-menuitem-stacked', mode == 'stacked');
+		
+		// Panes
+		this.updateMenuItemCheckmark(
+			'view-menuitem-collections-pane',
+			document.getElementById('zotero-collections-pane').getAttribute('collapsed') != 'true'
+		);
+		this.updateMenuItemCheckmark(
+			'view-menuitem-item-pane',
+			document.getElementById('zotero-item-pane').getAttribute('collapsed') != 'true'
+		);
+		this.updateMenuItemCheckmark(
+			'view-menuitem-tag-selector',
+			document.getElementById('zotero-tag-selector-container').getAttribute('collapsed') != 'true'
+		);
+		
+		// Font size
+		var fontSize = Zotero.Prefs.get('fontSize');
+		this.updateMenuItemEnabled('view-menuitem-font-size-bigger', fontSize < FONT_SIZES[FONT_SIZES.length - 1]);
+		this.updateMenuItemEnabled('view-menuitem-font-size-smaller', fontSize > FONT_SIZES[0]);
+		this.updateMenuItemEnabled('view-menuitem-font-size-reset', fontSize != FONT_SIZES[0]);
+		
+		var noteFontSize = Zotero.Prefs.get('note.fontSize');
+		for (let menuitem of document.querySelectorAll(`#note-font-size-menu menuitem`)) {
+			if (parseInt(menuitem.getAttribute('label')) == noteFontSize) {
+				menuitem.setAttribute('checked', true);
+			}
+			else {
+				menuitem.removeAttribute('checked');
+			}
+		}
+		this.updateMenuItemEnabled(
+			'view-menuitem-note-font-size-reset',
+			noteFontSize != NOTE_FONT_SIZE_DEFAULT
+		);
+		
+		// Recursive collections
+		this.updateMenuItemCheckmark(
+			'view-menuitem-recursive-collections',
+			Zotero.Prefs.get('recursiveCollections')
+		);
+	};
+	
+	
+	this.onViewMenuItemClick = function (event) {
+		var menuitem = event.originalTarget;
+		var id = menuitem.id;
+		var prefix = 'view-menuitem-';
+		if (menuitem.disabled || !id.startsWith(prefix)) {
+			return;
+		}
+		id = id.substr(prefix.length);
+		
+		switch (id) {
+			case 'standard':
+				Zotero.Prefs.set('layout', 'standard');
+				break;
+			
+			case 'stacked':
+				Zotero.Prefs.set('layout', 'stacked');
+				break;
+			
+			case 'collections-pane':
+				var collectionsPane = document.getElementById('zotero-collections-pane');
+				// Show
+				if (collectionsPane.getAttribute('collapsed') == 'true') {
+					document.getElementById('zotero-collections-splitter').setAttribute('state', 'open');
+					collectionsPane.setAttribute('collapsed', false);
+				}
+				// Hide
+				else {
+					document.getElementById('zotero-collections-splitter').setAttribute('state', 'collapsed');
+					collectionsPane.setAttribute('collapsed', true);
+				}
+				ZoteroPane.updateToolbarPosition();
+				break;
+			
+			case 'item-pane':
+				var itemPane = document.getElementById('zotero-item-pane');
+				// Show
+				if (itemPane.getAttribute('collapsed') == 'true') {
+					document.getElementById('zotero-items-splitter').setAttribute('state', 'open');
+					itemPane.setAttribute('collapsed', false);
+				}
+				// Hide
+				else {
+					document.getElementById('zotero-items-splitter').setAttribute('state', 'collapsed');
+					itemPane.setAttribute('collapsed', true);
+				}
+				ZoteroPane.updateToolbarPosition();
+				break;
+			
+			case 'tag-selector':
+				ZoteroPane.toggleTagSelector();
+				break;
+			
+			case 'font-size-bigger':
+				increaseFontSize('fontSize', FONT_SIZES);
+				break;
+			
+			case 'font-size-smaller':
+				decreaseFontSize('fontSize', FONT_SIZES);
+				break;
+			
+			case 'font-size-reset':
+				Zotero.Prefs.clear('fontSize');
+				break;
+			
+			/*case 'note-font-size-bigger':
+				increaseFontSize('note.fontSize', NOTE_FONT_SIZES);
+				break;
+			
+			case 'note-font-size-smaller':
+				decreaseFontSize('note.fontSize', NOTE_FONT_SIZES);
+				break;
+			*/
+			
+			case 'note-font-size-reset':
+				Zotero.Prefs.clear('note.fontSize');
+				this.promptForRestart();
+				break;
+			
+			case 'recursive-collections':
+				this.toggleBooleanPref('recursiveCollections');
+				break;
+		}
+	};
+	
+	
+	this.updateMenuItemCheckmark = function (id, checked) {
+		var menuitem = document.getElementById(id);
+		if (checked) {
+			menuitem.setAttribute('checked', true);
+		}
+		else {
+			menuitem.removeAttribute('checked');
+		}
+	};
+	
+	
+	this.updateMenuItemEnabled = function (id, enabled) {
+		var menuitem = document.getElementById(id);
+		if (enabled) {
+			menuitem.removeAttribute('disabled');
+		}
+		else {
+			menuitem.setAttribute('disabled', true);
+		}
+	};
+	
+	
+	this.toggleBooleanPref = function (pref) {
+		Zotero.Prefs.set(pref, !Zotero.Prefs.get(pref));
+	};
+	
+	
+	function decreaseFontSize(pref, sizes) {
+		var fontSize = Zotero.Prefs.get(pref);
+		var lastSize = fontSize;
+		// Get the highest font size below the current one
+		for (let i = sizes.length - 1; i >= 0; i--) {
+			if (fontSize > sizes[i]) {
+				lastSize = sizes[i];
+				break;
+			}
+		}
+		Zotero.Prefs.set(pref, lastSize);
+	}
+	
+	function increaseFontSize(pref, sizes) {
+		var fontSize = Zotero.Prefs.get(pref);
+		var lastSize = fontSize;
+		// Get the font size above the current one
+		for (let i = 0; i < sizes.length; i++) {
+			if (sizes[i] > fontSize) {
+				lastSize = sizes[i];
+				break;
+			}
+		}
+		Zotero.Prefs.set(pref, lastSize);
+	}
+	
+	
+	this.updateNoteFontSize = function (event) {
+		var size = event.originalTarget.getAttribute('label');
+		Zotero.Prefs.set('note.fontSize', size);
+	};
+	
+	
+	this.promptForRestart = function () {
+		// Prompt to restart
+		var ps = Services.prompt;
+		var buttonFlags = ps.BUTTON_POS_0 * ps.BUTTON_TITLE_IS_STRING
+			+ ps.BUTTON_POS_1 * ps.BUTTON_TITLE_IS_STRING;
+		var index = ps.confirmEx(
+			null,
+			Zotero.getString('general.restartRequired'),
+			Zotero.getString('general.restartRequiredForChange', [ZOTERO_CONFIG.CLIENT_NAME]),
+			buttonFlags,
+			Zotero.getString('general.restartNow'),
+			Zotero.getString('general.restartLater'),
+			null, null, {}
+		);
+		
+		if (index == 0) {
+			Zotero.Utilities.Internal.quitZotero(true);
+		}
+	};
+	
+	
 	this.updateAddonsPane = function (doc) {
-		// Hide unsigned add-on verification warnings
-		//
-		// This only works for the initial load of the window. If the user switches to Appearance
-		// or Plugins and then back to Extensions, the warnings will appear again. A better way to
-		// disable this might be discoverable by studying
-		// https://dxr.mozilla.org/mozilla-central/source/toolkit/mozapps/extensions/content/extensions.js
-		var addonList = doc.getElementById('addon-list');
-		setTimeout(function () {
+		// Unsigned add-on warnings are hidden by default in extensions.css (via style rules added
+		// by fetch_xulrunner.sh), but allow other warnings
+		function updateExtensions () {
+			var addonList = doc.getElementById('addon-list');
+			
 			for (let i = 0; i < addonList.itemCount; i++) {
 				let richListItem = addonList.getItemAtIndex(i);
 				let container = doc.getAnonymousElementByAttribute(
@@ -200,13 +539,16 @@ const ZoteroStandalone = new function() {
 					let link = doc.getAnonymousElementByAttribute(
 						richListItem, 'anonid', 'warning-link'
 					);
-					if (link && link.href.indexOf('unsigned-addons') != -1) {
-						richListItem.removeAttribute('notification');
-						container.hidden = true;
+					if (link) {
+						if (!link.href.includes('unsigned-addons')) {
+							container.classList.add('allowed-warning');
+						}
 					}
 				}
 			}
-		});
+		}
+		doc.getElementById('category-extension').onclick = updateExtensions;
+		setTimeout(updateExtensions);
 	}
 	
 	/**
@@ -244,6 +586,7 @@ const ZoteroStandalone = new function() {
 	 * Called before standalone window is closed
 	 */
 	this.onUnload = function() {
+		Zotero.Notifier.unregisterObserver(this._notifierID);
 		ZoteroPane.destroy();
 	}
 }
@@ -450,38 +793,58 @@ ZoteroStandalone.DebugOutput = {
 
 
 function toJavaScriptConsole() {
-	toOpenWindowByType("global:console", "chrome://global/content/console.xul");
+	openWindowByType('chrome://global/content/console.xul', 'global:console');
 }
 
 function openRunJSWindow() {
-	window.open('chrome://zotero/content/runJS.html', 'run-js', 'width=900,height=700,resizable');
+	openWindowByType(
+		'chrome://zotero/content/runJS.html',
+		'zotero:run-js',
+		'chrome,width=900,height=700,resizable,centerscreen'
+	);
 }
 
-function toOpenWindowByType(inType, uri, features)
-{
-	var topWindow = Services.wm.getMostRecentWindow(inType);
+function openStyleEditor() {
+	openWindowByType(
+		'chrome://zotero/content/tools/csledit.xul',
+		'zotero:style-editor',
+		'chrome,width=950,height=700,resizable'
+	);
+}
+
+function openScaffold() {
+	openWindowByType(
+		'chrome://scaffold/content/scaffold.xul',
+		'zotero:scaffold',
+		'chrome,resizable'
+	);
+}
+
+function openWindowByType(uri, type, features) {
+	var win = Services.wm.getMostRecentWindow(type);
 	
-	if (topWindow) {
-		topWindow.focus();
-	} else if(features) {
+	if (win) {
+		win.focus();
+	}
+	else if (features) {
 		window.open(uri, "_blank", features);
-	} else {
+	}
+	else {
 		window.open(uri, "_blank", "chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar");
 	}
 }
 
 const gXPInstallObserver = {
-	observe: function (aSubject, aTopic, aData) {
-		var installInfo = aSubject.QueryInterface(Components.interfaces.amIWebInstallInfo);
-		var win = installInfo.originatingWindow;
-		switch (aTopic) {
+	observe: function (subject, topic, data) {
+		const { installs } = subject.wrappedJSObject;
+		switch (topic) {
 			case "addon-install-disabled":
 			case "addon-install-blocked":
 			case "addon-install-failed":
-				var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
-					.getService(Components.interfaces.nsIPromptService);
-				promptService.alert(win, Zotero.getString("standalone.addonInstallationFailed.title"),
-					Zotero.getString("standalone.addonInstallationFailed.body", installInfo.installs[0].name));
+				Zotero.alert(
+					null,
+					Zotero.getString("standalone.addonInstallationFailed.title"),
+					Zotero.getString("standalone.addonInstallationFailed.body", installs[0].name));
 				break;
 			/*case "addon-install-started":
 			case "addon-install-complete":*/
@@ -493,6 +856,31 @@ const gXPInstallObserver = {
 function openUILinkIn(url) {
 	ZoteroPane.loadURI(url);
 }
+
+// Support context menus on HTML text boxes
+//
+// Adapted from editMenuOverlay.js in Fx68
+window.addEventListener("contextmenu", e => {
+	const HTML_NS = "http://www.w3.org/1999/xhtml";
+	let needsContextMenu =
+		e.target.ownerDocument == document &&
+		!e.defaultPrevented &&
+		e.target.parentNode.nodeName != "moz-input-box" &&
+		((["textarea", "input"].includes(e.target.localName) &&
+			e.target.namespaceURI == HTML_NS) ||
+			e.target.closest("search-textbox"));
+	
+	if (!needsContextMenu) {
+		return;
+	}
+	
+	let popup = document.getElementById("contentAreaContextMenu");
+	popup.openPopupAtScreen(e.screenX, e.screenY, true);
+	// Don't show any other context menu at the same time. There can be a
+	// context menu from an ancestor too but we only want to show this one.
+	e.preventDefault();
+});
+
 
 window.addEventListener("load", function(e) { ZoteroStandalone.onLoad(e); }, false);
 window.addEventListener("unload", function(e) { ZoteroStandalone.onUnload(e); }, false);

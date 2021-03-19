@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Отказ на всички">
 <!ENTITY zotero.general.edit "Редактиране">
 <!ENTITY zotero.general.delete "Изтриване">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Отказ">
 <!ENTITY zotero.general.refresh "Опресняване">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Затвори">
 <!ENTITY zotero.general.minimize "Минимизирай">
 <!ENTITY zotero.general.other "Други...">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "Зотеро доклад за проблем">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "Показване на дупликатите">
 <!ENTITY zotero.collections.showUnfiledItems "Показване на непопълнените записи">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "Вид запис">
 <!ENTITY zotero.items.type_column "Вид запис">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "Показване в библиотеката">
 <!ENTITY zotero.items.menu.attach.note "Добавяне на бележка">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Добавяне на прикачен файл">
 <!ENTITY zotero.items.menu.attach.link.uri "Добавяне на връзка към URI…">
 <!ENTITY zotero.items.menu.attach.file "Добавяне на съхранено копие на файл от твърдия диск...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "Внасяне...">
 <!ENTITY zotero.toolbar.importFromClipboard "Внасяне от клипборда">
 <!ENTITY zotero.toolbar.export.label "Изнасяне на библиотека...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF сканиране...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "Създаване на хронология">
 <!ENTITY zotero.toolbar.preferences.label "Предпочитания...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Подръжка и документация">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Запазване на копие от файл">
 <!ENTITY zotero.toolbar.attachment.weblink "Запазване на връзка към настоящата страница">
 <!ENTITY zotero.toolbar.attachment.snapshot "Направи &quot;моментна снимка&quot; на настоящата страница">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Няма маркери, които да бъдат показани">
 <!ENTITY zotero.tagSelector.loadingTags "Зареждане на маркери...">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Въведете ISBN, DOI, PMID, или arXiv идентификатори за добавяне към Вашата библиотека:">
 <!ENTITY zotero.lookup.button.search "Търсене">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "Избране на записи">
 <!ENTITY zotero.selectitems.intro.label "Изберете кои записи искате да добавите към Вашата библиотека">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Бележките под линия с предстоящо актуализиране ще бъдат актентирани в документа">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Изключването на автоматичното актуализиране може да ускори добавянето на бележки под линия в големи документи. Използвайте &quot;Опресняване&quot; за да ги актуализирате ръчно.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Използване на MEDLINE абревиатури на периодично издание">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "Полето “Абревиатура на периодично издание” ще бъде игнорирано.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "Показване на редактора">
 <!ENTITY zotero.integration.classicView.label "Класически изглед">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Прикачване на линк към URI">
 <!ENTITY zotero.attachLink.label.link "Линк:">
 <!ENTITY zotero.attachLink.label.title "Заглавие:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

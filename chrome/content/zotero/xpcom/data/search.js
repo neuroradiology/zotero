@@ -136,6 +136,7 @@ Zotero.Search.prototype.loadFromRow = function (row) {
 		
 		// Boolean
 		case 'synced':
+		case 'deleted':
 			val = !!val;
 			break;
 		
@@ -219,6 +220,20 @@ Zotero.Search.prototype._saveData = Zotero.Promise.coroutine(function* (env) {
 			i++;
 		}
 	}
+	
+	// Trashed status
+	if (this._changedData.deleted !== undefined) {
+		if (this._changedData.deleted) {
+			sql = "INSERT OR IGNORE INTO deletedSearches (savedSearchID) VALUES (?)";
+		}
+		else {
+			sql = "DELETE FROM deletedSearches WHERE savedSearchID=?";
+		}
+		yield Zotero.DB.queryAsync(sql, searchID);
+		
+		this._clearChanged('deleted');
+		this._markForReload('primaryData');
+	}
 });
 
 Zotero.Search.prototype._finalizeSave = Zotero.Promise.coroutine(function* (env) {
@@ -282,7 +297,7 @@ Zotero.Search.prototype.addCondition = function (condition, operator, value, req
 	
 	if (!Zotero.SearchConditions.hasOperator(condition, operator)){
 		let e = new Error("Invalid operator '" + operator + "' for condition " + condition);
-		e.name = "ZoteroUnknownFieldError";
+		e.name = "ZoteroInvalidDataError";
 		throw e;
 	}
 	
@@ -291,14 +306,19 @@ Zotero.Search.prototype.addCondition = function (condition, operator, value, req
 		var parts = Zotero.SearchConditions.parseSearchString(value);
 		
 		for (let part of parts) {
-			this.addCondition('blockStart');
+			if (condition == 'quicksearch-titleCreatorYearNote') {
+				this.addCondition('note', operator, part.text, false);
+				continue;
+			}
 			
+			this.addCondition('blockStart');
+
 			// Allow searching for exact object key
 			if (operator == 'contains' && Zotero.Utilities.isValidObjectKey(part.text)) {
 				this.addCondition('key', 'is', part.text, false);
 			}
-			
-			if (condition == 'quicksearch-titleCreatorYear') {
+
+			if (condition.startsWith('quicksearch-titleCreatorYear')) {
 				this.addCondition('title', operator, part.text, false);
 				this.addCondition('publicationTitle', operator, part.text, false);
 				this.addCondition('shortTitle', operator, part.text, false);
@@ -313,7 +333,8 @@ Zotero.Search.prototype.addCondition = function (condition, operator, value, req
 			this.addCondition('creator', operator, part.text, false);
 			
 			if (condition == 'quicksearch-everything') {
-				this.addCondition('annotation', operator, part.text, false);
+				this.addCondition('annotationText', operator, part.text, false);
+				this.addCondition('annotationComment', operator, part.text, false);
 				
 				if (part.inQuotes) {
 					this.addCondition('fulltextContent', operator, part.text, false);
@@ -331,6 +352,9 @@ Zotero.Search.prototype.addCondition = function (condition, operator, value, req
 		
 		if (condition == 'quicksearch-titleCreatorYear') {
 			this.addCondition('noChildren', 'true');
+		}
+		else if (condition == 'quicksearch-titleCreatorYearNote') {
+			this.addCondition('itemType', 'is', 'note');
 		}
 		
 		return false;
@@ -425,7 +449,7 @@ Zotero.Search.prototype.updateCondition = function (searchConditionID, condition
 	
 	if (!Zotero.SearchConditions.hasOperator(condition, operator)){
 		let e = new Error("Invalid operator '" + operator + "' for condition " + condition);
-		e.name = "ZoteroUnknownFieldError";
+		e.name = "ZoteroInvalidDataError";
 		throw e;
 	}
 	
@@ -808,8 +832,29 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
  * Populate the object's data from an API JSON data object
  *
  * If this object is identified (has an id or library/key), loadAll() must have been called.
+ *
+ * @param {Object} json
+ * @param {Object} [options]
+ * @param {Boolean} [options.strict = false] - Throw on unknown property
  */
-Zotero.Search.prototype.fromJSON = function (json) {
+Zotero.Search.prototype.fromJSON = function (json, options = {}) {
+	if (options.strict) {
+		for (let prop in json) {
+			switch (prop) {
+			case 'key':
+			case 'version':
+			case 'name':
+			case 'conditions':
+				break;
+			
+			default:
+				let e = new Error(`Unknown search property '${prop}'`);
+				e.name = "ZoteroInvalidDataError";
+				throw e;
+			}
+		}
+	}
+	
 	if (json.name) {
 		this.name = json.name;
 	}
@@ -822,6 +867,10 @@ Zotero.Search.prototype.fromJSON = function (json) {
 			condition.operator,
 			condition.value
 		);
+	}
+	
+	if (json.deleted || this.deleted) {
+		this.deleted = !!json.deleted;
 	}
 }
 
@@ -972,6 +1021,10 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 					var unfiled = condition.operator == 'true';
 					continue;
 				
+				case 'retracted':
+					var retracted = condition.operator == 'true';
+					continue;
+				
 				case 'publications':
 					var publications = condition.operator == 'true';
 					continue;
@@ -1034,6 +1087,10 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 			+ "AND itemID NOT IN (SELECT itemID FROM publicationsItems)";
 	}
 	
+	if (retracted) {
+		sql += " AND (itemID IN (SELECT itemID FROM retractedItems WHERE flag=0))";
+	}
+	
 	if (publications) {
 		sql += " AND (itemID IN (SELECT itemID FROM publicationsItems))";
 	}
@@ -1057,6 +1114,7 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 				var selectOpenParens = 0;
 				var condSelectSQL = '';
 				var condSQLParams = [];
+				let forceNoResults = false;
 				
 				//
 				// Special table handling
@@ -1141,7 +1199,6 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 						let objKey = condition.value;
 						let objectType = condition.name == 'collection' ? 'collection' : 'search';
 						let objectTypeClass = Zotero.DataObjectUtilities.getObjectsClassForObjectType(objectType);
-						let forceNoResults = false;
 						
 						// libraryID assigned on search
 						if (this.libraryID !== null) {
@@ -1188,7 +1245,7 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 						}
 						
 						if (forceNoResults) {
-							condSQL += '0=1';
+							condSQL += 'itemID IN (0)';
 						}
 						else if (objectType == 'collection') {
 							let ids = [obj.id];
@@ -1361,7 +1418,21 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 						
 						if (parseDate){
 							var go = false;
-							var dateparts = Zotero.Date.strToDate(condition.value);
+							let value = condition.value;
+							
+							// Parse 'yesterday'/'today'/'tomorrow'
+							let lc = value.toLowerCase();
+							if (lc == 'yesterday' || lc == Zotero.getString('date.yesterday')) {
+								value = Zotero.Date.dateToSQL(new Date(Date.now() - 1000 * 60 * 60 * 24)).substr(0, 10);
+							}
+							else if (lc == 'today' || lc == Zotero.getString('date.today')) {
+								value = Zotero.Date.dateToSQL(new Date()).substr(0, 10);
+							}
+							else if (lc == 'tomorrow' || lc == Zotero.getString('date.tomorrow')) {
+								value = Zotero.Date.dateToSQL(new Date(Date.now() + 1000 * 60 * 60 * 24)).substr(0, 10);
+							}
+							
+							let dateparts = Zotero.Date.strToDate(value);
 							
 							// Search on SQL date -- underscore is
 							// single-character wildcard
@@ -1544,31 +1615,33 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 					condSQL += ')';
 				}
 				
-				if (includeParentsAndChildren || includeParents) {
-					var parentSQL = "SELECT itemID FROM items WHERE "
-						+ "itemID IN (SELECT parentItemID FROM itemAttachments "
-							+ "WHERE itemID IN (" + condSQL + ")) "
-						+ "OR itemID IN (SELECT parentItemID FROM itemNotes "
-							+ "WHERE itemID IN (" + condSQL + ")) ";
-					var parentSQLParams = condSQLParams.concat(condSQLParams);
-				}
-				
-				if (includeParentsAndChildren || includeChildren) {
-					var childrenSQL = "SELECT itemID FROM itemAttachments WHERE "
-						+ "parentItemID IN (" + condSQL + ") UNION "
-						+ "SELECT itemID FROM itemNotes "
-						+ "WHERE parentItemID IN (" + condSQL + ")";
-					var childSQLParams = condSQLParams.concat(condSQLParams);
-				}
-				
-				if (includeParentsAndChildren || includeParents) {
-					condSQL += " UNION " + parentSQL;
-					condSQLParams = condSQLParams.concat(parentSQLParams);
-				}
-				
-				if (includeParentsAndChildren || includeChildren) {
-					condSQL += " UNION " + childrenSQL;
-					condSQLParams = condSQLParams.concat(childSQLParams);
+				if (!forceNoResults) {
+					if (includeParentsAndChildren || includeParents) {
+						var parentSQL = "SELECT itemID FROM items WHERE "
+							+ "itemID IN (SELECT parentItemID FROM itemAttachments "
+								+ "WHERE itemID IN (" + condSQL + ")) "
+							+ "OR itemID IN (SELECT parentItemID FROM itemNotes "
+								+ "WHERE itemID IN (" + condSQL + ")) ";
+						var parentSQLParams = condSQLParams.concat(condSQLParams);
+					}
+					
+					if (includeParentsAndChildren || includeChildren) {
+						var childrenSQL = "SELECT itemID FROM itemAttachments WHERE "
+							+ "parentItemID IN (" + condSQL + ") UNION "
+							+ "SELECT itemID FROM itemNotes "
+							+ "WHERE parentItemID IN (" + condSQL + ")";
+						var childSQLParams = condSQLParams.concat(condSQLParams);
+					}
+					
+					if (includeParentsAndChildren || includeParents) {
+						condSQL += " UNION " + parentSQL;
+						condSQLParams = condSQLParams.concat(parentSQLParams);
+					}
+					
+					if (includeParentsAndChildren || includeChildren) {
+						condSQL += " UNION " + childrenSQL;
+						condSQLParams = condSQLParams.concat(childSQLParams);
+					}
 				}
 				
 				condSQL = condSelectSQL + condSQL;

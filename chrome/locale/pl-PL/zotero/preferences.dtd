@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Ogólne">
 
-<!ENTITY zotero.preferences.userInterface "Interfejs użytkownika">
-<!ENTITY zotero.preferences.layout "Wygląd:">
-<!ENTITY zotero.preferences.layout.standard "Standardowy">
-<!ENTITY zotero.preferences.layout.stacked "Stos">
-<!ENTITY zotero.preferences.fontSize "Wielkość czcionki:">
-<!ENTITY zotero.preferences.fontSize.small "mała">
-<!ENTITY zotero.preferences.fontSize.medium "średnia">
-<!ENTITY zotero.preferences.fontSize.large "duża">
-<!ENTITY zotero.preferences.fontSize.xlarge "bardzo duża">
-<!ENTITY zotero.preferences.fontSize.notes "Wielkość czcionki w notatkach:">
-
 <!ENTITY zotero.preferences.fileHandling "Obsługa plików">
 <!ENTITY zotero.preferences.automaticSnapshots "Podczas tworzenia elementów ze stron internetowych automatycznie wykonaj zrzut ekranu">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Zapisując element dołączaj powiązane pliki PDF i inne">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Połącz lokalne dane ze zdalnymi, ignorując historię synchronizacji">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Przywróć dane z biblioteki zdalnej">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Nadpisz lokalne dane Zotero danymi z biblioteki zdalnej (na serwerze synchronizacji).">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Przywróć dane do biblioteki zdalnej">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Zamień zdalną bibliotekę">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Nadpisz dane w zdalnej bibliotece (na serwerze synchronizacji) lokalnymi danymi Zotero.">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Wyczyść historię synchronizacji plików">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Porównaj wszystkie pliki załączników z przechowywanymi zdalnie">
@@ -112,7 +101,7 @@
 
 <!ENTITY zotero.preferences.citationOptions.caption "Opcje cytowania">
 <!ENTITY zotero.preferences.export.citePaperJournalArticleURL "Dołącz adresy URL do pozycji bibliograficznych artykułów w wersji papierowej.">
-<!ENTITY zotero.preferences.export.citePaperJournalArticleURL.description "Gdy ta opcja nie jest wybrana, Zotero dołącza adresy URL tylko wtedy, gdy cytowane są artykuły z czasopism, magazynów, gazet, w których nie ma podanych zakresów stron.">
+<!ENTITY zotero.preferences.export.citePaperJournalArticleURL.description "Gdy ta opcja nie jest wybrana, Zotero dołącza adresy URL tylko wtedy, gdy cytowane są artykuły z czasopism, magazynów lub gazet, w których nie ma podanych zakresów stron.">
 
 <!ENTITY zotero.preferences.quickCopy.caption "Szybka kopia">
 <!ENTITY zotero.preferences.quickCopy.defaultFormat "Format domyślny:">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Pobierz dodatkowe style...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Otwórz/Zamknij okno Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Zapisz w Zotero (ikona paska adresu)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Przełącz w tryb pełnoekranowy">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Przenieś fokus na panel bibliotek (lewy)">
@@ -196,7 +184,7 @@
 <!ENTITY zotero.preferences.dataDir.useProfile "Użyj katalogu profilu">
 <!ENTITY zotero.preferences.dataDir.custom "Określ katalog:">
 <!ENTITY zotero.preferences.dataDir.choose "Wybierz...">
-<!ENTITY zotero.preferences.dataDir.viaCommandLine "(specified via command line)">
+<!ENTITY zotero.preferences.dataDir.viaCommandLine "(podany w linii poleceń)">
 <!ENTITY zotero.preferences.dataDir.reveal "Wyświetl katalog bazy danych">
 <!ENTITY zotero.preferences.dataDir.migrate "Przenieś do nowej domyślnej lokalizacji...">
 

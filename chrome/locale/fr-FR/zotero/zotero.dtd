@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Tout désélectionner">
 <!ENTITY zotero.general.edit "Modifier">
 <!ENTITY zotero.general.delete "Supprimer">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Annuler">
 <!ENTITY zotero.general.refresh "Actualiser">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Fermer">
 <!ENTITY zotero.general.minimize "Minimiser">
 <!ENTITY zotero.general.other "Autre…">
+<!ENTITY zotero.general.bigger "Plus grand">
+<!ENTITY zotero.general.smaller "Plus petit">
+<!ENTITY zotero.general.reset "Réinitialiser">
 
 
 <!ENTITY zotero.errorReport.title "Rapport d'erreur Zotero">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "Afficher les doublons">
 <!ENTITY zotero.collections.showUnfiledItems "Afficher les documents sans collection">
+<!ENTITY zotero.collections.showRetractedItems "Afficher les documents rétractés">
 
 <!ENTITY zotero.items.itemType "Type de document">
 <!ENTITY zotero.items.type_column "Type de document">
@@ -57,7 +62,7 @@
 <!ENTITY zotero.items.creator_column "Créateur">
 <!ENTITY zotero.items.date_column "Date">
 <!ENTITY zotero.items.year_column "Année">
-<!ENTITY zotero.items.publisher_column "Éditeur">
+<!ENTITY zotero.items.publisher_column "Maison d’édition">
 <!ENTITY zotero.items.publication_column "Publication">
 <!ENTITY zotero.items.journalAbbr_column "Abrév. de revue">
 <!ENTITY zotero.items.language_column "Langue">
@@ -69,7 +74,7 @@
 <!ENTITY zotero.items.dateModified_column "Date de modification">
 <!ENTITY zotero.items.extra_column "Extra">
 <!ENTITY zotero.items.archive_column "Archive">
-<!ENTITY zotero.items.archiveLocation_column "Loc. ds l'archive">
+<!ENTITY zotero.items.archiveLocation_column "Loc. ds l’archive">
 <!ENTITY zotero.items.place_column "Lieu">
 <!ENTITY zotero.items.volume_column "Volume">
 <!ENTITY zotero.items.edition_column "Édition">
@@ -82,10 +87,11 @@
 <!ENTITY zotero.items.genre_column "Genre">
 <!ENTITY zotero.items.system_column "Système">
 <!ENTITY zotero.items.moreColumns.label "Plus de colonnes">
-<!ENTITY zotero.items.restoreColumnOrder.label "Restaurer l'ordre des colonnes">
+<!ENTITY zotero.items.restoreColumnOrder.label "Restaurer l’ordre des colonnes">
 
 <!ENTITY zotero.items.menu.showInLibrary "Afficher dans la bibliothèque">
 <!ENTITY zotero.items.menu.attach.note "Ajouter une note">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Ajouter une pièce jointe">
 <!ENTITY zotero.items.menu.attach.link.uri "Joindre un lien vers un URI…">
 <!ENTITY zotero.items.menu.attach.file "Joindre une copie enregistrée d'un fichier…">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "Importer…">
 <!ENTITY zotero.toolbar.importFromClipboard "Importer depuis le presse-papiers">
 <!ENTITY zotero.toolbar.export.label "Exporter la bibliothèque…">
-<!ENTITY zotero.toolbar.rtfScan.label "Analyse d'un fichier RTF…">
+<!ENTITY zotero.toolbar.rtfScan.label "Analyse d'un fichier RTF">
 <!ENTITY zotero.toolbar.timeline.label "Créer une chronologie">
 <!ENTITY zotero.toolbar.preferences.label "Préférences…">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Assistance et documentation">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Stocker une copie du fichier…">
 <!ENTITY zotero.toolbar.attachment.weblink "Enregistrer le lien vers la page courante">
 <!ENTITY zotero.toolbar.attachment.snapshot "Capturer la page courante">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Aucun marqueur à afficher">
 <!ENTITY zotero.tagSelector.loadingTags "Chargement des marqueurs…">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Saisir le(s) ISBN, DOI, PMID ou identifiant(s) arXiv à ajouter à votre bibliothèque :">
 <!ENTITY zotero.lookup.button.search "Rechercher">
+
+<!ENTITY zotero.createParent.title "Créer un document parent">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "Sélectionner des documents">
 <!ENTITY zotero.selectitems.intro.label "Veuillez sélectionner les documents à ajouter à votre bibliothèque">
@@ -203,7 +214,7 @@
 <!ENTITY zotero.import.lastModified "Dernière modification">
 <!ENTITY zotero.import.size "Taille">
 <!ENTITY zotero.import.createCollection "Placer les collections et les documents importés dans une nouvelle collection">
-<!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.fileHandling "Gestion des fichiers">
 
 <!ENTITY zotero.exportOptions.title "Exporter…">
 <!ENTITY zotero.exportOptions.format.label "Format :">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Les citations en attente de mise à jour seront surlignées dans le document">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Désactiver les mises à jour peut accélérer l'insertion de citation dans les documents longs. Cliquez sur Actualiser pour mettre à jour les citations manuellement.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Utiliser les abréviations MEDLINE des titres de revues">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "Le champ Zotero &quot;Abrév. de revue&quot; sera ignoré.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Passer à un autre logiciel de traitement de texte…">
 
 <!ENTITY zotero.integration.showEditor.label "Montrer l'éditeur">
 <!ENTITY zotero.integration.classicView.label "Vue classique">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Joindre un lien vers un URI">
 <!ENTITY zotero.attachLink.label.link "Lien :">
 <!ENTITY zotero.attachLink.label.title "Titre :">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

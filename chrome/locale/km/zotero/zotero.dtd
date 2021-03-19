@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "ដោះជម្រើស">
 <!ENTITY zotero.general.edit "កែតម្រូវ">
 <!ENTITY zotero.general.delete "លុបចោល">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancel">
 <!ENTITY zotero.general.refresh "Refresh">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Close">
 <!ENTITY zotero.general.minimize "Minimize">
 <!ENTITY zotero.general.other "Other…">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "Zotero Error Report">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "បង្ហាញឯកសារត្រួត">
 <!ENTITY zotero.collections.showUnfiledItems "បង្ហាញឯកសារមិនទាន់បានតម្កល់ទុក">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "ប្រភេទឯកសារ">
 <!ENTITY zotero.items.type_column "Item Type">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "បង្ហាញនៅក្នុងបណ្ណាល័យ">
 <!ENTITY zotero.items.menu.attach.note "បន្ថែមកំណត់ចំណាំ">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "បន្ថែមឯកសារកម្ជាប់">
 <!ENTITY zotero.items.menu.attach.link.uri "ភ្ជាប់កម្ជាប់ទៅនឹងយូអ៊ែរអិល...">
 <!ENTITY zotero.items.menu.attach.file "ភ្ជាប់ឯកសារចម្លងចូលទុក...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "នាំចូល...">
 <!ENTITY zotero.toolbar.importFromClipboard "នាំចូលពីកន្លែងរក្សាទុកឯកសារបណ្តោះអាសន្ន">
 <!ENTITY zotero.toolbar.export.label "នាំចេញពីបណ្ណាល័យ...">
-<!ENTITY zotero.toolbar.rtfScan.label "វិភាគអ៊ែរធីអែហ្វ...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "បង្កើតលំដាប់ពេល">
 <!ENTITY zotero.toolbar.preferences.label "ជម្រើសអាទិភាពផ្សេងៗ...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "គាំទ្រ និង ឯកសារ">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "តម្កល់ឯកសារទុក...">
 <!ENTITY zotero.toolbar.attachment.weblink "ទាញរក្សាទុកកម្ជាប់គេហទំព័រនេះ">
 <!ENTITY zotero.toolbar.attachment.snapshot "ថតយកអត្ថបទគេហទំព័រនេះ">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "គ្មានស្លាកត្រូវបង្ហាញ">
 <!ENTITY zotero.tagSelector.loadingTags "Loading tags…">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
 <!ENTITY zotero.lookup.button.search "Search">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "ជ្រើសរើសឯកសារ">
 <!ENTITY zotero.selectitems.intro.label "ជ្រើសរើសឯកសារណាមួយដែលអ្នកចង់បញ្ចូលទៅក្នុងបណ្ណាល័យរបស់អ្នក">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Citations with pending updates will be highlighted in the document">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Disabling updates can speed up citation insertion in large documents. Click Refresh to update citations manually.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Use MEDLINE journal abbreviations">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "The “Journal Abbr” field will be ignored.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "បង្ហាញកំណែតម្រូវ">
 <!ENTITY zotero.integration.classicView.label "មើលតាមទម្រង់បុរាណ">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Attach Link to URI">
 <!ENTITY zotero.attachLink.label.link "Link:">
 <!ENTITY zotero.attachLink.label.title "Title:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Sulje">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
+<!ENTITY manageAttachments.label "Hallitse liitteitä">
+<!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
 <!ENTITY importCmd.label "Tuo...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Tuo leikepöydältä">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY viewMenu.label "Näytä">
+<!ENTITY layout.label "Asettelu">
+<!ENTITY standardView.label "Vakionäkymä">
+<!ENTITY stackedView.label "Pinottu näkymä">
+<!ENTITY collectionsPane.label "Collections Pane">
+<!ENTITY itemPane.label "Item Pane">
+<!ENTITY tagSelector.label "Tag Selector">
+<!ENTITY recursiveCollections.label "Show Items from Subcollections">
+<!ENTITY fontSize.label "Fonttikoko">
+<!ENTITY noteFontSize.label "Note Font Size">
+
+
 <!ENTITY toolsMenu.label "Työkalut">
 <!ENTITY toolsMenu.accesskey "T">
 <!ENTITY installConnector.label "Asenna selainlisäosa">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Lisäosat">
+<!ENTITY developer.label "Kehittäjätyökalut">
 
 
 <!ENTITY minimizeWindow.key "m">

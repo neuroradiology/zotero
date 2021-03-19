@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "일반">
 
-<!ENTITY zotero.preferences.userInterface "사용자 인터페이스">
-<!ENTITY zotero.preferences.layout "레이아웃:">
-<!ENTITY zotero.preferences.layout.standard "표준">
-<!ENTITY zotero.preferences.layout.stacked "스택">
-<!ENTITY zotero.preferences.fontSize "글꼴 크기:">
-<!ENTITY zotero.preferences.fontSize.small "작게">
-<!ENTITY zotero.preferences.fontSize.medium "중간">
-<!ENTITY zotero.preferences.fontSize.large "크게">
-<!ENTITY zotero.preferences.fontSize.xlarge "매우 크게">
-<!ENTITY zotero.preferences.fontSize.notes "노트 글꼴 크기:">
-
 <!ENTITY zotero.preferences.fileHandling "파일 관리">
 <!ENTITY zotero.preferences.automaticSnapshots "웹 페이지  항목을 생성할 때 자동으로 스냅샷 저장">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "항목 저장시 연관된 PDF 및 다른 파일을 자동으로 첨부">
 <!ENTITY zotero.preferences.autoRecognizeFiles "PDF 파일 메타데이터 자동 검색">
 <!ENTITY zotero.preferences.autoRenameFiles "부모 메타데이터를 이용하여 첨부 파일 이름 자동 변경">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "링크한 파일 이름 바꾸기">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "PDF 파일을 열 앱">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "시스템 기본값">
 
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "로컬 데이터와 원격 데이터 병합. 기존 동기화 기록 무시">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "온라인 라이브러리에서 복원">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "로컬 Zotero 데이터를 온라인 라이브러리 데이터로 덮어씁니다">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "온라인 라이브러리로 복원">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "온라인 라이브러리 교체">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "온라인 라이브러리 데이터를 로컬 Zotero 데이터로 덮어씁니다">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "파일 동기화 기록 재설정">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "모든 첨부 파일을 저장소 서비스의 파일과 비교합니다">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "추가 스타일 받기...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Zotero 패널 열기/닫기">
 <!ENTITY zotero.preferences.keys.saveToZotero "Zotero에 저장 (주소 표시줄 아이콘)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "전체화면 끄기/켜기">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "라이브러리 창에 포커스">

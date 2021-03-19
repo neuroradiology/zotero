@@ -200,6 +200,32 @@ describe("Zotero.Items", function () {
 			assert.equal(item1.dateAdded, '2019-01-01 00:00:00');
 		});
 		
+		it("should keep automatic tag on non-master item as automatic", async function () {
+			var item1 = await createDataObject('item', { tags: [{ tag: 'A' }] });
+			var item2 = await createDataObject('item', { tags: [{ tag: 'B', type: 1 }] });
+			await Zotero.Items.merge(item1, [item2]);
+			var tags = item1.getTags();
+			var tag = tags.find(x => x.tag == 'B');
+			assert.propertyVal(tag, 'type', 1);
+		});
+		
+		it("should skip automatic tag on non-master item that exists as manual tag on master", async function () {
+			var item1 = await createDataObject('item', { tags: [{ tag: 'A' }, { tag: 'B' }] });
+			var item2 = await createDataObject('item', { tags: [{ tag: 'B', type: 1 }] });
+			await Zotero.Items.merge(item1, [item2]);
+			var tags = item1.getTags();
+			var tag = tags.find(x => x.tag == 'B');
+			assert.notProperty(tag, 'type');
+		});
+		
+		it("should keep automatic tag on master if it also exists on non-master item", async function () {
+			var item1 = await createDataObject('item', { tags: [{ tag: 'B', type: 1 }] });
+			var item2 = await createDataObject('item', { tags: [{ tag: 'B', type: 1 }] });
+			await Zotero.Items.merge(item1, [item2]);
+			var tags = item1.getTags();
+			assert.propertyVal(tags[0], 'type', 1);
+		});
+		
 		it("should merge two items when servant is linked to an item absent from cache", function* () {
 			// two group libraries
 			var groupOneInfo = yield createGroup({
@@ -264,6 +290,27 @@ describe("Zotero.Items", function () {
 			assert.lengthOf(rels, 2);
 			assert.sameMembers(rels, [item2URI, item3URI]);
 		})
+		
+		// Same as test in itemPaneTest, but without the UI
+		it("should transfer merge-tracking relations when merging two pairs into one item", async function () {
+			var item1 = await createDataObject('item', { title: 'A' });
+			var item2 = await createDataObject('item', { title: 'B' });
+			var item3 = await createDataObject('item', { title: 'C' });
+			var item4 = await createDataObject('item', { title: 'D' });
+			
+			var uris = [item2, item3, item4].map(item => Zotero.URI.getItemURI(item));
+			
+			await Zotero.Items.merge(item1, [item2]);
+			await Zotero.Items.merge(item3, [item4]);
+			
+			await Zotero.Items.merge(item1, [item3]);
+			
+			// Remaining item should include all other URIs
+			assert.sameMembers(
+				item1.getRelations()[Zotero.Relations.replacedItemPredicate],
+				uris
+			);
+		});
 		
 		it("should update relations pointing to replaced item to point to master", function* () {
 			var item1 = yield createDataObject('item');
@@ -575,6 +622,19 @@ describe("Zotero.Items", function () {
 				items.map(item => item.id),
 				[item1, item4, item6].map(item => item.id)
 			);
+		});
+	});
+	
+	describe("#_loadChildItems()", function () {
+		it("should mark child items as loaded for an attachment", async function () {
+			var attachment = await importPDFAttachment();
+			var itemID = attachment.id;
+			Zotero.Items.unload([itemID]);
+			attachment = await Zotero.Items.getAsync(itemID);
+			await attachment.loadDataType('childItems');
+			assert.isTrue(attachment._loaded.childItems);
+			attachment.getAnnotations();
+			await attachment.eraseTx();
 		});
 	});
 });

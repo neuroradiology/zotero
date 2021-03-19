@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Allgemein">
 
-<!ENTITY zotero.preferences.userInterface "Benutzer-Interface">
-<!ENTITY zotero.preferences.layout "Layout:">
-<!ENTITY zotero.preferences.layout.standard "Standard">
-<!ENTITY zotero.preferences.layout.stacked "Gestapelt">
-<!ENTITY zotero.preferences.fontSize "Schriftgröße:">
-<!ENTITY zotero.preferences.fontSize.small "Klein">
-<!ENTITY zotero.preferences.fontSize.medium "Mittel">
-<!ENTITY zotero.preferences.fontSize.large "Groß">
-<!ENTITY zotero.preferences.fontSize.xlarge "Extra Groß">
-<!ENTITY zotero.preferences.fontSize.notes "Schriftgröße Notizen:">
-
 <!ENTITY zotero.preferences.fileHandling "Dateiverarbeitung">
 <!ENTITY zotero.preferences.automaticSnapshots "Automatisch einen Schnappschuss erstellen, sobald ein Eintrag aus einer Webseite erstellt wird">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Automatisch zugehörige PDFs und andere Dateien beim Speichern von Einträgen anhängen">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Lokale Daten mit Daten vom Server zusammenführen, ohne den Synchronisierungsverlauf zu beachten">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Wiederherstellen aus der Online-Bibliothek">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Überschreiben der lokalen Zotero-Daten mit Daten aus der Online-Bibliothek.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Wiederherstellen der Online-Bibliothek">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Ersetze Online-Bibliothek">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Überschreiben der Online-Bibliothek mit lokalen Zotero-Daten">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Zurücksetzen des Synchronisierungsverlaufs">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Vergleiche alle Dateianhänge mit dem Datenserver">
@@ -127,9 +116,9 @@
 <!ENTITY zotero.preferences.prefpane.cite "Zitieren">
 <!ENTITY zotero.preferences.cite.styles "Stile">
 <!ENTITY zotero.preferences.cite.wordProcessors "Textverarbeitungsprogramme">
-<!ENTITY zotero.preferences.cite.wordProcessors.useClassicAddCitationDialog "Alten Zitations-Dialog nutzen">
-<!ENTITY zotero.preferences.styleEditor "Zitierstil Editor">
-<!ENTITY zotero.preferences.stylePreview "Zitierstil Vorschau">
+<!ENTITY zotero.preferences.cite.wordProcessors.useClassicAddCitationDialog "Klassische Ansicht beim Zitations-Dialog nutzen">
+<!ENTITY zotero.preferences.styleEditor "Zitierstil-Editor">
+<!ENTITY zotero.preferences.stylePreview "Zitierstil-Vorschau">
 
 <!ENTITY zotero.preferences.cite.styles.styleManager "Stil Manager">
 <!ENTITY zotero.preferences.cite.styles.styleManager.title "Titel">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Zusätzliche Stile erhalten...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Zotero-Panel öffnen/schließen">
 <!ENTITY zotero.preferences.keys.saveToZotero "In Zotero speichern (Adressleisten-Symbol)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Vollbild-Modus an/aus">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Fokus auf Bibliotheksspalte">
@@ -201,7 +189,7 @@
 <!ENTITY zotero.preferences.dataDir.migrate "Nach neuem Standardverzeichnis migrieren...">
 
 <!ENTITY zotero.preferences.attachmentBaseDir.caption "Basisverzeichnis für verknüpfte Dateianhänge">
-<!ENTITY zotero.preferences.attachmentBaseDir.message "Zotero verwendet relative Pfade für verknüpfte Dateine innerhalb des Basisverzeichnisses, so dass Sie auf verschiedenen Computern Zugang auf die Datein haben, solange die Ordnerstruktur im Basisverzeichnis die gleiche ist.">
+<!ENTITY zotero.preferences.attachmentBaseDir.message "Zotero verwendet relative Pfade für verknüpfte Dateien innerhalb des Basisverzeichnisses, so dass Sie auf verschiedenen Computern Zugang auf die Dateien haben, solange die Ordnerstruktur im Basisverzeichnis die gleiche ist.">
 <!ENTITY zotero.preferences.attachmentBaseDir.basePath "Basisverzeichnis:">
 <!ENTITY zotero.preferences.attachmentBaseDir.selectBasePath "Auswählen...">
 <!ENTITY zotero.preferences.attachmentBaseDir.resetBasePath "Auf Absolute Dateipfade zurücksetzen">

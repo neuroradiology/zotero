@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Generelt">
 
-<!ENTITY zotero.preferences.userInterface "Brugerflade">
-<!ENTITY zotero.preferences.layout "Layout:">
-<!ENTITY zotero.preferences.layout.standard "Standard">
-<!ENTITY zotero.preferences.layout.stacked "Stablet">
-<!ENTITY zotero.preferences.fontSize "Skriftstørrelse:">
-<!ENTITY zotero.preferences.fontSize.small "Lille">
-<!ENTITY zotero.preferences.fontSize.medium "Medium">
-<!ENTITY zotero.preferences.fontSize.large "Stor">
-<!ENTITY zotero.preferences.fontSize.xlarge "Ekstra stor">
-<!ENTITY zotero.preferences.fontSize.notes "Skriftstørrelse i noter:">
-
 <!ENTITY zotero.preferences.fileHandling "Filhåndtering">
 <!ENTITY zotero.preferences.automaticSnapshots "Tag automatisk et &quot;Snapshot&quot; når der oprettes Elementer for web-sider">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Vedhæft automatisk tilhørende PDF-filer og andre filer når Elementer gemmes">
 <!ENTITY zotero.preferences.autoRecognizeFiles "Hent automatisk metadata i PDF'er">
 <!ENTITY zotero.preferences.autoRenameFiles "Omdøb automatisk vedhæftede filer ved hjælp af metadata">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Omdøb linkede filer">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Åbn PDF'er med brug af">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Systemstandard">
 
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Flet lokale data med fjerndata og ignorér synkroniseringshistorikken">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Gendan fra onlinebibliotek">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Overskriv lokale Zotero-data med data fra onlinebiblioteket.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Gendan til onlinebibliotek">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Replace Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Overskriv onlinebiblioteket med lokale Zotero-data.">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Nulstil historik for fil-synkronisering">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Sammenlign alle vedhæftede filer med lagringstjenesten">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Hent flere bibliografiske formater...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Åbn/Luk Zotero-vinduet">
 <!ENTITY zotero.preferences.keys.saveToZotero "Gem til Zotero (ikon i adresselinjen)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Slå fuldskærmsvisning til/fra">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Panel med fokusbiblioteker">

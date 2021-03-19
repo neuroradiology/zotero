@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Deselect All">
 <!ENTITY zotero.general.edit "Edit">
 <!ENTITY zotero.general.delete "Delete">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Cancel">
 <!ENTITY zotero.general.refresh "Refresh">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Close">
 <!ENTITY zotero.general.minimize "Minimize">
 <!ENTITY zotero.general.other "Other…">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "Zotero Error Report">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "Show Duplicates">
 <!ENTITY zotero.collections.showUnfiledItems "Show Unfiled Items">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "Item Type">
 <!ENTITY zotero.items.type_column "Item Type">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "Show in Library">
 <!ENTITY zotero.items.menu.attach.note "Тэмдэглэл нэмэх">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Add Attachment">
 <!ENTITY zotero.items.menu.attach.link.uri "Attach Link to URI…">
 <!ENTITY zotero.items.menu.attach.file "Attach Stored Copy of File...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "Import...">
 <!ENTITY zotero.toolbar.importFromClipboard "Import from Clipboard">
 <!ENTITY zotero.toolbar.export.label "Export Library...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "Create Timeline">
 <!ENTITY zotero.toolbar.preferences.label "Preferences...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Support and Documentation">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Store Copy of File...">
 <!ENTITY zotero.toolbar.attachment.weblink "Save Link to Current Page">
 <!ENTITY zotero.toolbar.attachment.snapshot "Take Snapshot of Current Page">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "No tags to display">
 <!ENTITY zotero.tagSelector.loadingTags "Loading tags…">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
 <!ENTITY zotero.lookup.button.search "Search">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "Select Items">
 <!ENTITY zotero.selectitems.intro.label "Select which items you'd like to add to your library">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Citations with pending updates will be highlighted in the document">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Disabling updates can speed up citation insertion in large documents. Click Refresh to update citations manually.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Use MEDLINE journal abbreviations">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "The “Journal Abbr” field will be ignored.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "Show Editor">
 <!ENTITY zotero.integration.classicView.label "Classic View">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Attach Link to URI">
 <!ENTITY zotero.attachLink.label.link "Link:">
 <!ENTITY zotero.attachLink.label.title "Title:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

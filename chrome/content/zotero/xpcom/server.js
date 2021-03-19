@@ -31,6 +31,7 @@ Zotero.Server = new function() {
 		204:"No Content",
 		300:"Multiple Choices",
 		400:"Bad Request",
+		403:"Forbidden",
 		404:"Not Found",
 		409:"Conflict",
 		412:"Precondition Failed",
@@ -139,7 +140,12 @@ Zotero.Server.SocketListener = new function() {
 		var dataListener = new Zotero.Server.DataListener(iStream, oStream);
 		var pump = Components.classes["@mozilla.org/network/input-stream-pump;1"]
 							 .createInstance(Components.interfaces.nsIInputStreamPump);
-		pump.init(iStream, -1, -1, 0, 0, false);
+		try {
+			pump.init(iStream, 0, 0, false);
+		}
+		catch (e) {
+			pump.init(iStream, -1, -1, 0, 0, false);
+		}
 		pump.asyncRead(dataListener, null);
 	}
 	
@@ -152,6 +158,7 @@ Zotero.Server.SocketListener = new function() {
  * handles the actual acquisition of data
  */
 Zotero.Server.DataListener = function(iStream, oStream) {
+	Components.utils.import("resource://gre/modules/NetUtil.jsm");
 	this.header = "";
 	this.headerFinished = false;
 	
@@ -160,9 +167,6 @@ Zotero.Server.DataListener = function(iStream, oStream) {
 	
 	this.iStream = iStream;
 	this.oStream = oStream;
-	this.sStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
-	                         .createInstance(Components.interfaces.nsIScriptableInputStream);
-	this.sStream.init(iStream);
 	
 	this.foundReturn = false;
 }
@@ -186,7 +190,7 @@ Zotero.Server.DataListener.prototype.onStopRequest = function(request, context, 
  */
 Zotero.Server.DataListener.prototype.onDataAvailable = function(request, context,
                                                              inputStream, offset, count) {
-	var readData = this.sStream.read(count);
+	var readData = NetUtil.readInputStreamToString(inputStream, count);
 	
 	if(this.headerFinished) {	// reading body
 		this.body += readData;
@@ -239,35 +243,44 @@ Zotero.Server.DataListener.prototype._headerFinished = function() {
 	
 	Zotero.debug(this.header, 5);
 	
-	const methodRe = /^([A-Z]+) ([^ \r\n?]+)(\?[^ \r\n]+)?/;
-	const hostRe = /[\r\n]Host: *(localhost|127\.0\.0\.1)(:[0-9]+)?[\r\n]/i;
-	const contentTypeRe = /[\r\n]Content-Type: *([^ \r\n]+)/i;
-	
-	const originRe = /[\r\n]Origin: *([^ \r\n]+)/i;
-	var m = originRe.exec(this.header);
-	if (m) {
-		this.origin = m[1];
+	// Parse headers into this.headers with lowercase names
+	this.headers = {};
+	var headerLines = this.header.trim().split(/\r\n/);
+	for (let line of headerLines) {
+		line = line.trim();
+		let pos = line.indexOf(':');
+		if (pos == -1) {
+			continue;
+		}
+		let k = line.substr(0, pos).toLowerCase();
+		let v = line.substr(pos + 1).trim();
+		this.headers[k] = v;
 	}
-	else {
-		const bookmarkletRe = /[\r\n]Zotero-Bookmarklet: *([^ \r\n]+)/i;
-		var m = bookmarkletRe.exec(this.header);
-		if (m) this.origin = "https://www.zotero.org";
+	
+	if (this.headers.origin) {
+		this.origin = this.headers.origin;
+	}
+	else if (this.headers['zotero-bookmarklet']) {
+		this.origin = "https://www.zotero.org";
 	}
 	
 	if (!Zotero.isServer) {
 		// Make sure the Host header is set to localhost/127.0.0.1 to prevent DNS rebinding attacks
-		if (!hostRe.exec(this.header)) {
+		const hostRe = /^(localhost|127\.0\.0\.1)(:[0-9]+)?$/i;
+		if (!hostRe.test(this.headers.host)) {
 			this._requestFinished(this._generateResponse(400, "text/plain", "Invalid Host header\n"));
 			return;
 		}
 	}
 	
 	// get first line of request
+	const methodRe = /^([A-Z]+) ([^ \r\n?]+)(\?[^ \r\n]+)?/;
 	var method = methodRe.exec(this.header);
+	
 	// get content-type
-	var contentType = contentTypeRe.exec(this.header);
-	if(contentType) {
-		var splitContentType = contentType[1].split(/\s*;/);
+	var contentType = this.headers['content-type'];
+	if (contentType) {
+		let splitContentType = contentType.split(/\s*;/);
 		this.contentType = splitContentType[0];
 	}
 	
@@ -288,10 +301,10 @@ Zotero.Server.DataListener.prototype._headerFinished = function() {
 	} else if(method[1] == "GET") {
 		this._processEndpoint("GET", null); // async
 	} else if(method[1] == "POST") {
-		const contentLengthRe = /[\r\n]Content-Length: +([0-9]+)/i;
+		const contentLengthRe = /^([0-9]+)$/;
 		
 		// parse content length
-		var m = contentLengthRe.exec(this.header);
+		var m = contentLengthRe.exec(this.headers['content-length']);
 		if(!m) {
 			this._requestFinished(this._generateResponse(400, "text/plain", "Content-length not provided\n"));
 			return;
@@ -310,26 +323,24 @@ Zotero.Server.DataListener.prototype._headerFinished = function() {
  */
 Zotero.Server.DataListener.prototype._bodyData = function() {
 	if(this.body.length >= this.bodyLength) {
-		// convert to UTF-8
-		var dataStream = Components.classes["@mozilla.org/io/string-input-stream;1"]
-		                           .createInstance(Components.interfaces.nsIStringInputStream);
-		dataStream.setData(this.body, this.bodyLength);
-		
-		var utf8Stream = Components.classes["@mozilla.org/intl/converter-input-stream;1"]
-		                           .createInstance(Components.interfaces.nsIConverterInputStream);
-		utf8Stream.init(dataStream, "UTF-8", 4096, "?");
-		
-		this.body = "";
-		var string = {};
-		while(utf8Stream.readString(this.bodyLength, string)) {
-			this.body += string.value;
-		}		
-		
+		let logContentTypes = [
+			'text/plain',
+			'application/json'
+		];
+		let noLogEndpoints = [
+			'/connector/saveSingleFile'
+		];
+		if (this.body != '{}'
+				&& logContentTypes.includes(this.contentType)
+				&& !noLogEndpoints.includes(this.pathname)) {
+			Zotero.debug(Zotero.Utilities.ellipsize(this.body, 1000, false, true), 5);
+		}
 		// handle envelope
 		this._processEndpoint("POST", this.body); // async
 	}
 }
-	
+
+
 /**
  * Generates the response to an HTTP request
  */
@@ -385,6 +396,8 @@ Zotero.Server.DataListener.prototype._generateResponse = function (status, conte
 
 /**
  * Generates a response based on calling the function associated with the endpoint
+ *
+ * Note: postData contains raw bytes and should be decoded before use
  */
 Zotero.Server.DataListener.prototype._processEndpoint = Zotero.Promise.coroutine(function* (method, postData) {
 	try {
@@ -408,13 +421,44 @@ Zotero.Server.DataListener.prototype._processEndpoint = Zotero.Promise.coroutine
 			}
 		}
 		
+		
+		// Reject browser-based requests that don't require a CORS preflight request [1] if they
+		// don't come from the connector or include Zotero-Allowed-Request
+		//
+		// [1] https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests
+		var whitelistedEndpoints = [
+			'/connector/ping'
+		];
+		var simpleRequestContentTypes = [
+			'application/x-www-form-urlencoded',
+			'multipart/form-data',
+			'text/plain'
+		];
+		var isBrowser = (this.headers['user-agent'] && this.headers['user-agent'].startsWith('Mozilla/'))
+			// Origin isn't sent via fetch() for HEAD/GET, but for crazy UA strings, protecting
+			// POST requests is better than nothing
+			|| 'origin' in this.headers;
+		if (isBrowser
+				&& !this.headers['x-zotero-connector-api-version']
+				&& !this.headers['zotero-allowed-request']
+				&& (!endpoint.supportedDataTypes
+				|| endpoint.supportedDataTypes == '*'
+				|| endpoint.supportedDataTypes.some(type => simpleRequestContentTypes.includes(type)))
+				&& !whitelistedEndpoints.includes(this.pathname)
+				// Ignore test endpoints
+				&& !this.pathname.startsWith('/test/')
+				// Ignore content types that trigger preflight requests
+				&& !(this.contentType && !simpleRequestContentTypes.includes(this.contentType))) {
+			this._requestFinished(this._generateResponse(403, "text/plain", "Request not allowed\n"));
+			return;
+		}
+		
 		var decodedData = null;
 		if(postData && this.contentType) {
 			// check that endpoint supports contentType
 			var supportedDataTypes = endpoint.supportedDataTypes;
 			if(supportedDataTypes && supportedDataTypes != '*' 
 				&& supportedDataTypes.indexOf(this.contentType) === -1) {
-				
 				this._requestFinished(this._generateResponse(400, "text/plain", "Endpoint does not support content-type\n"));
 				return;
 			}
@@ -422,16 +466,19 @@ Zotero.Server.DataListener.prototype._processEndpoint = Zotero.Promise.coroutine
 			// decode content-type post data
 			if(this.contentType === "application/json") {
 				try {
+					postData = Zotero.Utilities.Internal.decodeUTF8(postData);
 					decodedData = JSON.parse(postData);
 				} catch(e) {
 					this._requestFinished(this._generateResponse(400, "text/plain", "Invalid JSON provided\n"));
 					return;
 				}
 			} else if(this.contentType === "application/x-www-form-urlencoded") {				
+				postData = Zotero.Utilities.Internal.decodeUTF8(postData);
 				decodedData = Zotero.Server.decodeQueryString(postData);
 			} else if(this.contentType === "multipart/form-data") {
 				let boundary = /boundary=([^\s]*)/i.exec(this.header);
 				if (!boundary) {
+					Zotero.debug('Invalid boundary: ' + this.header, 1);
 					return this._requestFinished(this._generateResponse(400, "text/plain", "Invalid multipart/form-data provided\n"));
 				}
 				boundary = '--' + boundary[1];
@@ -441,6 +488,7 @@ Zotero.Server.DataListener.prototype._processEndpoint = Zotero.Promise.coroutine
 					return this._requestFinished(this._generateResponse(400, "text/plain", "Invalid multipart/form-data provided\n"));
 				}
 			} else {
+				postData = Zotero.Utilities.Internal.decodeUTF8(postData);
 				decodedData = postData;
 			}
 		}
@@ -560,31 +608,60 @@ Zotero.Server.DataListener.prototype._requestFinished = function (response, opti
 
 Zotero.Server.DataListener.prototype._decodeMultipartData = function(data, boundary) {
 	var contentDispositionRe = /^Content-Disposition:\s*(.*)$/i;
+	let contentTypeRe = /^Content-Type:\s*(.*)$/i
+
 	var results = [];
 	data = data.split(boundary);
 	// Ignore pre first boundary and post last boundary
 	data = data.slice(1, data.length-1);
 	for (let field of data) {
 		let fieldData = {};
-		field = field.trim();
 		// Split header and body
 		let unixHeaderBoundary = field.indexOf("\n\n");
 		let windowsHeaderBoundary = field.indexOf("\r\n\r\n");
 		if (unixHeaderBoundary < windowsHeaderBoundary && unixHeaderBoundary != -1) {
-			fieldData.header = field.slice(0, unixHeaderBoundary);
-			fieldData.body = field.slice(unixHeaderBoundary+2);
+			fieldData.header = field.slice(0, unixHeaderBoundary).trim();
+			fieldData.body = field.slice(unixHeaderBoundary+2).trim();
 		} else if (windowsHeaderBoundary != -1) {
-			fieldData.header = field.slice(0, windowsHeaderBoundary);
-			fieldData.body = field.slice(windowsHeaderBoundary+4);
+			fieldData.header = field.slice(0, windowsHeaderBoundary).trim();
+			fieldData.body = field.slice(windowsHeaderBoundary+4).trim();
 		} else {
+			// Only log first 200 characters in case the part is large
+			Zotero.debug('Malformed multipart/form-data body: ' + field.substr(0, 200), 1);
 			throw new Error('Malformed multipart/form-data body');
 		}
 		
-		let contentDisposition = contentDispositionRe.exec(fieldData.header);
-		if (contentDisposition) {
-			for (let nameVal of contentDisposition[1].split(';')) {
-				nameVal.split('=');
-				fieldData[nameVal[0]] = nameVal.length > 1 ? nameVal[1] : null;
+		fieldData.params = {};
+		let headers = [];
+		if (fieldData.header.indexOf("\r\n") > -1) {
+			headers = fieldData.header.split("\r\n");
+		}
+		else if (fieldData.header.indexOf("\n\n") > -1) {
+			headers = fieldData.header.split("\n\n");
+		}
+		else {
+			headers = [fieldData.header];
+		}
+		for (const header of headers) {
+			if (contentDispositionRe.test(header)) {
+				// Example:
+				// Content-Disposition: form-data; name="fieldName"; filename="filename.jpg"
+				let contentDisposition = header.split(';');
+				if (contentDisposition.length > 1) {
+					contentDisposition.shift();
+					for (let param of contentDisposition) {
+						let nameVal = param.trim().split('=');
+						fieldData.params[nameVal[0]] = nameVal[1].trim().slice(1, -1);
+					}
+				}
+			}
+			else if (contentTypeRe.test(header)) {
+				// Example:
+				// Content-Type: image/png
+				let contentType = header.split(':');
+				if (contentType.length > 1) {
+					fieldData.params.contentType = contentType[1].trim();
+				}
 			}
 		}
 		results.push(fieldData);

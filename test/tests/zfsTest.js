@@ -805,6 +805,44 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 	})
 	
 	
+	describe("#uploadFile()", function () {
+		it("should compress single-file HTML snapshots", async function () {
+			var { engine, client, caller } = await setup();
+			var zfs = new Zotero.Sync.Storage.Mode.ZFS({
+				apiClient: client
+			})
+			
+			var dir = await getTempDirectory();
+			var file = OS.Path.join(getTestDataDirectory().path, 'snapshot', 'index.html');
+			var file2 = OS.Path.join(dir, 'index.html');
+			await OS.File.copy(file, file2);
+			file = file2;
+			
+			var parentItem = await createDataObject('item');
+			var item = await Zotero.Attachments.importSnapshotFromFile({
+				file,
+				url: 'http://example.com/',
+				parentItemID: parentItem.id,
+				title: 'Test',
+				contentType: 'text/html',
+				charset: 'utf-8'
+			});
+			
+			var request = { name: item.libraryKey };
+			
+			var stub = sinon.stub(zfs, '_processUploadFile');
+			await zfs.uploadFile(request);
+			
+			var zipFile = OS.Path.join(Zotero.getTempDirectory().path, item.key + '.zip');
+			// _getUploadFile() should return the ZIP file
+			assert.equal((await zfs._getUploadFile(item)).path, zipFile);
+			assert.isTrue(await OS.File.exists(zipFile));
+			
+			stub.restore();
+		});
+	});
+	
+	
 	describe("#_processUploadFile()", function () {
 		it("should handle 404 from upload authorization request", function* () {
 			var { engine, client, caller } = yield setup();
@@ -884,7 +922,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			})
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${item.key}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${item.key}&includeTrashed=1`,
 				status: 200,
 				text: JSON.stringify([itemJSON])
 			});
@@ -932,7 +970,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			})
 			setResponse({
 				method: "GET",
-				url: `users/1/items?format=json&itemKey=${item.key}&includeTrashed=1`,
+				url: `users/1/items?itemKey=${item.key}&includeTrashed=1`,
 				status: 200,
 				text: JSON.stringify([itemJSON])
 			});
@@ -985,6 +1023,9 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			assert.isFalse(result.localChanges);
 			assert.isFalse(result.remoteChanges);
 			assert.isTrue(result.syncRequired);
+			// Item should be marked for redownloading
+			var versions = yield Zotero.Sync.Data.Local.getObjectsToTryFromSyncQueue('item', item.libraryID);
+			assert.include(versions, item.key);
 		});
 		
 		
@@ -1001,16 +1042,20 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			item.synced = true;
 			yield item.saveTx();
 			
+			var responses = 0;
 			server.respond(function (req) {
 				if (req.method == "POST"
 						&& req.url == `${baseURL}users/1/items/${item.key}/file`
 						&& req.requestBody.indexOf('upload=') == -1
 						&& req.requestHeaders["If-None-Match"] == "*") {
+					responses++;
 					req.respond(
 						413,
 						{
 							"Content-Type": "application/json",
-							"Last-Modified-Version": 10
+							"Last-Modified-Version": 10,
+							"Zotero-Storage-Usage": "300",
+							"Zotero-Storage-Quota": "300"
 						},
 						"File would exceed quota (299.7 + 0.5 &gt; 300)"
 					);
@@ -1024,6 +1069,19 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			assert.equal(e.errorType, 'warning');
 			assert.include(e.message, 'test.png');
 			assert.equal(e.dialogButtonText, Zotero.getString('sync.storage.openAccountSettings'));
+			assert.equal(responses, 1);
+			
+			// Try again
+			var e = yield getPromiseError(zfs.uploadFile({
+				name: item.libraryKey
+			}));
+			assert.ok(e);
+			assert.equal(e.errorType, 'warning');
+			assert.include(e.message, 'test.png');
+			assert.equal(e.dialogButtonText, Zotero.getString('sync.storage.openAccountSettings'));
+			// Shouldn't have been another request. A manual sync resets the flag, but we're not
+			// testing that here.
+			assert.equal(responses, 1);
 		})
 	})
 })

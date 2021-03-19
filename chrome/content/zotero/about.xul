@@ -73,12 +73,14 @@
 				</vbox>
 				<label class="subhead" value="&zotero.about.additionalSoftware;"/>
 				<vbox class="subcontent">
+					<label class="zotero-text-link" href="https://ace.c9.io/" value="ACE Editor (translator code editor)"/>
 					<label class="zotero-text-link" href="http://bluebirdjs.com/" value="Bluebird"/>
 					<label class="zotero-text-link" href="http://p.yusukekamiyamane.com/" value="Fugue icons (by Yusuke Kamiyamane)"/>
 					<label class="zotero-text-link" href="http://www.davidashen.net/rnv.html" value="RNV (CSL validation)"/>
 					<label class="zotero-text-link" href="https://codefisher.org/pastel-svg/" value="Pastel SVG icons (by Michael Buckley)"/>
 					<label class="zotero-text-link" href="http://www.famfamfam.com/lab/icons/silk/" value="Silk icons (by Mark James)"/>
 					<label class="zotero-text-link" href="http://simile.mit.edu/timeline/" value="SIMILE Project (Timeline)"/>
+					<label class="zotero-text-link" href="https://github.com/gildas-lormeau/SingleFile" value="SingleFile (webpage snapshots)"/>
 					<label class="zotero-text-link" href="http://www.w3.org/2005/ajar/tab" value="Tabulator (RDF parser)"/>
 					<label class="zotero-text-link" href="http://tango.freedesktop.org/Tango_Desktop_Project" value="Tango Desktop Project (pref icons)"/>
 					<label class="zotero-text-link" href="https://www.tinymce.com/" value="TinyMCE (rich-text editing)"/>

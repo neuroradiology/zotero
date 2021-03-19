@@ -239,6 +239,7 @@ Zotero.CreatorTypes = new function() {
 		var sql = "SELECT itemTypeID, creatorTypeID AS id, creatorType AS name, primaryField "
 			+ "FROM itemTypeCreatorTypes NATURAL JOIN creatorTypes";
 		var rows = yield Zotero.DB.queryAsync(sql);
+		_creatorTypesByItemType = {};
 		for (let i=0; i<rows.length; i++) {
 			let row = rows[i];
 			let itemTypeID = row.itemTypeID;
@@ -307,7 +308,8 @@ Zotero.CreatorTypes = new function() {
 	
 	
 	this.getLocalizedString = function(idOrName) {
-		return Zotero.getString("creatorTypes."+this.getName(idOrName));
+		var name = this.getName(idOrName);
+		return Zotero.Schema.globalSchemaLocale.creatorTypes[name];
 	}
 	
 	
@@ -349,8 +351,11 @@ Zotero.ItemTypes = new function() {
 	this._table = 'itemTypesCombined';
 	this._hasCustom = true;
 	
+	var _primaryTypeNames = ['book', 'bookSection', 'journalArticle', 'newspaperArticle', 'document'];
 	var _primaryTypes;
 	var _secondaryTypes;
+	// Item types hidden from New Item menu
+	var _hiddenTypeNames = ['webpage', 'attachment', 'note', 'annotation'];
 	var _hiddenTypes;
 	
 	var _numPrimary = 5;
@@ -362,15 +367,19 @@ Zotero.ItemTypes = new function() {
 	this.init = Zotero.Promise.coroutine(function* () {
 		yield this.constructor.prototype.init.apply(this);
 		
-		// TODO: get rid of ' AND itemTypeID!=5' and just remove display=2
-		// from magazineArticle in system.sql
-		_primaryTypes = yield this._getTypesFromDB('WHERE (display=2 AND itemTypeID!=5) LIMIT ' + _numPrimary);
+		_primaryTypes = yield this._getTypesFromDB(
+			`WHERE typeName IN ('${_primaryTypeNames.join("', '")}')`
+		);
 		
 		// Secondary types
-		_secondaryTypes = yield this._getTypesFromDB('WHERE display IN (1,2)');
+		_secondaryTypes = yield this._getTypesFromDB(
+			`WHERE typeName NOT IN ('${_primaryTypeNames.concat(_hiddenTypeNames).join("', '")}')`
+		);
 		
 		// Hidden types
-		_hiddenTypes = yield this._getTypesFromDB('WHERE display=0')
+		_hiddenTypes = yield this._getTypesFromDB(
+			`WHERE typeName IN ('${_hiddenTypeNames.join("', '")}')`
+		);
 		
 		// Custom labels and icons
 		var sql = "SELECT customItemTypeID AS id, label, icon FROM customItemTypes";
@@ -395,17 +404,17 @@ Zotero.ItemTypes = new function() {
 			mru = new Set(
 				mru.split(',')
 				.slice(0, _numPrimary)
-				.map(id => parseInt(id))
-				// Ignore 'webpage' item type
-				.filter(id => !isNaN(id) && id != 13)
+				.map(name => this.getName(name))
+				// Ignore hidden item types and 'webpage'
+				.filter(name => name && !_hiddenTypeNames.concat('webpage').includes(name))
 			);
 			
 			// Add types from defaults until we reach our limit
 			for (let i = 0; i < _primaryTypes.length && mru.size < _numPrimary; i++) {
-				mru.add(_primaryTypes[i].id);
+				mru.add(_primaryTypes[i].name);
 			}
 			
-			return Array.from(mru).map(id => ({ id, name: this.getName(id) }));
+			return Array.from(mru).map(name => ({ id: this.getID(name), name }));
 		}
 		
 		return _primaryTypes;
@@ -437,7 +446,12 @@ Zotero.ItemTypes = new function() {
 			return _customLabels[id];
 		}
 		
-		return Zotero.getString("itemTypes." + typeName);
+		var label = Zotero.Schema.globalSchemaLocale.itemTypes[typeName];
+		if (!label) {
+			Zotero.logError(`Localized string not available for item type '${typeName}'`);
+			label = Zotero.Utilities.Internal.camelToTitleCase(typeName);
+		}
+		return label;
 	}
 	
 	this.getImageSrc = function (itemType) {

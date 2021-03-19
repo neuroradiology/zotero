@@ -4,27 +4,16 @@
 <!ENTITY zotero.preferences.items "các mục tài liệu">
 <!ENTITY zotero.preferences.period ".">
 <!ENTITY zotero.preferences.settings "Các thiết lập">
-<!ENTITY zotero.preferences.custom "Thiết lập...">
+<!ENTITY zotero.preferences.custom "Tùy chỉnh...">
 
 <!ENTITY zotero.preferences.prefpane.general "Các tùy chọn chung">
-
-<!ENTITY zotero.preferences.userInterface "Giao diện người dùng">
-<!ENTITY zotero.preferences.layout "Bố trí">
-<!ENTITY zotero.preferences.layout.standard "Chuẩn">
-<!ENTITY zotero.preferences.layout.stacked "Xếp chồng">
-<!ENTITY zotero.preferences.fontSize "Cỡ chữ:">
-<!ENTITY zotero.preferences.fontSize.small "Nhỏ">
-<!ENTITY zotero.preferences.fontSize.medium "Trung bình">
-<!ENTITY zotero.preferences.fontSize.large "Lớn">
-<!ENTITY zotero.preferences.fontSize.xlarge "Rất lớn">
-<!ENTITY zotero.preferences.fontSize.notes "Cỡ chữ ghi chú:">
 
 <!ENTITY zotero.preferences.fileHandling "Xử lý tập tin">
 <!ENTITY zotero.preferences.automaticSnapshots "Tự động tạo ảnh chụp khi lưu tài liệu từ web">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Tự động đính kèm các tập tin PDF và các tập tin liên quan khác khi lưu tài liệu mới">
 <!ENTITY zotero.preferences.autoRecognizeFiles "Tự lấy metadata cho các tập tin PDF">
 <!ENTITY zotero.preferences.autoRenameFiles "Tự động đổi tên các tập tin đính kèm dùng thông tin meta từ mục cha">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Đổi tên tập tin liên kết">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Mở các tập tin PDF bằng">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Thiết lập mặc định">
 
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Trộn dữ liệu cục bộ với dữ liệu trên máy chủ, bỏ qua lịch sử đồng bộ">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Lấy lại từ thư viện trực tuyến">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Ghi đè dữ liệu Zotero cục bộ bằng dữ liệu từ thư viện trực tuyến">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Lưu vào thư viện trực tuyến">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Thay thế thư viện trực tuyến">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Ghi đè tư viện trực tuyến bằng dữ liệu từ tập tin cục bộ">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Thiết lập lại lịch sử đồng bộ tập tin">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "So sánh tất cả các tập tin đính kèm bằng dịch vụ lưu trữ">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Lấy các style khác...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Mở/Đóng cửa sổ Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Lưu vào Zotero (biểu tượng thanh địa chỉ)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Bật/Tắt chế độ Toàn-màn-hình">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Khung thư viện quan tâm">

@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Genel">
 
-<!ENTITY zotero.preferences.userInterface "Kullanıcı Arabirimi">
-<!ENTITY zotero.preferences.layout "Düzen:">
-<!ENTITY zotero.preferences.layout.standard "Standart">
-<!ENTITY zotero.preferences.layout.stacked "Üst üste yığılmış">
-<!ENTITY zotero.preferences.fontSize "Yazıtipi boyutu:">
-<!ENTITY zotero.preferences.fontSize.small "Küçük">
-<!ENTITY zotero.preferences.fontSize.medium "Orta">
-<!ENTITY zotero.preferences.fontSize.large "Büyük">
-<!ENTITY zotero.preferences.fontSize.xlarge "Çok büyük">
-<!ENTITY zotero.preferences.fontSize.notes "Not yazıtipi boyutu:">
-
 <!ENTITY zotero.preferences.fileHandling "Dosya Kullanımı">
 <!ENTITY zotero.preferences.automaticSnapshots "Web sayfalarından eserler yaratılırken sayfa görünümü otomatik olarak kaydet">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Eserleri kaydederken ilişkilendirilen PDF ve diğer dosyaları da otomatik olarak ekle">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Eşitleme geçmişini yok sayarak, yerel verileri uzaktaki verilerle birleştir">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Çevrimiçi Kitaplıktan Geri Yükle">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Yerel Zotero verilerinin üzerine çevrimiçi kitaplıktaki verileri yaz.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Çevrimiçi Kitaplığa Geri Döndür">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Çevrimiçi Kitaplığı Değiştir">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Çevrimiçi kitaplıktaki verilerin üzerine yerel Zotero verilerini yaz.">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Dosya Eşitleme Geçmişini Sıfırla">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Tüm ek dosyaları depolama hizmetindekilerle karşılaştır">
@@ -110,9 +99,9 @@
 
 <!ENTITY zotero.preferences.prefpane.export "Dışarı Aktar">
 
-<!ENTITY zotero.preferences.citationOptions.caption "Kaynakça Seçenekleri">
+<!ENTITY zotero.preferences.citationOptions.caption "Alıntı Seçenekleri">
 <!ENTITY zotero.preferences.export.citePaperJournalArticleURL "Kaynakçalara makale URL'leri dahil edilsin">
-<!ENTITY zotero.preferences.export.citePaperJournalArticleURL.description "Bu seçenek devre dışı bırakıldığında, Zotero, bilimsel dergi, magazin ve gazete makalelerine göndermelere URL'leri, yalnızca bir sayfa aralığı belirtilmediği halde ekleyecektir.">
+<!ENTITY zotero.preferences.export.citePaperJournalArticleURL.description "Bu seçenek devre dışı bırakıldığında, Zotero, bilimsel dergi, magazin ve gazete makalelerine olan alıntılara URL'leri, yalnızca bir sayfa aralığı belirtilmediği halde ekleyecektir.">
 
 <!ENTITY zotero.preferences.quickCopy.caption "Çabuk Kopyala">
 <!ENTITY zotero.preferences.quickCopy.defaultFormat "Varsayılan Biçim:">
@@ -124,10 +113,10 @@
 <!ENTITY zotero.preferences.quickCopy.siteEditor.locale "Dil">
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Bu kadardan daha fazlası sürüklendiğinde Çabuk Kopyalamayı devre dışı bırak:">
 
-<!ENTITY zotero.preferences.prefpane.cite "Gönderme Yap">
+<!ENTITY zotero.preferences.prefpane.cite "Alıntı Yap">
 <!ENTITY zotero.preferences.cite.styles "Stiller">
-<!ENTITY zotero.preferences.cite.wordProcessors "Kelime İşlemcileri">
-<!ENTITY zotero.preferences.cite.wordProcessors.useClassicAddCitationDialog "Klasik Gönderme Ekleme İletişim Kutusunu kullan">
+<!ENTITY zotero.preferences.cite.wordProcessors "Sözcük İşlemcileri">
+<!ENTITY zotero.preferences.cite.wordProcessors.useClassicAddCitationDialog "Klasik Alıntı Ekleme İletişim Kutusunu kullan">
 <!ENTITY zotero.preferences.styleEditor "Stil Düzenleyicisi">
 <!ENTITY zotero.preferences.stylePreview "Stil Önizleyicisi">
 
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Ek stiller indir...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Zotero Bölmesini Aç/Kapa">
 <!ENTITY zotero.preferences.keys.saveToZotero "Zotero'ya Kaydet (adres çubuğu ikonu)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Tam Ekran Moduna Geç">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Dermeler Bölmesine Odaklan">
@@ -146,7 +134,7 @@
 <!ENTITY zotero.preferences.keys.newNote "Yeni Not Oluştur">
 <!ENTITY zotero.preferences.keys.toggleAllRead "Tüm Besleme Eserlerini Okunmuş/Okunmamış İşaretle">
 <!ENTITY zotero.preferences.keys.toggleTagSelector "Etiket Seçiciyi Aç">
-<!ENTITY zotero.preferences.keys.copySelectedItemCitationsToClipboard "Seçili Eserin Göndermelerini Panoya Kopyala">
+<!ENTITY zotero.preferences.keys.copySelectedItemCitationsToClipboard "Seçili Eserin Alıntılarını Panoya Kopyala">
 <!ENTITY zotero.preferences.keys.copySelectedItemsToClipboard "Seçilen Eserleri Panoya Kopyala">
 <!ENTITY zotero.preferences.keys.importFromClipboard "Panodan İçeri Aktar">
 <!ENTITY zotero.preferences.keys.changesTakeEffect "Değişiklikler, Zotero tekrar başlatıldıktan sonra etkinleşir">

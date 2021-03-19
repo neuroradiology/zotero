@@ -40,7 +40,9 @@ Zotero.QuickCopy = new function() {
 		
 		if (!_initialized) {
 			// Make sure export translator code is loaded whenever the output format changes
-			Zotero.Prefs.registerObserver("export.quickCopy.setting", _loadOutputFormat);
+			this._prefObserverID = Zotero.Prefs.registerObserver(
+				"export.quickCopy.setting", _loadOutputFormat
+			);
 			_initialized = true;
 		}
 		
@@ -71,7 +73,7 @@ Zotero.QuickCopy = new function() {
 		if (_initPromise) {
 			_initPromise.cancel();
 		}
-		Zotero.Prefs.unregisterObserver("export.quickCopy.setting", _loadOutputFormat);
+		Zotero.Prefs.unregisterObserver(this._prefObserverID);
 	};
 	
 	
@@ -170,7 +172,7 @@ Zotero.QuickCopy = new function() {
 			// Accessing some properties may throw for URIs that do not support those
 			// parts. E.g. hostPort throws NS_ERROR_FAILURE for about:blank
 			var urlHostPort = nsIURI.hostPort;
-			var urlPath = nsIURI.path;
+			var urlPath = nsIURI.pathQueryRef;
 		}
 		catch (e) {}
 		
@@ -276,19 +278,21 @@ Zotero.QuickCopy = new function() {
 			
 			// If all notes, export full content
 			if (allNotes) {
-				var content = [],
-					parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-						.createInstance(Components.interfaces.nsIDOMParser),
-					doc = parser.parseFromString('<div class="zotero-notes"/>', 'text/html'),
-					textDoc = parser.parseFromString('<div class="zotero-notes"/>', 'text/html'),
-					container = doc.documentElement,
-					textContainer = textDoc.documentElement;
+								var content = [];
+				let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+					.createInstance(Components.interfaces.nsIDOMParser);
+				let docHTML = '<html><body><div class="zotero-notes"/></body></html>';
+				let doc = parser.parseFromString(docHTML, 'text/html');
+				let textDoc = parser.parseFromString(docHTML, 'text/html');
+				let container = doc.body.firstChild;
+				let textContainer = textDoc.body.firstChild;
+				
 				for (var i=0; i<notes.length; i++) {
 					var div = doc.createElement("div");
 					div.className = "zotero-note";
 					// AMO reviewer: This documented is never rendered (and the inserted markup
 					// is sanitized anyway)
-					div.insertAdjacentHTML('afterbegin', notes[i].getNote());
+					div.insertAdjacentHTML('afterbegin', notes[i].note);
 					container.appendChild(div);
 					textContainer.appendChild(textDoc.importNode(div, true));
 				}

@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "選択をすべて解除">
 <!ENTITY zotero.general.edit "編集">
 <!ENTITY zotero.general.delete "削除">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "キャンセル">
 <!ENTITY zotero.general.refresh "再読み込み">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "閉じる">
 <!ENTITY zotero.general.minimize "最小化する">
 <!ENTITY zotero.general.other "その他...">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "リセット">
 
 
 <!ENTITY zotero.errorReport.title "Zotero エラーレポート">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "重複アイテムを表示">
 <!ENTITY zotero.collections.showUnfiledItems "未整理のアイテムを表示">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "アイテムの種類">
 <!ENTITY zotero.items.type_column "アイテムの種類">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "ライブラリの中に表示">
 <!ENTITY zotero.items.menu.attach.note "メモを追加">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "添付ファイルを追加する">
 <!ENTITY zotero.items.menu.attach.link.uri "URIへのリンクを添付する...">
 <!ENTITY zotero.items.menu.attach.file "保存されたファイルのコピーを添付する...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "インポート...">
 <!ENTITY zotero.toolbar.importFromClipboard "クリップボードからインポートする">
 <!ENTITY zotero.toolbar.export.label "ライブラリをエクスポート...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF スキャン...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF スキャン">
 <!ENTITY zotero.toolbar.timeline.label "タイムラインを作成">
 <!ENTITY zotero.toolbar.preferences.label "環境設定...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "サポートとヘルプ">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "ファイルのコピーを保存...">
 <!ENTITY zotero.toolbar.attachment.weblink "現在のページへのリンクを保存">
 <!ENTITY zotero.toolbar.attachment.snapshot "現在のページのスナップショットを撮る">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "表示するタグがありません">
 <!ENTITY zotero.tagSelector.loadingTags "タグを読込中...">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "ライブラリに追加するためには ISBN, DOI, PMID, または arXiv ID (複数可) を入力してください。">
 <!ENTITY zotero.lookup.button.search "検索">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "アイテムを選択">
 <!ENTITY zotero.selectitems.intro.label "ライブラリに追加したいアイテムを選択してください">
@@ -203,7 +214,7 @@
 <!ENTITY zotero.import.lastModified "最後の更新">
 <!ENTITY zotero.import.size "サイズ">
 <!ENTITY zotero.import.createCollection "インポートされたコレクションやアイテムを新しいコレクションに格納する">
-<!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.fileHandling "ファイルの取り扱い">
 
 <!ENTITY zotero.exportOptions.title "エクスポート...">
 <!ENTITY zotero.exportOptions.format.label "フォーマット:">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "更新待ちの出典表記は書類中でハイライト表示されます。">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "更新を無効化すれば大きな書類への出典表記の挿入が高速化できます。出典表記を手動で更新するためにはリフレッシュボタンをクリックしてください。">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "MEDLINEの略誌名を使用する">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "「雑誌略誌名」のフィールドは無視されます。">
+
+<!ENTITY zotero.integration.prefs.exportDocument "別のワード・プロセッサに切り替える...">
 
 <!ENTITY zotero.integration.showEditor.label "エディタを表示">
 <!ENTITY zotero.integration.classicView.label "クラシック表示">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "URIへのリンクを添付する">
 <!ENTITY zotero.attachLink.label.link "リンク:">
 <!ENTITY zotero.attachLink.label.title "題:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

@@ -21,6 +21,10 @@ describe("Zotero.Integration", function () {
 		this.primaryFieldType = "Field";
 		this.secondaryFieldType = "Bookmark";
 		this.supportedNotes = ['footnotes', 'endnotes'];
+		// Will display an option to switch word processors in the Doc Prefs
+		this.supportsImportExport = true;
+		// Will allow inserting notes
+		this.supportsTextInsertion = true;
 		this.fields = [];
 	};
 	DocumentPluginDummy.Application.prototype = {
@@ -81,25 +85,50 @@ describe("Zotero.Integration", function () {
 		 */
 		setDocumentData: function(data) {this.data = data},
 		/**
-		 * Inserts a field at the given position and initializes the field object.
+		 * Inserts a field at cursor position and initializes the field object.
+		 * If Document.insertText() was called previously inserts the field
+		 * directly after the inserted text.
 		 * @param {String} fieldType
 		 * @param {Integer} noteType
 		 * @returns {DocumentPluginDummy.Field}
 		 */
-		insertField: function(fieldType, noteType) { 
+		insertField: function(fieldType, noteType) {
 			if (typeof noteType != "number") {
 				throw new Error("noteType must be an integer");
 			}
-			var field = new DocumentPluginDummy.Field(this); 
+			var field = new DocumentPluginDummy.Field(this);
 			this.fields.push(field);
 			return field;
+		},
+		/**
+		 * Inserts rich text at cursor position. If Document.insertField() was called
+		 * previously inserts the text directly after the inserted field.
+		 * @param {String} text
+		 */
+		insertText: function (text) { return; },
+		/**
+		 * Converts placeholders (which are text with links to https://www.zotero.org/?[placeholderID])
+		 * to fields and sets their field codes to strings in `codes` in the reverse order of their appearance
+		 * @param {String[]} codes
+		 * @param {String[]} placeholderIDs - the order of placeholders to be replaced
+		 * @param {Number} noteType - controls whether citations should be in-text or in footnotes/endnotes
+		 * @param {Number} fieldType
+		 * @return {Field[]}
+		 */
+		convertPlaceholdersToFields: function (codes, noteType, fieldType) {
+			return codes.map(code => {
+				let field = new DocumentPluginDummy.Field(this);
+				field.code = code;
+				this.fields.push(field);
+				return field;
+			});
 		},
 		/**
 		 * Gets all fields present in the document.
 		 * @param {String} fieldType
 		 * @returns {DocumentPluginDummy.Field[]}
 		 */
-		getFields: function(fieldType) {return Array.from(this.fields)},
+		getFields: function (fieldType) {return Array.from(this.fields)},
 		/**
 		 * Sets the bibliography style, overwriting the current values for this document
 		 */
@@ -119,6 +148,31 @@ describe("Zotero.Integration", function () {
 		 * Informs the document processor that the operation is complete
 		 */
 		complete: () => 0,
+		
+		/**
+		 * Converts field text in document to their underlying codes and appends
+		 * document preferences and bibliography style as paragraphs at the end
+		 * of the document. Prefixes:
+		 * 	- Bibliography style: "BIBLIOGRAPHY_STYLE "
+		 * 	- Document preferences: "DOCUMENT_PREFERENCES "
+		 * 	
+		 * 	All Zotero exported text must be converted to a hyperlink
+		 * 	(with any url, e.g. http://www.zotero.org)
+		 */
+		exportDocument: (fieldType) => 0,
+		
+		/**
+		 * Converts a document from an exported form described in #exportDocument()
+		 * to a Zotero editable form. Bibliography Style and Document Preferences
+		 * text is removed and stored internally within the doc. The citation codes are
+		 * also stored within the doc in appropriate representation. 
+		 * 
+		 * Note that no citation text updates are needed. Zotero will issue field updates 
+		 * manually.
+		 * 
+		 * @returns {Boolean} whether the document contained importable data
+		 */
+		importDocument: (fieldType) => 0,
 	};
 
 	/**
@@ -283,7 +337,7 @@ describe("Zotero.Integration", function () {
 		testItems = [];
 		for (let i = 0; i < 5; i++) {
 			let testItem = yield createDataObject('item', {libraryID: Zotero.Libraries.userLibraryID});
-			testItem.setField('title', `title${1}`);
+			testItem.setField('title', `title${i}`);
 			testItem.setCreator(0, {creatorType: 'author', name: `Author No${i}`});
 			testItems.push(testItem);
 		}
@@ -329,7 +383,7 @@ describe("Zotero.Integration", function () {
 			});
 			
 			afterEach(function() {
-				setDocumentDataSpy.reset();
+				setDocumentDataSpy.resetHistory();
 			});
 			
 			after(function() {
@@ -359,7 +413,7 @@ describe("Zotero.Integration", function () {
 					} catch (e) {}
 					await initDoc(docID, {style});
 					displayDialogStub.resetHistory();
-					displayAlertStub.reset();
+					displayAlertStub.resetHistory();
 				});
 				
 				after(function* () {
@@ -533,7 +587,7 @@ describe("Zotero.Integration", function () {
 				assert.isTrue(getCiteprocBibliographySpy.calledOnce);
 				
 				assert.equal(getCiteprocBibliographySpy.lastCall.returnValue[0].entry_ids.length, 3);
-				getCiteprocBibliographySpy.reset();
+				getCiteprocBibliographySpy.resetHistory();
 
 				setAddEditItems(testItems[3]);
 				yield execCommand('addEditCitation', docID);
@@ -554,7 +608,7 @@ describe("Zotero.Integration", function () {
 				assert.isTrue(getCiteprocBibliographySpy.calledOnce);
 
 				assert.equal(getCiteprocBibliographySpy.lastCall.returnValue[0].entry_ids.length, 3);
-				getCiteprocBibliographySpy.reset();
+				getCiteprocBibliographySpy.resetHistory();
 
 				sinon.stub(doc, 'cursorInField').resolves(doc.fields[1]);
 				sinon.stub(doc, 'canInsertField').resolves(false);
@@ -577,7 +631,7 @@ describe("Zotero.Integration", function () {
 					displayAlertStub = sinon.stub(DocumentPluginDummy.Document.prototype, 'displayAlert').resolves(0);
 				});	
 				beforeEach(function() {
-					displayAlertStub.reset();
+					displayAlertStub.resetHistory();
 				});
 				after(function() {
 					displayAlertStub.restore();
@@ -666,12 +720,12 @@ describe("Zotero.Integration", function () {
 					doc.fields[1].code = doc.fields[0].code;
 					doc.fields[1].text = doc.fields[0].text;
 					
-					var originalUpdateDocument = Zotero.Integration.Fields.prototype.updateDocument;
-					var stubUpdateDocument = sinon.stub(Zotero.Integration.Fields.prototype, 'updateDocument');
+					var originalUpdateDocument = Zotero.Integration.Session.prototype.updateDocument;
+					var stubUpdateDocument = sinon.stub(Zotero.Integration.Session.prototype, 'updateDocument');
 					try {
 						var indicesLength;
 						stubUpdateDocument.callsFake(function() {
-							indicesLength = Object.keys(Zotero.Integration.currentSession.newIndices).length;
+							indicesLength = Object.keys(this.newIndices).length;
 							return originalUpdateDocument.apply(this, arguments);
 						});
 
@@ -700,12 +754,12 @@ describe("Zotero.Integration", function () {
 						`"citationID":"${newCitationID}"`);
 					doc.fields[1].text = doc.fields[0].text;
 					
-					var originalUpdateDocument = Zotero.Integration.Fields.prototype.updateDocument;
-					var stubUpdateDocument = sinon.stub(Zotero.Integration.Fields.prototype, 'updateDocument');
+					var originalUpdateDocument = Zotero.Integration.Session.prototype.updateDocument;
+					var stubUpdateDocument = sinon.stub(Zotero.Integration.Session.prototype, 'updateDocument');
 					try {
 						var indices;
 						stubUpdateDocument.callsFake(function() {
-							indices = Object.keys(Zotero.Integration.currentSession.newIndices);
+							indices = Object.keys(this.newIndices);
 							return originalUpdateDocument.apply(this, arguments);
 						});
 
@@ -789,11 +843,68 @@ describe("Zotero.Integration", function () {
 					setCodeSpy.restore();
 				})
 			});
+			
+			describe('with retracted items', function () {
+				it('should display a retraction warning for a retracted item in a document', async function () {
+					var docID = this.test.fullTitle();
+					await initDoc(docID);
+					var doc = applications[docID].doc;
+					setAddEditItems(testItems[0]);
+					await execCommand('addEditCitation', docID);
+
+					let stub1 = sinon.stub(Zotero.Retractions, 'isRetracted').returns(true);
+					let stub2 = sinon.stub(Zotero.Retractions, 'shouldShowCitationWarning').returns(true);
+
+					let promise = execCommand('refresh', docID);
+					await assert.isFulfilled(waitForDialog());
+					
+					stub1.restore();
+					stub2.restore();
+					await promise;
+				});
+				
+				it('should display a retraction warning for an embedded retracted item in a document', async function () {
+					var docID = this.test.fullTitle();
+					await initDoc(docID);
+					var doc = applications[docID].doc;
+					let testItem = await createDataObject('item', { libraryID: Zotero.Libraries.userLibraryID });
+					testItem.setField('title', `embedded title`);
+					testItem.setCreator(0, { creatorType: 'author', name: `Embedded Author` });
+					setAddEditItems(testItem);
+					await execCommand('addEditCitation', docID);
+					await testItem.eraseTx();
+
+					let stub = sinon.stub(Zotero.Retractions, 'getRetractionsFromJSON').resolves([0]);
+
+					let promise = execCommand('refresh', docID);
+					await assert.isFulfilled(waitForDialog());
+					
+					stub.restore();
+					await promise;
+				});
+				
+				it('should not display retraction warning when disabled for a retracted item', async function () {
+					var docID = this.test.fullTitle();
+					await initDoc(docID);
+					var doc = applications[docID].doc;
+					let testItem = await createDataObject('item', { libraryID: Zotero.Libraries.userLibraryID });
+					testItem.setField('title', `title`);
+					testItem.setCreator(0, { creatorType: 'author', name: `Author` });
+					await Zotero.Retractions.disableCitationWarningsForItem(testItem);
+					setAddEditItems(testItem);
+					await execCommand('addEditCitation', docID);
+
+					await assert.isFulfilled(execCommand('refresh', docID));
+					
+					await testItem.eraseTx();
+				});
+			});
 		});
 		
 		describe('#addEditBibliography', function() {
 			var docID = this.fullTitle();
 			beforeEach(function* () {
+				setAddEditItems(testItems[0]);
 				yield initDoc(docID);
 				yield execCommand('addEditCitation', docID);
 			});

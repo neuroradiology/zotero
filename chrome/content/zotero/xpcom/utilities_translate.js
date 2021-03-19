@@ -91,9 +91,7 @@ Zotero.Utilities.Translate.prototype.getVersion = function() {
 Zotero.Utilities.Translate.prototype.gatherElementsOnXPath = function(doc, parentNode, xpath, nsResolver) {
 	var elmts = [];
 	
-	var iterator = doc.evaluate(xpath, parentNode, nsResolver,
-		(Zotero.isFx ? Components.interfaces.nsIDOMXPathResult.ANY_TYPE : XPathResult.ANY_TYPE),
-		null);
+	var iterator = doc.evaluate(xpath, parentNode, nsResolver, XPathResult.ANY_TYPE, null);
 	var elmt = iterator.iterateNext();
 	var i = 0;
 	while (elmt) {
@@ -216,26 +214,6 @@ Zotero.Utilities.Translate.prototype.processDocuments = async function (urls, pr
 	}
 	
 	var processDoc = function (doc) {
-		if (Zotero.isFx) {
-			let newLoc = doc.location;
-			let url = Services.io.newURI(newLoc.href, null, null);
-			return processor(
-				// Rewrap document for the sandbox
-				translate._sandboxManager.wrap(
-					Zotero.Translate.DOMWrapper.unwrap(doc),
-					null,
-					// Duplicate overrides from Zotero.HTTP.wrapDocument()
-					{
-						documentURI: newLoc.spec,
-						URL: newLoc.spec,
-						location: new Zotero.HTTP.Location(url),
-						defaultView: new Zotero.HTTP.Window(url)
-					}
-				),
-				newLoc.href
-			);
-		}
-		
 		return processor(doc, doc.location.href);
 	};
 	

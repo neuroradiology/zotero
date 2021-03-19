@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Sluiten">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "S">
+<!ENTITY manageAttachments.label "Bijlagen beheren">
+<!ENTITY convertToStored.label "Gekoppelde bijlagen opslaan">
 <!ENTITY importCmd.label "Importeren...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Importeren van klembord">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY viewMenu.label "Beeld">
+<!ENTITY layout.label "Lay-out">
+<!ENTITY standardView.label "Standaard">
+<!ENTITY stackedView.label "Gestapeld">
+<!ENTITY collectionsPane.label "Verzamelingvenster">
+<!ENTITY itemPane.label "Itemvenster">
+<!ENTITY tagSelector.label "Labelkiezer">
+<!ENTITY recursiveCollections.label "Items uit deelverzamelingen tonen">
+<!ENTITY fontSize.label "Lettergrootte">
+<!ENTITY noteFontSize.label "Lettergrootte notities">
+
+
 <!ENTITY toolsMenu.label "Opties">
 <!ENTITY toolsMenu.accesskey "O">
 <!ENTITY installConnector.label "Browser Connector installeren">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Add-ons">
+<!ENTITY developer.label "Ontwikkelaar">
 
 
 <!ENTITY minimizeWindow.key "m">

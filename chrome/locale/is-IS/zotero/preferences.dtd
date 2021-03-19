@@ -8,17 +8,6 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Almennt">
 
-<!ENTITY zotero.preferences.userInterface "Notendaviðmót">
-<!ENTITY zotero.preferences.layout "Framsetning:">
-<!ENTITY zotero.preferences.layout.standard "Stöðluð">
-<!ENTITY zotero.preferences.layout.stacked "Stöfluð">
-<!ENTITY zotero.preferences.fontSize "Stærð leturs:">
-<!ENTITY zotero.preferences.fontSize.small "Smátt">
-<!ENTITY zotero.preferences.fontSize.medium "Meðalstórt">
-<!ENTITY zotero.preferences.fontSize.large "Stórt">
-<!ENTITY zotero.preferences.fontSize.xlarge "Risastórt">
-<!ENTITY zotero.preferences.fontSize.notes "Gefið upp leturstærð:">
-
 <!ENTITY zotero.preferences.fileHandling "File Handling">
 <!ENTITY zotero.preferences.automaticSnapshots "Taka sjálfkrafa mynd af skjá þegar vefsíðufærslur eru búnar til">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Hengja sjálfkrafa PDF skjöl og önnur gögn við færslur þegar þær eru vistaðar">
@@ -88,7 +77,7 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Sameina staðbundin Zotero gögn með gögnum á samhæfingarþjóni, án tillits til fyrri samhæfingaraðgerða.">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Restore from Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Overwrite local Zotero data with data from the online library.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Restore to Online Library">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Replace Online Library">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Overwrite online library with local Zotero data">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Endurræsa forsögu skráasamhæfingar">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Compare all attachment files with the storage service">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "Tilvísunarmál - CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Ná í viðbótarstíla…">
 
-<!ENTITY zotero.preferences.keys.openZotero "Opna/Loka Zotero svæði">
 <!ENTITY zotero.preferences.keys.saveToZotero "Vista í Zotero (tákn birt í vefslóðareit)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Víxla úr og í heilskjásham">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Áhersla á safnaglugga">

@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Kapat">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
+<!ENTITY manageAttachments.label "Ekleri Yönet">
+<!ENTITY convertToStored.label "Bağlantılanmış Dosyaları Depolanmış Dosyalara Dönüştür">
 <!ENTITY importCmd.label "İçeri Aktar...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Panodan İçeri Aktar">
@@ -32,7 +34,7 @@
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
 
-<!ENTITY copyCitationCmd.label "Gönderme Kopyala">
+<!ENTITY copyCitationCmd.label "Alıntı Kopyala">
 <!ENTITY copyBibliographyCmd.label "Kaynakça Kopyala">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Sayfa Yönünü Değiştir">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY viewMenu.label "Görünüm">
+<!ENTITY layout.label "Yerleşim">
+<!ENTITY standardView.label "Normal Görünüm">
+<!ENTITY stackedView.label "Yığılmış Görünüm">
+<!ENTITY collectionsPane.label "Dermeler Bölmesi">
+<!ENTITY itemPane.label "Eser Bölmesi">
+<!ENTITY tagSelector.label "Etiket Seçici">
+<!ENTITY recursiveCollections.label "Alt Dermelerdeki Eserleri Göster">
+<!ENTITY fontSize.label "Yazı Tipi Boyutu">
+<!ENTITY noteFontSize.label "Not Yazı Tipi Boyutu">
+
+
 <!ENTITY toolsMenu.label "Araçlar">
 <!ENTITY toolsMenu.accesskey "T">
 <!ENTITY installConnector.label "Tarayıcı Bağlayıcılarını Kur...">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Eklentiler">
+<!ENTITY developer.label "Geliştirici">
 
 
 <!ENTITY minimizeWindow.key "m">

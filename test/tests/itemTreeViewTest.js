@@ -2,6 +2,7 @@
 
 describe("Zotero.ItemTreeView", function() {
 	var win, zp, cv, itemsView;
+	var userLibraryID;
 	var existingItemID;
 	var existingItemID2;
 	
@@ -11,6 +12,7 @@ describe("Zotero.ItemTreeView", function() {
 		zp = win.ZoteroPane;
 		cv = zp.collectionsView;
 		
+		userLibraryID = Zotero.Libraries.userLibraryID;
 		var item1 = yield createDataObject('item', { setTitle: true });
 		existingItemID = item1.id;
 		var item2 = yield createDataObject('item');
@@ -147,7 +149,7 @@ describe("Zotero.ItemTreeView", function() {
 			assert.equal(selected[0], existingItemID);
 			
 			// Reset call count on spy
-			win.ZoteroPane.itemSelected.reset();
+			win.ZoteroPane.itemSelected.resetHistory();
 			
 			// Create item with skipNotifier flag
 			var item = new Zotero.Item('book');
@@ -172,7 +174,7 @@ describe("Zotero.ItemTreeView", function() {
 			assert.equal(selected[0], existingItemID);
 			
 			// Reset call count on spy
-			win.ZoteroPane.itemSelected.reset();
+			win.ZoteroPane.itemSelected.resetHistory();
 			
 			// Create item with skipSelect flag
 			var item = new Zotero.Item('book');
@@ -242,6 +244,56 @@ describe("Zotero.ItemTreeView", function() {
 			yield itemsView._refreshPromise;
 		});
 		
+		it.skip("shouldn't clear quicksearch in Unfiled Items when adding selected item to collection", async function () {
+			var spy = sinon.spy(win.ZoteroPane, 'search');
+			
+			var collection = await createDataObject('collection');
+			var title1 = Zotero.Utilities.randomString();
+			var title2 = Zotero.Utilities.randomString();
+			var item1 = await createDataObject('item', { title: title1 });
+			var item2 = await createDataObject('item', { title: title1 });
+			var item3 = await createDataObject('item', { title: title2 });
+			
+			await zp.setVirtual(userLibraryID, 'unfiled', true, true);
+			itemsView = zp.itemsView;
+			assert.equal(cv.selectedTreeRow.id, 'U' + userLibraryID);
+			
+			var searchString = title1;
+			var quicksearch = win.document.getElementById('zotero-tb-search');
+			quicksearch.value = searchString;
+			quicksearch.doCommand();
+			while (!spy.called) {
+				Zotero.debug("Waiting for search");
+				await Zotero.Promise.delay(50);
+			}
+			await spy.returnValues[0];
+			spy.resetHistory();
+			
+			assert.equal(itemsView.rowCount, 2);
+			
+			await itemsView.selectItem(item1.id);
+			
+			// Move item1 to collection
+			item1.setCollections([collection.id]);
+			await item1.saveTx({
+				skipSelect: true
+			});
+			
+			assert.equal(itemsView.rowCount, 1);
+			assert.equal(quicksearch.value, searchString);
+			
+			// Clear search
+			quicksearch.value = "";
+			quicksearch.doCommand();
+			while (!spy.called) {
+				Zotero.debug("Waiting for search");
+				await Zotero.Promise.delay(50);
+			}
+			await spy.returnValues[0];
+			
+			spy.restore();
+		});
+		
 		it("shouldn't change selection outside of trash if new trashed item is created with skipSelect", function* () {
 			yield selectLibrary(win);
 			yield waitForItemsLoad(win);
@@ -267,7 +319,7 @@ describe("Zotero.ItemTreeView", function() {
 			itemsView.selection.clearSelection();
 			assert.lengthOf(itemsView.getSelectedItems(), 0);
 			// Reset call count on spy
-			win.ZoteroPane.itemSelected.reset();
+			win.ZoteroPane.itemSelected.resetHistory();
 			
 			// Modify item
 			item.setField('title', 'no select on modify');
@@ -293,7 +345,7 @@ describe("Zotero.ItemTreeView", function() {
 			assert.equal(selected[0], id);
 			
 			// Reset call count on spy
-			win.ZoteroPane.itemSelected.reset();
+			win.ZoteroPane.itemSelected.resetHistory();
 			
 			// Modify item
 			item.setField('title', 'maintain selection on modify');
@@ -595,9 +647,8 @@ describe("Zotero.ItemTreeView", function() {
 			var userLibraryID = Zotero.Libraries.userLibraryID;
 			var collection = yield createDataObject('collection');
 			var item = yield createDataObject('item', { title: "Unfiled Item" });
-			yield zp.setVirtual(userLibraryID, 'unfiled', true);
-			var selected = yield cv.selectByID("U" + userLibraryID);
-			assert.ok(selected);
+			yield zp.setVirtual(userLibraryID, 'unfiled', true, true);
+			assert.equal(cv.selectedTreeRow.id, 'U' + userLibraryID);
 			yield waitForItemsLoad(win);
 			assert.isNumber(zp.itemsView.getRowIndexByID(item.id));
 			yield Zotero.DB.executeTransaction(function* () {

@@ -24,11 +24,13 @@
 */
 
 Zotero.Attachments = new function(){
-	// Keep in sync with Zotero.Schema.integrityCheck()
+	// Keep in sync with Zotero.Schema.integrityCheck() and this.linkModeToName()
 	this.LINK_MODE_IMPORTED_FILE = 0;
 	this.LINK_MODE_IMPORTED_URL = 1;
 	this.LINK_MODE_LINKED_FILE = 2;
 	this.LINK_MODE_LINKED_URL = 3;
+	this.LINK_MODE_EMBEDDED_IMAGE = 4;
+	
 	this.BASE_PATH_PLACEHOLDER = 'attachments:';
 	
 	var _findPDFQueue = [];
@@ -263,6 +265,7 @@ Zotero.Attachments = new function(){
 	
 	/**
 	 * @param {Object} options - 'file', 'url', 'title', 'contentType', 'charset', 'parentItemID', 'singleFile'
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
 	 * @return {Promise<Zotero.Item>}
 	 */
 	this.importSnapshotFromFile = Zotero.Promise.coroutine(function* (options) {
@@ -279,6 +282,7 @@ Zotero.Attachments = new function(){
 		var contentType = options.contentType;
 		var charset = options.charset;
 		var parentItemID = options.parentItemID;
+		var saveOptions = options.saveOptions;
 		
 		if (!parentItemID) {
 			throw new Error("parentItemID not provided");
@@ -302,7 +306,7 @@ Zotero.Attachments = new function(){
 				// DEBUG: this should probably insert access date too so as to
 				// create a proper item, but at the moment this is only called by
 				// translate.js, which sets the metadata fields itself
-				itemID = yield attachmentItem.save();
+				itemID = yield attachmentItem.save(saveOptions);
 				
 				var storageDir = Zotero.getStorageDirectory();
 				destDir = this.getStorageDirectory(attachmentItem);
@@ -347,6 +351,98 @@ Zotero.Attachments = new function(){
 		}
 		return attachmentItem;
 	});
+
+
+	/**
+	 * Saves an image for a parent note or image annotation
+	 *
+	 * Emerging formats like WebP and AVIF are supported here,
+	 * but should be filtered on the calling logic for now
+	 *
+	 * @param {Object} params
+	 * @param {Blob} params.blob - Image to save
+	 * @param {Integer} params.parentItemID - Note or annotation item to add item to
+	 * @param {Object} [params.saveOptions] - Options to pass to Zotero.Item::save()
+	 * @return {Promise<Zotero.Item>}
+	 */
+	this.importEmbeddedImage = async function ({ blob, parentItemID, saveOptions }) {
+		Zotero.debug('Importing embedded image');
+		
+		if (!parentItemID) {
+			throw new Error("parentItemID must be provided");
+		}
+		
+		var contentType = blob.type;
+		var fileExt;
+		switch (contentType) {
+			case 'image/apng':
+				fileExt = 'apng';
+				break;
+			case 'image/avif': // Supported from FF 86
+				fileExt = 'avif';
+				break;
+			case 'image/gif':
+				fileExt = 'gif';
+				break;
+			case 'image/jpeg':
+				fileExt = 'jpg';
+				break;
+			case 'image/png':
+				fileExt = 'png';
+				break;
+			case 'image/svg+xml':
+				fileExt = 'svg';
+				break;
+			case 'image/webp': // Supported from FF 65
+				fileExt = 'webp';
+				break;
+			case 'image/bmp':
+				fileExt = 'bmp';
+				break;
+			default:
+				throw new Error(`Unsupported embedded image content type '${contentType}'`);
+		}
+		var filename = 'image.' + fileExt;
+		
+		var attachmentItem;
+		var destDir;
+		try {
+			await Zotero.DB.executeTransaction(async function () {
+				// Create a new attachment
+				attachmentItem = new Zotero.Item('attachment');
+				let { libraryID: parentLibraryID } = Zotero.Items.getLibraryAndKeyFromID(parentItemID);
+				attachmentItem.libraryID = parentLibraryID;
+				attachmentItem.parentID = parentItemID;
+				attachmentItem.attachmentLinkMode = this.LINK_MODE_EMBEDDED_IMAGE;
+				attachmentItem.attachmentPath = 'storage:' + filename;
+				attachmentItem.attachmentContentType = contentType;
+				await attachmentItem.save(saveOptions);
+				
+				// Write blob to file in attachment directory
+				destDir = await this.createDirectoryForItem(attachmentItem);
+				let file = OS.Path.join(destDir, filename);
+				await Zotero.File.putContentsAsync(file, blob);
+				await Zotero.File.setNormalFilePermissions(file);
+			}.bind(this));
+		}
+		catch (e) {
+			Zotero.logError("Failed importing image:\n\n" + e);
+			
+			// Clean up
+			try {
+				if (destDir) {
+					await OS.File.removeDir(destDir, { ignoreAbsent: true });
+				}
+			}
+			catch (e) {
+				Zotero.logError(e);
+			}
+			
+			throw e;
+		}
+		
+		return attachmentItem;
+	};
 	
 	
 	/**
@@ -361,7 +457,7 @@ Zotero.Attachments = new function(){
 	 * @param {String} [options.contentType]
 	 * @param {String} [options.referrer]
 	 * @param {CookieSandbox} [options.cookieSandbox]
-	 * @param {Object} [options.saveOptions]
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
 	 * @return {Promise<Zotero.Item>} - A promise for the created attachment item
 	 */
 	this.importFromURL = Zotero.Promise.coroutine(function* (options) {
@@ -398,14 +494,6 @@ Zotero.Attachments = new function(){
 				var browser = Zotero.HTTP.loadDocuments(
 					url,
 					Zotero.Promise.coroutine(function* () {
-						let channel = browser.docShell.currentDocumentChannel;
-						if (channel && (channel instanceof Components.interfaces.nsIHttpChannel)) {
-							if (channel.responseStatus < 200 || channel.responseStatus >= 400) {
-								reject(new Error("Invalid response " + channel.responseStatus + " "
-									+ channel.responseStatusText + " for '" + url + "'"));
-								return false;
-							}
-						}
 						try {
 							let attachmentItem = yield Zotero.Attachments.importFromDocument({
 								libraryID,
@@ -426,7 +514,9 @@ Zotero.Attachments = new function(){
 						}
 					}),
 					undefined,
-					undefined,
+					(e) => {
+						reject(e);
+					},
 					true,
 					cookieSandbox
 				);
@@ -509,7 +599,8 @@ Zotero.Attachments = new function(){
 			return process(contentType, Zotero.MIME.hasNativeHandler(contentType));
 		}
 		
-		return Zotero.MIME.getMIMETypeFromURL(url, cookieSandbox).spread(process);
+		var args = yield Zotero.MIME.getMIMETypeFromURL(url, cookieSandbox);
+		return process(...args);
 	});
 	
 	
@@ -530,7 +621,7 @@ Zotero.Attachments = new function(){
 	 * @param {String} [options.title]
 	 * @param {String} options.contentType
 	 * @param {String[]} [options.collections]
-	 * @param {Object} [options.saveOptions]
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
 	 * @return {Zotero.Item}
 	 */
 	this.createURLAttachmentFromTemporaryStorageDirectory = async function (options) {
@@ -565,8 +656,8 @@ Zotero.Attachments = new function(){
 			attachmentItem.attachmentPath = 'storage:' + options.filename;
 			await attachmentItem.saveTx(
 				Object.assign(
-					options.saveOptions || {},
-					{ notifierQueue }
+					{ notifierQueue },
+					options.saveOptions || {}
 				)
 			);
 			
@@ -594,6 +685,7 @@ Zotero.Attachments = new function(){
 	 * Create a link attachment from a URL
 	 *
 	 * @param {Object} options - 'url', 'parentItemID', 'contentType', 'title', 'collections'
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
 	 * @return {Promise<Zotero.Item>} - A promise for the created attachment item
 	 */
 	this.linkFromURL = Zotero.Promise.coroutine(function* (options) {
@@ -604,25 +696,16 @@ Zotero.Attachments = new function(){
 		var contentType = options.contentType;
 		var title = options.title;
 		var collections = options.collections;
+		var saveOptions = options.saveOptions;
 		
-		/* Throw error on invalid URLs
-		 We currently accept the following protocols:
-		 PersonalBrain (brain://)
-		 DevonThink (x-devonthink-item://)
-		 Notational Velocity (nv://)
-		 MyLife Organized (mlo://)
-		 Evernote (evernote://)
-		 OneNote (onenote://)
-		 Kindle (kindle://) 
-		 Logos (logosres:) 
-		 Bear (bear://)
-		 MarginNote (marginnoteapp://)
-		 Zotero (zotero://) */
-
-		var urlRe = /^((https?|zotero|evernote|onenote|brain|nv|mlo|kindle|x-devonthink-item|bear|marginnoteapp|ftp):\/\/|logosres:)[^\s]*$/;
-		var matches = urlRe.exec(url);
+		var schemeRE = /^([a-z][a-z0-9+.-]+):/;
+		var matches = url.match(schemeRE);
 		if (!matches) {
-			throw ("Invalid URL '" + url + "' in Zotero.Attachments.linkFromURL()");
+			throw new Error(`Invalid URL '${url}'`);
+		}
+		var scheme = matches[1];
+		if (['javascript', 'data', 'chrome', 'resource', 'mailto'].includes(scheme)) {
+			throw new Error(`Invalid scheme '${scheme}'`);
 		}
 		
 		// If no title provided, figure it out from the URL
@@ -666,7 +749,8 @@ Zotero.Attachments = new function(){
 			linkMode: this.LINK_MODE_LINKED_URL,
 			contentType,
 			parentItemID,
-			collections
+			collections,
+			saveOptions,
 		});
 	});
 	
@@ -675,6 +759,7 @@ Zotero.Attachments = new function(){
 	 * TODO: what if called on file:// document?
 	 *
 	 * @param {Object} options - 'document', 'parentItemID', 'collections'
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
 	 * @return {Promise<Zotero.Item>}
 	 */
 	this.linkFromDocument = Zotero.Promise.coroutine(function* (options) {
@@ -683,6 +768,7 @@ Zotero.Attachments = new function(){
 		var document = options.document;
 		var parentItemID = options.parentItemID;
 		var collections = options.collections;
+		var saveOptions = options.saveOptions;
 		
 		if (parentItemID && collections) {
 			throw new Error("parentItemID and collections cannot both be provided");
@@ -699,7 +785,8 @@ Zotero.Attachments = new function(){
 			contentType,
 			charset: document.characterSet,
 			parentItemID,
-			collections
+			collections,
+			saveOptions,
 		});
 		
 		if (Zotero.Fulltext.isCachedMIMEType(contentType)) {
@@ -718,6 +805,7 @@ Zotero.Attachments = new function(){
 	 * Save a snapshot from a Document
 	 *
 	 * @param {Object} options - 'libraryID', 'document', 'parentItemID', 'forceTitle', 'collections'
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
 	 * @return {Promise<Zotero.Item>} - A promise for the created attachment item
 	 */
 	this.importFromDocument = Zotero.Promise.coroutine(function* (options) {
@@ -728,6 +816,7 @@ Zotero.Attachments = new function(){
 		var parentItemID = options.parentItemID;
 		var title = options.title;
 		var collections = options.collections;
+		var saveOptions = options.saveOptions;
 		
 		if (parentItemID && collections) {
 			throw new Error("parentItemID and parentCollectionIDs cannot both be provided");
@@ -761,8 +850,19 @@ Zotero.Attachments = new function(){
 			if ((contentType === 'text/html' || contentType === 'application/xhtml+xml')
 					// Documents from XHR don't work here
 					&& Zotero.Translate.DOMWrapper.unwrap(document) instanceof Ci.nsIDOMDocument) {
-				Zotero.debug('Saving document with saveDocument()');
-				yield Zotero.Utilities.Internal.saveDocument(document, tmpFile);
+				if (document.defaultView.window) {
+					// If we have a full hidden browser, use SingleFile
+					Zotero.debug('Getting snapshot with snapshotDocument()');
+					let snapshotContent = yield Zotero.Utilities.Internal.snapshotDocument(document);
+
+					// Write main HTML file to disk
+					yield Zotero.File.putContentsAsync(tmpFile, snapshotContent);
+				}
+				else {
+					// Fallback to nsIWebBrowserPersist
+					Zotero.debug('Saving document with saveDocument()');
+					yield Zotero.Utilities.Internal.saveDocument(document, tmpFile);
+				}
 			}
 			else {
 				Zotero.debug("Saving file with saveURI()");
@@ -805,11 +905,10 @@ Zotero.Attachments = new function(){
 					attachmentItem.setCollections(collections);
 				}
 				attachmentItem.attachmentPath = 'storage:' + fileName;
-				var itemID = yield attachmentItem.save();
+				var itemID = yield attachmentItem.save(saveOptions);
 				
 				Zotero.Fulltext.queueItem(attachmentItem);
 				
-				// DEBUG: Does this fail if 'storage' is symlinked to another drive?
 				destDir = this.getStorageDirectory(attachmentItem).path;
 				yield OS.File.move(tmpDir, destDir);
 			}.bind(this));
@@ -838,6 +937,102 @@ Zotero.Attachments = new function(){
 	
 	
 	/**
+	 * Save a snapshot from HTML page content given by SingleFile
+	 *
+	 * @param {Object} options
+	 * @param {String} options.url
+	 * @param {Object} options.snapshotContent - HTML content from SingleFile
+	 * @param {Integer} [options.parentItemID]
+	 * @param {Integer[]} [options.collections]
+	 * @param {String} [options.title]
+	 * @param {Object} [options.saveOptions] - Options to pass to Zotero.Item::save()
+	 * @return {Promise<Zotero.Item>} - A promise for the created attachment item
+	 */
+	this.importFromSnapshotContent = async (options) => {
+		Zotero.debug("Importing attachment item from Snapshot Content");
+
+		let url = options.url;
+		let snapshotContent = options.snapshotContent;
+		let parentItemID = options.parentItemID;
+		let collections = options.collections;
+		let title = options.title;
+		let saveOptions = options.saveOptions;
+
+		let contentType = "text/html";
+
+		if (parentItemID && collections) {
+			throw new Error("parentItemID and parentCollectionIDs cannot both be provided");
+		}
+
+		// If no title was provided, pull it from the document
+		if (!title) {
+			let parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+				.createInstance(Components.interfaces.nsIDOMParser);
+			parser.init(null, Services.io.newURI(url));
+			let doc = parser.parseFromString(snapshotContent, 'text/html');
+			title = doc.title;
+		}
+		
+		let tmpDirectory = (await this.createTemporaryStorageDirectory()).path;
+		let destDirectory;
+		let attachmentItem;
+		try {
+			let fileName = Zotero.File.truncateFileName(this._getFileNameFromURL(url, contentType), 100);
+			let tmpFile = OS.Path.join(tmpDirectory, fileName);
+			await Zotero.File.putContentsAsync(tmpFile, snapshotContent);
+
+			// If we're using the title from the document, make some adjustments
+			// Remove e.g. " - Scaled (-17%)" from end of images saved from links,
+			// though I'm not sure why it's getting added to begin with
+			if (contentType.indexOf('image/') === 0) {
+				title = title.replace(/(.+ \([^,]+, [0-9]+x[0-9]+[^\)]+\)) - .+/, "$1" );
+			}
+			// If not native type, strip mime type data in parens
+			else if (!Zotero.MIME.hasNativeHandler(contentType, this._getExtensionFromURL(url))) {
+				title = title.replace(/(.+) \([a-z]+\/[^\)]+\)/, "$1" );
+			}
+
+			attachmentItem = await _addToDB({
+				file: 'storage:' + fileName,
+				title,
+				url,
+				linkMode: Zotero.Attachments.LINK_MODE_IMPORTED_URL,
+				parentItemID,
+				charset: 'utf-8',
+				contentType,
+				collections,
+				saveOptions
+			});
+
+			Zotero.Fulltext.queueItem(attachmentItem);
+
+			destDirectory = this.getStorageDirectory(attachmentItem).path;
+			await OS.File.move(tmpDirectory, destDirectory);
+		}
+		catch (e) {
+			Zotero.debug(e, 1);
+			
+			// Clean up
+			try {
+				if (tmpDirectory) {
+					await OS.File.removeDir(tmpDirectory, { ignoreAbsent: true });
+				}
+				if (destDirectory) {
+					await OS.File.removeDir(destDirectory, { ignoreAbsent: true });
+				}
+			}
+			catch (e) {
+				Zotero.debug(e, 1);
+			}
+			
+			throw e;
+		}
+		
+		return attachmentItem;
+	};
+
+
+	/**
 	 * @param {String} url
 	 * @param {String} path
 	 * @param {Object} [options]
@@ -857,15 +1052,11 @@ Zotero.Attachments = new function(){
 				}
 				
 				wbp.progressListener = new Zotero.WebProgressFinishListener(() => resolve());
-					
-				var nsIURL = Components.classes["@mozilla.org/network/standard-url;1"]
-					.createInstance(Components.interfaces.nsIURL);
-				nsIURL.spec = url;
 				var headers = {};
 				if (options.referrer) {
 					headers.Referer = options.referrer;
 				}
-				Zotero.Utilities.Internal.saveURI(wbp, nsIURL, path, headers);
+				Zotero.Utilities.Internal.saveURI(wbp, url, path, headers);
 			});
 			
 			if (options.isPDF) {
@@ -1679,7 +1870,6 @@ Zotero.Attachments = new function(){
 			
 			// If URL wasn't available or failed, try to get a URL from a page
 			if (pageURL) {
-				addTriedURL(pageURL);
 				url = null;
 				let responseURL;
 				try {
@@ -1735,7 +1925,6 @@ Zotero.Attachments = new function(){
 								skip = true;
 								break;
 							}
-							addTriedURL(nextURL);
 							continue;
 						}
 						
@@ -1745,10 +1934,11 @@ Zotero.Attachments = new function(){
 							Zotero.debug("Redirected to " + responseURL);
 						}
 						
-						// If HTML, check for a meta redirect
 						contentType = req.getResponseHeader('Content-Type');
 						if (contentType.startsWith('text/html')) {
 							doc = await Zotero.Utilities.Internal.blobToHTMLDocument(blob, responseURL);
+							
+							// Check for a meta redirect on HTML pages
 							let refreshURL = Zotero.HTTP.getHTMLMetaRefreshURL(doc, responseURL);
 							if (refreshURL) {
 								if (isTriedURL(refreshURL)) {
@@ -1758,10 +1948,22 @@ Zotero.Attachments = new function(){
 								}
 								doc = null;
 								nextURL = refreshURL;
-								addTriedURL(nextURL);
 								continue;
 							}
 						}
+						
+						// Don't try this page URL again
+						//
+						// We only do this for URLs that don't redirect, since some sites seem to
+						// use redirects plus cookies for IP-based authentication [1]. The downside
+						// is that we might follow the same set of redirects more than once, but we
+						// won't process the final page multiple times, and if a publisher URL does
+						// redirect that's hopefully a decent indication that a PDF will be found
+						// the first time around.
+						//
+						// [1] https://forums.zotero.org/discussion/81182
+						addTriedURL(responseURL);
+						
 						break;
 					}
 					if (skip) {
@@ -1792,6 +1994,7 @@ Zotero.Attachments = new function(){
 					Zotero.debug(`PDF at ${url} was already tried -- skipping`);
 					continue;
 				}
+				// Don't try this PDF URL again
 				addTriedURL(url);
 				
 				// Use the page we loaded as the referrer
@@ -1878,9 +2081,14 @@ Zotero.Attachments = new function(){
 					break;
 			}
 			
+			var value;
 			switch (field) {
+				case 'title':
+					value = item.getField('title', false, true);
+					break;
+				
 				case 'year':
-					var value = item.getField('date', true, true);
+					value = item.getField('date', true, true);
 					if (value) {
 						value = Zotero.Date.multipartToSQL(value).substr(0, 4);
 						if (value == '0000') {
@@ -1890,7 +2098,7 @@ Zotero.Attachments = new function(){
 				break;
 				
 				default:
-					var value = '' + item.getField(field, false, true);
+					value = '' + item.getField(field, false, true);
 			}
 			
 			var re = new RegExp("\{?([^%\{\}]*)" + rpl + "(\{[0-9]+\})?" + "([^%\{\}]*)\}?");
@@ -1915,6 +2123,7 @@ Zotero.Attachments = new function(){
 		formatString = rpl('year');
 		formatString = rpl('title');
 		
+		formatString = Zotero.Utilities.cleanTags(formatString);
 		formatString = Zotero.File.getValidFileName(formatString);
 		return formatString;
 	}
@@ -1986,6 +2195,9 @@ Zotero.Attachments = new function(){
 	this.getStorageDirectory = function (item) {
 		if (!(item instanceof Zotero.Item)) {
 			throw new Error("'item' must be a Zotero.Item");
+		}
+		if (!item.key) {
+			throw new Error("Item key must be set");
 		}
 		return this.getStorageDirectoryByLibraryAndKey(item.libraryID, item.key);
 	}
@@ -2096,6 +2308,9 @@ Zotero.Attachments = new function(){
 			case Zotero.Attachments.LINK_MODE_IMPORTED_FILE:
 				break;
 			
+			case Zotero.Attachments.LINK_MODE_EMBEDDED_IMAGE:
+				return false;
+			
 			default:
 				throw new Error("Invalid attachment link mode");
 		}
@@ -2113,21 +2328,15 @@ Zotero.Attachments = new function(){
 		var parent = OS.Path.dirname(path);
 		var iterator = new OS.File.DirectoryIterator(parent);
 		try {
-			while (true) {
-				let entry = yield iterator.next();
+			yield iterator.forEach((entry) => {
 				if (entry.name.startsWith('.')) {
-					continue;
+					return;
 				}
 				numFiles++;
 				if (numFiles > 1) {
-					break;
+					iterator.close();
 				}
-			}
-		}
-		catch (e) {
-			if (e != StopIteration) {
-				throw e;
-			}
+			});
 		}
 		finally {
 			iterator.close();
@@ -2258,7 +2467,7 @@ Zotero.Attachments = new function(){
 		Zotero.DB.requireTransaction();
 		
 		var newAttachment = attachment.clone(libraryID);
-		if (attachment.isImportedAttachment()) {
+		if (attachment.isStoredFileAttachment()) {
 			// Attachment path isn't copied over by clone() if libraryID is different
 			newAttachment.attachmentPath = attachment.attachmentPath;
 		}
@@ -2270,7 +2479,7 @@ Zotero.Attachments = new function(){
 		// Move files over if they exist
 		var oldDir;
 		var newDir;
-		if (newAttachment.isImportedAttachment()) {
+		if (newAttachment.isStoredFileAttachment()) {
 			oldDir = this.getStorageDirectory(attachment).path;
 			if (await OS.File.exists(oldDir)) {
 				newDir = this.getStorageDirectory(newAttachment).path;
@@ -2296,7 +2505,7 @@ Zotero.Attachments = new function(){
 		}
 		catch (e) {
 			// Move files back if old item can't be deleted
-			if (newAttachment.isImportedAttachment()) {
+			if (newAttachment.isStoredFileAttachment()) {
 				try {
 					await OS.File.move(newDir, oldDir);
 				}
@@ -2322,7 +2531,7 @@ Zotero.Attachments = new function(){
 		Zotero.DB.requireTransaction();
 		
 		var newAttachment = attachment.clone(libraryID);
-		if (attachment.isImportedAttachment()) {
+		if (attachment.isStoredFileAttachment()) {
 			// Attachment path isn't copied over by clone() if libraryID is different
 			newAttachment.attachmentPath = attachment.attachmentPath;
 		}
@@ -2332,7 +2541,7 @@ Zotero.Attachments = new function(){
 		yield newAttachment.save();
 		
 		// Copy over files if they exist
-		if (newAttachment.isImportedAttachment() && (yield attachment.fileExists())) {
+		if (newAttachment.isStoredFileAttachment() && (yield attachment.fileExists())) {
 			let dir = Zotero.Attachments.getStorageDirectory(attachment);
 			let newDir = yield Zotero.Attachments.createDirectoryForItem(newAttachment);
 			yield Zotero.File.copyDirectory(dir, newDir);
@@ -2343,54 +2552,129 @@ Zotero.Attachments = new function(){
 	});
 	
 	
+	this.convertLinkedFileToStoredFile = async function (item, options = {}) {
+		if (!item.isLinkedFileAttachment()) {
+			throw new Error("Not a linked-file attachment");
+		}
+		
+		var file = await item.getFilePathAsync();
+		if (!file) {
+			Zotero.debug("Linked file not found at " + file);
+			return false;
+		}
+		
+		var json = item.toJSON();
+		json.linkMode = 'imported_file';
+		delete json.path;
+		json.filename = OS.Path.basename(file);
+		var newItem = new Zotero.Item('attachment');
+		newItem.libraryID = item.libraryID;
+		newItem.fromJSON(json);
+		await newItem.saveTx();
+		
+		// Move child annotations and embedded-image attachments
+		await Zotero.Items.moveChildItems(item, newItem);
+		// Copy relations pointing to the old item
+		await Zotero.Relations.copyObjectSubjectRelations(item, newItem);
+		
+		var newFile;
+		try {
+			// Transfer file
+			let destDir = await this.createDirectoryForItem(newItem);
+			newFile = OS.Path.join(destDir, json.filename);
+			if (options.move) {
+				newFile = await Zotero.File.moveToUnique(file, newFile);
+			}
+			// Copy file to unique filename, which automatically shortens long filenames
+			else {
+				newFile = Zotero.File.copyToUnique(file, newFile);
+				// TEMP: copyToUnique returns an nsIFile
+				newFile = newFile.path;
+				await Zotero.File.setNormalFilePermissions(newFile);
+				let mtime = (await OS.File.stat(file)).lastModificationDate;
+				await OS.File.setDates(newFile, null, mtime);
+			}
+		}
+		catch (e) {
+			Zotero.logError(e);
+			// Delete new file
+			if (newFile) {
+				try {
+					await Zotero.File.removeIfExists(newFile);
+				}
+				catch (e) {
+					Zotero.logError(e);
+				}
+			}
+			// Delete new item
+			try {
+				await newItem.eraseTx();
+			}
+			catch (e) {
+				Zotero.logError(e);
+			}
+			return false;
+		}
+		
+		try {
+			await Zotero.DB.executeTransaction(async function () {
+				await Zotero.Fulltext.transferItemIndex(item, newItem);
+			});
+		}
+		catch (e) {
+			Zotero.logError(e);
+		}
+		
+		if (newFile && json.filename != OS.Path.basename(newFile)) {
+			Zotero.debug("Filename was changed");
+			newItem.attachmentFilename = OS.Path.basename(newFile);
+			await newItem.saveTx();
+		}
+		
+		await item.eraseTx();
+		
+		return newItem;
+	};
+	
+	
 	this._getFileNameFromURL = function(url, contentType) {
-		var nsIURL = Components.classes["@mozilla.org/network/standard-url;1"]
-					.createInstance(Components.interfaces.nsIURL);
-		nsIURL.spec = url;
+		url = Zotero.Utilities.parseURL(url);
 		
-		var ext = Zotero.MIME.getPrimaryExtension(contentType, nsIURL.fileExtension);
+		var fileBaseName = url.fileBaseName;
+		var fileExt = Zotero.MIME.getPrimaryExtension(contentType, url.fileExtension);
 		
-		if (!nsIURL.fileName) {
-			var matches = nsIURL.directory.match(/\/([^\/]+)\/$/);
+		if (!fileBaseName) {
+			let matches = url.pathname.match(/\/([^\/]+)\/$/);
 			// If no filename, use the last part of the path if there is one
 			if (matches) {
-				nsIURL.fileName = matches[1];
+				fileBaseName = matches[1];
 			}
 			// Or just use the host
 			else {
-				nsIURL.fileName = nsIURL.host;
-				var tld = nsIURL.fileExtension;
+				fileBaseName = url.hostname;
 			}
-		}
-		
-		// If we found a better extension, use that
-		if (ext && (!nsIURL.fileExtension || nsIURL.fileExtension != ext)) {
-			nsIURL.fileExtension = ext;
-		}
-		
-		// If we replaced the TLD (which would've been interpreted as the extension), add it back
-		if (tld && tld != nsIURL.fileExtension) {
-			nsIURL.fileBaseName = nsIURL.fileBaseName + '.' + tld;
 		}
 		
 		// Test unencoding fileBaseName
 		try {
-			decodeURIComponent(nsIURL.fileBaseName);
+			decodeURIComponent(fileBaseName);
 		}
 		catch (e) {
 			if (e.name == 'URIError') {
 				// If we got a 'malformed URI sequence' while decoding,
 				// use MD5 of fileBaseName
-				nsIURL.fileBaseName = Zotero.Utilities.Internal.md5(nsIURL.fileBaseName, false);
+				fileBaseName = Zotero.Utilities.Internal.md5(fileBaseName, false);
 			}
 			else {
 				throw e;
 			}
 		}
 		
+		var fileName = fileBaseName + (fileExt ? '.' + fileExt : '');
+		
 		// Pass unencoded name to getValidFileName() so that percent-encoded
 		// characters aren't stripped to just numbers
-		return Zotero.File.getValidFileName(decodeURIComponent(nsIURL.fileName));
+		return Zotero.File.getValidFileName(decodeURIComponent(fileName));
 	}
 	
 	
@@ -2606,6 +2890,8 @@ Zotero.Attachments = new function(){
 			return 'linked_file';
 		case this.LINK_MODE_LINKED_URL:
 			return 'linked_url';
+		case this.LINK_MODE_EMBEDDED_IMAGE:
+			return 'embedded_image';
 		default:
 			throw new Error(`Invalid link mode ${linkMode}`);
 		}

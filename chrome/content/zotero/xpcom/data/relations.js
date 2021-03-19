@@ -121,9 +121,9 @@ Zotero.Relations = new function () {
 	 * @param {String} objectType - Type of relation to search for (e.g., 'item')
 	 * @param {String} predicate
 	 * @param {String} object
-	 * @return {Zotero.DataObject[]}
+	 * @return {Promise<Zotero.DataObject[]>}
 	 */
-	this.getByPredicateAndObject = function (objectType, predicate, object) {
+	this.getByPredicateAndObject = async function (objectType, predicate, object) {
 		var objectsClass = Zotero.DataObjectUtilities.getObjectsClassForObjectType(objectType);
 		if (predicate) {
 			predicate = this._getPrefixAndValue(predicate).join(':');
@@ -135,7 +135,7 @@ Zotero.Relations = new function () {
 		if (!o || !o[predicateID] || !o[predicateID][object]) {
 			return [];
 		}
-		return objectsClass.get(Array.from(o[predicateID][object].values()));
+		return objectsClass.getAsync(Array.from(o[predicateID][object].values()));
 	};
 	
 	
@@ -167,6 +167,35 @@ Zotero.Relations = new function () {
 		}
 		return toReturn;
 	});
+	
+	
+	/**
+	 * For every relation pointing to a given object, create a relation on the subject pointing to a
+	 * new object
+	 *
+	 * @param {Zotero.DataObject} fromObject
+	 * @param {Zotero.DataObject} toObject
+	 * @return {Promise}
+	 */
+	this.copyObjectSubjectRelations = async function (fromObject, toObject) {
+		var objectType = fromObject.objectType;
+		var ObjectType = Zotero.Utilities.capitalize(objectType);
+		var fromObjectURI = Zotero.URI[`get${ObjectType}URI`](fromObject);
+		var toObjectURI = Zotero.URI[`get${ObjectType}URI`](toObject);
+		var subjectPredicates = await Zotero.Relations.getByObject(objectType, fromObjectURI);
+		for (let { subject, predicate } of subjectPredicates) {
+			if (subject.isEditable()) {
+				subject.addRelation(predicate, toObjectURI);
+				await subject.saveTx({
+					skipDateModifiedUpdate: true
+				});
+			}
+			else {
+				Zotero.debug(`Subject ${objectType} ${subject.libraryKey} is not editable `
+					+ `-- not copying ${predicate} relation`);
+			}
+		}
+	};
 	
 	
 	this.updateUser = Zotero.Promise.coroutine(function* (fromUserID, toUserID) {

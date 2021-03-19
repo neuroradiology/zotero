@@ -34,6 +34,37 @@ describe("Zotero.Utilities", function() {
 	});
 	
 	
+	describe("#isHTTPURL()", function () {
+		it("should return true for HTTP URL", function () {
+			assert.isTrue(Zotero.Utilities.isHTTPURL('http://example.com'));
+		});
+		
+		it("should return true for HTTPS URL", function () {
+			assert.isTrue(Zotero.Utilities.isHTTPURL('https://example.com'));
+		});
+		
+		it("should return false for plausible HTTP URL if allowNoScheme not provided", function () {
+			assert.isFalse(Zotero.Utilities.isHTTPURL('example.com'));
+		});
+		
+		it("should return false for plausible HTTP URL if allowNoScheme is true", function () {
+			assert.isTrue(Zotero.Utilities.isHTTPURL('example.com', true));
+		});
+		
+		it("should return false for file URL", function () {
+			assert.isFalse(Zotero.Utilities.isHTTPURL('file:///c:/path/to/file.txt'));
+		});
+		
+		it("should return false for mailto URLs in allowNoScheme mode", function () {
+			assert.isFalse(Zotero.Utilities.isHTTPURL('mailto:foo@example.com', true));
+		});
+		
+		it("should return false for zotero: URL", function () {
+			assert.isFalse(Zotero.Utilities.isHTTPURL('zotero://select/library/items/AAAAAAAA'));
+		});
+	});
+	
+	
 	describe("#cleanDOI()", function () {
 		var cleanDOI = Zotero.Utilities.cleanDOI;
 		var doi = '10.1088/1748-9326/11/4/048002';
@@ -476,6 +507,52 @@ describe("Zotero.Utilities", function() {
 			assert.doesNotThrow(() => "" instanceof Zotero.Item);
 		})
 	});
+	
+	describe("#parseURL()", function () {
+		var f;
+		before(() => {
+			f = Zotero.Utilities.parseURL;
+		});
+		
+		describe("#fileName", function () {
+			it("should contain filename", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileName', 'def.html');
+			});
+			
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileName', '');
+			});
+		});
+		
+		describe("#fileExtension", function () {
+			it("should contain extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileExtension', 'html');
+			});
+			
+			it("should be empty if no extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def'), 'fileExtension', '');
+			});
+			
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileExtension', '');
+			});
+		});
+		
+		describe("#fileBaseName", function () {
+			it("should contain base name", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileBaseName', 'def');
+			});
+			
+			it("should equal filename if no extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def'), 'fileBaseName', 'def');
+			});
+			
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileBaseName', '');
+			});
+		});
+	});
+	
 	
 	describe("#ellipsize()", function () {
 		describe("with wordBoundary", function () {

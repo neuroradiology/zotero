@@ -126,13 +126,21 @@ Zotero.Sync.Data.Local = {
 				+ `last username '${lastUsername}', current username '${username}'`, 2);
 			var io = {
 				title: Zotero.getString('general.warning'),
-				text: [Zotero.getString('account.lastSyncWithDifferentAccount', [ZOTERO_CONFIG.CLIENT_NAME, lastUsername, username])],
-				checkboxLabel: Zotero.getString('account.confirmDelete'),
-				acceptLabel: Zotero.getString('account.confirmDelete.button')
+				text: Zotero.getString(
+						'account.lastSyncWithDifferentAccount',
+						[Zotero.appName, lastUsername, username]
+					) + '\n\n'
+					+ Zotero.getString(
+						'account.lastSyncWithDifferentAccount.beforeContinuing',
+						[lastUsername, Zotero.appName]
+					),
+				checkboxLabel: Zotero.getString('account.confirmDelete', lastUsername),
+				acceptLabel: Zotero.getString('account.confirmDelete.button'),
+				extra2Label: Zotero.getString('general.moreInformation')
 			};
 			win.openDialog("chrome://zotero/content/hardConfirmationDialog.xul", "",
-				"chrome, dialog, modal, centerscreen", io);
-					
+				"chrome,dialog,modal,centerscreen", io);
+			
 			if (io.accept) {
 				var resetDataDirFile = OS.Path.join(Zotero.DataDirectory.dir, 'reset-data-directory');
 				yield Zotero.File.putContentsAsync(resetDataDirFile, '');
@@ -150,6 +158,9 @@ Zotero.Sync.Data.Local = {
 				
 				return true;
 			}
+			else if (io.extra2) {
+				Zotero.launchURL("https://www.zotero.org/support/kb/switching_accounts");
+			}
 			
 			return false;
 		}
@@ -164,6 +175,7 @@ Zotero.Sync.Data.Local = {
 				// Replace local user key with libraryID, in case duplicates were merged before the
 				// first sync
 				yield Zotero.Relations.updateUser(null, userID);
+				yield Zotero.Notes.updateUser(null, userID);
 			}
 		});
 		
@@ -381,9 +393,7 @@ Zotero.Sync.Data.Local = {
 	 */
 	_getAPIKeyLoginInfo: function () {
 		try {
-			var loginManager = Components.classes["@mozilla.org/login-manager;1"]
-				.getService(Components.interfaces.nsILoginManager);
-			var logins = loginManager.findLogins(
+			var logins = Services.logins.findLogins(
 				{},
 				this._loginManagerHost,
 				null,
@@ -392,11 +402,12 @@ Zotero.Sync.Data.Local = {
 		}
 		catch (e) {
 			Zotero.logError(e);
-			var msg = Zotero.getString('sync.error.loginManagerCorrupted1', Zotero.appName) + "\n\n"
-				+ Zotero.getString('sync.error.loginManagerCorrupted2', [Zotero.appName, Zotero.appName]);
-			var ps = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
-				.getService(Components.interfaces.nsIPromptService);
-			ps.alert(null, Zotero.getString('general.error'), msg);
+			if (this._lastLoginManagerErrorTime > Date.now() - 60000) {
+				let msg = Zotero.getString('sync.error.loginManagerCorrupted1', Zotero.appName) + "\n\n"
+					+ Zotero.getString('sync.error.loginManagerCorrupted2', Zotero.appName);
+				Zotero.alert(null, Zotero.getString('general.error'), msg);
+				this._lastLoginManagerErrorTime = Date.now();
+			}
 			return false;
 		}
 		
@@ -532,23 +543,51 @@ Zotero.Sync.Data.Local = {
 		var sql = "SELECT O." + objectsClass.idColumn + " FROM " + objectsClass.table + " O";
 		if (objectType == 'item') {
 			sql += " LEFT JOIN itemAttachments IA USING (itemID) "
-				+ "LEFT JOIN itemNotes INo ON (O.itemID=INo.itemID) ";
+				+ "LEFT JOIN itemNotes INo ON (O.itemID=INo.itemID) "
+				+ "LEFT JOIN itemAnnotations IAn ON (O.itemID=IAn.itemID)";
 		}
 		sql += " WHERE libraryID=? AND synced=0";
-		// Sort child items last
+		// Don't sync external annotations
 		if (objectType == 'item') {
-			sql += " ORDER BY COALESCE(IA.parentItemID, INo.parentItemID)";
+			sql += " AND (IAn.isExternal IS NULL OR IAN.isExternal=0)";
 		}
 		
 		var ids = yield Zotero.DB.columnQueryAsync(sql, [libraryID]);
 		
 		// Sort descendent collections last
 		if (objectType == 'collection') {
-			ids = Zotero.Collections.sortByLevel(ids);
+			try {
+				ids = Zotero.Collections.sortByLevel(ids.map(id => Zotero.Collections.get(id))).map(o => o.id);
+			}
+			catch (e) {
+				Zotero.logError(e);
+				// If collections were incorrectly nested, fix and try again
+				if (e instanceof Zotero.Error && e.error == Zotero.Error.ERROR_INVALID_OBJECT_NESTING) {
+					let c = Zotero.Collections.get(e.collectionID);
+					Zotero.debug(`Removing parent collection ${c.parentKey} from collection ${c.key}`);
+					c.parentID = null;
+					yield c.saveTx();
+					return this.getUnsynced(...arguments);
+				}
+				else {
+					throw e;
+				}
+			}
+		}
+		else if (objectType == 'item') {
+			ids = Zotero.Items.sortByParent(ids.map(id => Zotero.Items.get(id))).map(o => o.id);
 		}
 		
 		return ids;
 	}),
+	
+	
+	isSyncItem: function (item) {
+		if (item.itemType == 'annotation' && item.annotationIsExternal) {
+			return false;
+		}
+		return true;
+	},
 	
 	
 	//
@@ -723,11 +762,10 @@ Zotero.Sync.Data.Local = {
 		var ObjectType = Zotero.Utilities.capitalize(objectType);
 		var libraryName = Zotero.Libraries.get(libraryID).name;
 		
-		var knownErrors = [
-			'ZoteroUnknownTypeError',
-			'ZoteroUnknownFieldError',
+		var knownErrors = new Set([
+			'ZoteroInvalidDataError',
 			'ZoteroMissingObjectError'
-		];
+		]);
 		
 		Zotero.debug("Processing " + json.length + " downloaded "
 			+ (json.length == 1 ? objectType : objectTypePlural)
@@ -858,7 +896,7 @@ Zotero.Sync.Data.Local = {
 							// For items, check if mtime or file hash changed in metadata,
 							// which would indicate that a remote storage sync took place and
 							// a download is needed
-							if (objectType == 'item' && obj.isImportedAttachment()) {
+							if (objectType == 'item' && obj.isStoredFileAttachment()) {
 								if (jsonDataLocal.mtime != jsonData.mtime
 										|| jsonDataLocal.md5 != jsonData.md5) {
 									saveOptions.storageDetailsChanged = true;
@@ -886,9 +924,11 @@ Zotero.Sync.Data.Local = {
 									Zotero.debug("No remote changes to apply to local "
 										+ objectType + " " + obj.libraryKey);
 									saveOptions.skipData = true;
-									// If local object is different but we ignored the changes
-									// (e.g., ISBN hyphenation), save as unsynced. Since we're skipping
-									// data, the local version won't be overwritten.
+									// If either there were additional local changes after cancelling
+									// out equivalent changes on both sides or the local object was
+									// different but we ignored the changes (e.g., ISBN hyphenation),
+									// keep as unsynced. In the latter case, since we're skipping
+									// data, the local fields won't be overwritten.
 									if (result.localChanged) {
 										saveOptions.saveAsUnsynced = true;
 									}
@@ -908,6 +948,22 @@ Zotero.Sync.Data.Local = {
 									if (objectType != 'item') {
 										throw new Error(`Unexpected conflict on ${objectType} object`);
 									}
+									
+									// Skip conflict resolution if there are invalid fields
+									try {
+										let testObj = obj.clone();
+										testObj.fromJSON(jsonData, { strict: true });
+									}
+									catch (e) {
+										results.push({
+											key: objectKey,
+											processed: false,
+											error: e,
+											retry: false
+										});
+										throw e;
+									}
+									
 									Zotero.debug("Conflict!", 2);
 									Zotero.debug(jsonDataLocal);
 									Zotero.debug(jsonData);
@@ -929,11 +985,19 @@ Zotero.Sync.Data.Local = {
 								Zotero.debug(`Applying remote changes to ${objectType} `
 									+ obj.libraryKey);
 								Zotero.debug(result.changes);
+								// If there were local changes as well, keep object as unsynced and
+								// save the remote version to the sync cache rather than the merged
+								// version
+								if (result.localChanged) {
+									saveOptions.saveAsUnsynced = true;
+									saveOptions.cacheObject = jsonObject.data;
+								}
 								Zotero.DataObjectUtilities.applyChanges(
 									jsonDataLocal, result.changes
 								);
 								// Transfer properties that aren't in the changeset
 								['version', 'dateAdded', 'dateModified'].forEach(x => {
+									if (jsonData[x] === undefined) return;
 									if (jsonDataLocal[x] !== jsonData[x]) {
 										Zotero.debug(`Applying remote '${x}' value`);
 									}
@@ -1023,8 +1087,11 @@ Zotero.Sync.Data.Local = {
 					}
 				}
 				catch (e) {
+					// This allows errors handled by syncRunner to know the library in question
+					e.libraryID = libraryID;
+					
 					// Display nicer debug line for known errors
-					if (knownErrors.indexOf(e.name) != -1) {
+					if (knownErrors.has(e.name)) {
 						let desc = e.name
 							.replace(/^Zotero/, "")
 							// Convert "MissingObjectError" to "missing object error"
@@ -1107,8 +1174,9 @@ Zotero.Sync.Data.Local = {
 	 * Check whether an attachment's file mod time matches the given mod time, and mark the file
 	 * for download if not (or if this is a new attachment)
 	 */
-	_checkAttachmentForDownload: Zotero.Promise.coroutine(function* (item, mtime, isNewObject) {
-		var markToDownload = false;
+	_checkAttachmentForDownload: async function (item, mtime, isNewObject) {
+		var markToDownload = true;
+		var fileExists = false;
 		if (!isNewObject) {
 			// Convert previously used Unix timestamps to ms-based timestamps
 			if (mtime < 10000000000) {
@@ -1117,7 +1185,7 @@ Zotero.Sync.Data.Local = {
 			}
 			var fmtime = null;
 			try {
-				fmtime = yield item.attachmentModificationTime;
+				fmtime = await item.attachmentModificationTime;
 			}
 			catch (e) {
 				// This will probably fail later too, but ignore it for now
@@ -1125,21 +1193,20 @@ Zotero.Sync.Data.Local = {
 			}
 			if (fmtime) {
 				let state = Zotero.Sync.Storage.Local.checkFileModTime(item, fmtime, mtime);
-				if (state !== false) {
-					markToDownload = true;
+				if (state === false) {
+					markToDownload = false;
 				}
+				fileExists = true;
 			}
-			else {
-				markToDownload = true;
-			}
-		}
-		else {
-			markToDownload = true;
 		}
 		if (markToDownload) {
-			item.attachmentSyncState = "to_download";
+			// If file already exists locally, download it even in "as needed" mode. While we could
+			// just check whether a download is necessary at file open, these are files that people
+			// have previously downloaded, and avoiding opening an outdated version seems more
+			// important than avoiding a little bit of extra data transfer.
+			item.attachmentSyncState = fileExists ? "force_download" : "to_download";
 		}
-	}),
+	},
 	
 	
 	/**
@@ -1403,10 +1470,25 @@ Zotero.Sync.Data.Local = {
 			json = this._checkCacheJSON(json);
 			
 			if (!options.skipData) {
-				obj.fromJSON(json.data);
+				obj.fromJSON(json.data, { strict: true });
 			}
-			if (obj.objectType == 'item' && obj.isImportedAttachment()) {
-				yield this._checkAttachmentForDownload(obj, json.data.mtime, options.isNewObject);
+			if (obj.objectType == 'item') {
+				// Update createdByUserID and lastModifiedByUserID
+				for (let p of ['createdByUser', 'lastModifiedByUser']) {
+					if (json.meta && json.meta[p]) {
+						let { id: userID, username, name } = json.meta[p];
+						obj[p + 'ID'] = userID;
+						name = name !== '' ? name : username;
+						// Update stored name if it changed
+						if (Zotero.Users.getName(userID) != name) {
+							yield Zotero.Users.setName(userID, name);
+						}
+					}
+				}
+				
+				if (obj.isStoredFileAttachment()) {
+					yield this._checkAttachmentForDownload(obj, json.data.mtime, options.isNewObject);
+				}
 			}
 			obj.version = json.data.version;
 			if (!options.saveAsUnsynced) {
@@ -1439,7 +1521,7 @@ Zotero.Sync.Data.Local = {
 			yield this._removeObjectFromSyncQueue(obj.objectType, obj.libraryID, json.key);
 			
 			// Mark updated attachments for download
-			if (obj.objectType == 'item' && obj.isImportedAttachment()) {
+			if (obj.objectType == 'item' && obj.isStoredFileAttachment()) {
 				// If storage changes were made (attachment mtime or hash), mark
 				// library as requiring download
 				if (options.isNewObject || options.storageDetailsChanged) {
@@ -1474,11 +1556,17 @@ Zotero.Sync.Data.Local = {
 		Zotero.debug("CHANGESET2");
 		Zotero.debug(changeset2);
 		
+		const isAutoMergeType = objectType != 'item';
 		var conflicts = [];
+		var matchedLocalChanges = new Set();
 		
 		for (let i = 0; i < changeset1.length; i++) {
 			for (let j = 0; j < changeset2.length; j++) {
 				let c1 = changeset1[i];
+				// If we've removed all local changes, keep remaining remote changes
+				if (!c1) {
+					break;
+				}
 				let c2 = changeset2[j];
 				if (c1.field != c2.field) {
 					continue;
@@ -1500,6 +1588,9 @@ Zotero.Sync.Data.Local = {
 							if (c1.op == 'member-add' && c2.op == 'member-add'
 									&& c1.value.tag === c2.value.tag) {
 								changeset1.splice(i--, 1);
+								// We're in the inner loop without an incrementor for i, so don't go
+								// below 0
+								if (i < 0) i = 0;
 								changeset2.splice(j--, 1);
 								if (c1.value.type > 0) {
 									changeset2.push({
@@ -1535,6 +1626,7 @@ Zotero.Sync.Data.Local = {
 					let creators2 = c2.value;
 					if (creators1.length == creators2.length
 							&& creators1.every((c, index) => Zotero.Creators.equals(c, creators2[index]))) {
+						matchedLocalChanges.add(i);
 						changeset2.splice(j--, 1);
 						continue;
 					}
@@ -1542,6 +1634,7 @@ Zotero.Sync.Data.Local = {
 				
 				// Removed on both sides
 				if (c1.op == 'delete' && c2.op == 'delete') {
+					matchedLocalChanges.add(i);
 					changeset2.splice(j--, 1);
 					continue;
 				}
@@ -1551,6 +1644,7 @@ Zotero.Sync.Data.Local = {
 						|| (c1.op == 'member-remove' && c2.op == 'member-remove')
 						|| (c1.op == 'property-member-add' && c2.op == 'property-member-add')
 						|| (c1.op == 'property-member-remove' && c2.op == 'property-member-remove')) {
+					matchedLocalChanges.add(i);
 					changeset2.splice(j--, 1);
 					continue;
 				}
@@ -1558,6 +1652,7 @@ Zotero.Sync.Data.Local = {
 				// If both sides have values, see if they're the same, and if so remove the
 				// second one
 				if (c1.op != 'delete' && c2.op != 'delete' && c1.value === c2.value) {
+					matchedLocalChanges.add(i);
 					changeset2.splice(j--, 1);
 					continue;
 				}
@@ -1565,19 +1660,34 @@ Zotero.Sync.Data.Local = {
 				// Automatically apply remote changes if both items are in trash and for non-items,
 				// even if in conflict
 				if ((objectType == 'item' && currentJSON.deleted && newJSON.deleted)
-						|| objectType != 'item') {
+						|| isAutoMergeType) {
 					continue;
 				}
 				
 				// Conflict
+				matchedLocalChanges.add(i);
 				changeset2.splice(j--, 1);
 				conflicts.push([c1, c2]);
 			}
 		}
 		
+		// If there were local changes that weren't made remotely as well, the object needs to be
+		// kept as unsynced
+		var localChanged = changeset1.length > matchedLocalChanges.size;
+		
+		// If we're applying remote changes automatically, only consider the local object as changed
+		// if fields were changed that weren't changed remotely
+		if (isAutoMergeType && localChanged) {
+			let remoteFields = new Set(changeset2.map(x => x.field));
+			if (changeset1.every(x => remoteFields.has(x.field))) {
+				localChanged = false;
+			}
+		}
+		
 		return {
 			changes: changeset2,
-			conflicts
+			conflicts,
+			localChanged
 		};
 	},
 	
@@ -1753,9 +1863,15 @@ Zotero.Sync.Data.Local = {
 	},
 	
 	
-	addObjectsToSyncQueue: Zotero.Promise.coroutine(function* (objectType, libraryID, keys) {
+	/**
+	 * @param {String} objectType
+	 * @param {Integer} libraryID
+	 * @param {String[]} keys
+	 * @param {Boolean} [tryImmediately=false] - Assign lastCheck of 0 so item is retried immediately
+	 */
+	addObjectsToSyncQueue: Zotero.Promise.coroutine(function* (objectType, libraryID, keys, tryImmediately) {
 		var syncObjectTypeID = Zotero.Sync.Data.Utilities.getSyncObjectTypeID(objectType);
-		var now = Zotero.Date.getUnixTimestamp();
+		var now = tryImmediately ? 0 : Zotero.Date.getUnixTimestamp();
 		
 		// Default to first try
 		var keyTries = {};

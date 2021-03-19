@@ -151,16 +151,17 @@ describe("Zotero.DB", function() {
 			assert.equal(e.message, "Failed");
 		});
 		
-		it("should stop gracefully if onRow throws a StopIteration", function* () {
+		it("should stop gracefully if onRow calls cancel()", function* () {
 			var i = 0;
 			var rows = [];
 			yield Zotero.DB.queryAsync(
 				"SELECT * FROM " + tmpTable,
 				false,
 				{
-					onRow: function (row) {
+					onRow: function (row, cancel) {
 						if (i > 0) {
-							throw StopIteration;
+							cancel();
+							return;
 						}
 						rows.push(row.getResultByIndex(0));
 						i++;
@@ -340,4 +341,39 @@ describe("Zotero.DB", function() {
 			assert.ok(callback2Ran);
 		});
 	})
+	
+	
+	describe("#columnExists()", function () {
+		it("should return true if a column exists", async function () {
+			assert.isTrue(await Zotero.DB.columnExists('items', 'itemID'));
+		});
+		
+		it("should return false if a column doesn't exists", async function () {
+			assert.isFalse(await Zotero.DB.columnExists('items', 'foo'));
+		});
+		
+		it("should return false if a table doesn't exists", async function () {
+			assert.isFalse(await Zotero.DB.columnExists('foo', 'itemID'));
+		});
+	});
+	
+	
+	describe("#indexExists()", function () {
+		it("should return true if an index exists", async function () {
+			assert.isTrue(await Zotero.DB.indexExists('items_synced'));
+		});
+		
+		it("should return false if an index doesn't exists", async function () {
+			assert.isFalse(await Zotero.DB.indexExists('foo'));
+		});
+	});
+	
+	
+	describe("#parseSQLFile", function () {
+		it("should extract tables and indexes from userdata SQL file", async function () {
+			var sql = Zotero.File.getResource(`resource://zotero/schema/userdata.sql`);
+			var statements = await Zotero.DB.parseSQLFile(sql);
+			assert.isTrue(statements.some(x => x.startsWith('CREATE TABLE items')));
+		});
+	});
 });

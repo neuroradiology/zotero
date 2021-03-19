@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "انتخاب هیچ‌کدام">
 <!ENTITY zotero.general.edit "ویرایش">
 <!ENTITY zotero.general.delete "حذف">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "تایید">
 <!ENTITY zotero.general.cancel "انصراف">
 <!ENTITY zotero.general.refresh "Refresh">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "Close">
 <!ENTITY zotero.general.minimize "Minimize">
 <!ENTITY zotero.general.other "Other…">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "گزارش خطا در زوترو">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "نمایش آیتم‌‌های تکراری">
 <!ENTITY zotero.collections.showUnfiledItems "نمایش آیتم‌های دسته‌بندی نشده">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "نوع آیتم">
 <!ENTITY zotero.items.type_column "نوع آیتم">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "نمایش در کتابخانه">
 <!ENTITY zotero.items.menu.attach.note "افزودن یادداشت">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "افزودن پیوست">
 <!ENTITY zotero.items.menu.attach.link.uri "پیوست پیوند به URI">
 <!ENTITY zotero.items.menu.attach.file "پیوست کردن رونوشت پرونده...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "درون‌برد...">
 <!ENTITY zotero.toolbar.importFromClipboard "درون‌برد از حافظه">
 <!ENTITY zotero.toolbar.export.label "صدور کتابخانه...">
-<!ENTITY zotero.toolbar.rtfScan.label "پیمایش RTF...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "ساخت Time Line">
 <!ENTITY zotero.toolbar.preferences.label "تنظیمات...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "پشتیبانی و راهنما">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "ذخیره رونوشت از پرونده...">
 <!ENTITY zotero.toolbar.attachment.weblink "ذخیره پیوند به صفحه جاری">
 <!ENTITY zotero.toolbar.attachment.snapshot "گرفتن تصویر لحظه‌ای از صفحه جاری">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "هیچ برچسبی برای نمایش وجود ندارد">
 <!ENTITY zotero.tagSelector.loadingTags "Loading tags…">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
 <!ENTITY zotero.lookup.button.search "جستجو">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "انتخاب آیتم‌‌ها">
 <!ENTITY zotero.selectitems.intro.label "آیتم‌‌های مورد نظر را برای افزودن به کتابخانه انتخاب کنید">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Citations with pending updates will be highlighted in the document">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Disabling updates can speed up citation insertion in large documents. Click Refresh to update citations manually.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Use MEDLINE journal abbreviations">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "The “Journal Abbr” field will be ignored.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "نمایش ویرایشگر">
 <!ENTITY zotero.integration.classicView.label "نمایش کلاسیک">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "پیوست کردن پیوند به URI">
 <!ENTITY zotero.attachLink.label.link "پیوند:">
 <!ENTITY zotero.attachLink.label.title "عنوان:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

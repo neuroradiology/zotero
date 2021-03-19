@@ -4,6 +4,7 @@ chai.use(chaiAsPromised);
 var sqlDateTimeRe = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 var isoDateTimeRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 var zoteroObjectKeyRe = /^[23456789ABCDEFGHIJKLMNPQRSTUVWXYZ]{8}$/; // based on Zotero.Utilities::generateObjectKey()
+var browserWindowInitialized = false;
 
 /**
  * Waits for a DOM event on the specified node. Returns a promise
@@ -49,7 +50,16 @@ function loadWindow(winurl, argument) {
 function loadBrowserWindow() {
 	var win = window.openDialog("chrome://browser/content/browser.xul", "", "all,height=700,width=1000");
 	return waitForDOMEvent(win, "load").then(function() {
-		return win;
+		return new Zotero.Promise((resolve) => {
+			if (!browserWindowInitialized) {
+				setTimeout(function () {
+					browserWindowInitialized = true;
+					resolve(win);
+				}, 1000);
+				return;
+			}
+			resolve(win);
+		});
 	});
 }
 
@@ -58,17 +68,24 @@ function loadBrowserWindow() {
  *
  * @param {Window} [win] - Existing window to use; if not specified, a new window is opened
  */
-var loadZoteroPane = Zotero.Promise.coroutine(function* (win) {
+var loadZoteroPane = async function (win) {
 	if (!win) {
-		var win = yield loadBrowserWindow();
+		var win = await loadBrowserWindow();
 	}
 	Zotero.Prefs.clear('lastViewedFolder');
-	win.ZoteroOverlay.toggleDisplay(true);
 	
-	yield waitForItemsLoad(win, 0);
+	while (true) {
+		if (win.ZoteroPane && win.ZoteroPane.collectionsView) {
+			break;
+		}
+		Zotero.debug("Waiting for ZoteroPane initialization");
+		await Zotero.Promise.delay(50);
+	}
+	
+	await waitForItemsLoad(win, 0);
 	
 	return win;
-});
+};
 
 var loadPrefPane = Zotero.Promise.coroutine(function* (paneName) {
 	var id = 'zotero-prefpane-' + paneName;
@@ -249,6 +266,8 @@ function waitForItemEvent(event) {
 
 /**
  * Wait for a single notifier event and return a promise for the data
+ *
+ * Tests run after all other handlers (priority 101, since handlers are 100 by default)
  */
 function waitForNotifierEvent(event, type) {
 	if (!event) throw new Error("event not provided");
@@ -262,7 +281,7 @@ function waitForNotifierEvent(event, type) {
 				extraData: extraData
 			});
 		}
-	}}, [type]);
+	}}, [type], 'test', 101);
 	return deferred.promise;
 }
 
@@ -412,12 +431,12 @@ function createUnsavedDataObject(objectType, params = {}) {
 		throw new Error("Object type not provided");
 	}
 	
-	var allowedParams = ['libraryID', 'parentID', 'parentKey', 'synced', 'version'];
+	var allowedParams = ['libraryID', 'parentID', 'parentKey', 'synced', 'version', 'deleted'];
 	
 	var itemType;
 	if (objectType == 'item' || objectType == 'feedItem') {
 		itemType = params.itemType || 'book';
-		allowedParams.push('deleted', 'dateAdded', 'dateModified');
+		allowedParams.push('dateAdded', 'dateModified');
 	}
 	if (objectType == 'item') {
 		allowedParams.push('inPublications');
@@ -497,8 +516,14 @@ var modifyDataObject = function (obj, params = {}, saveOptions) {
 /**
  * Return a promise for the error thrown by a promise, or false if none
  */
-function getPromiseError(promise) {
-	return promise.thenReturn(false).catch(e => e);
+async function getPromiseError(promise) {
+	try {
+		await promise;
+	}
+	catch (e) {
+		return e;
+	}
+	return false;
 }
 
 /**
@@ -664,7 +689,7 @@ function generateAllTypesAndFieldsData() {
 	};
 	
 	// Item types that should not be included in sample data
-	let excludeItemTypes = ['note', 'attachment'];
+	let excludeItemTypes = ['note', 'attachment', 'annotation'];
 	
 	for (let i = 0; i < itemTypes.length; i++) {
 		if (excludeItemTypes.indexOf(itemTypes[i].name) != -1) continue;
@@ -879,7 +904,8 @@ function importFileAttachment(filename, options = {}) {
 	filename.split('/').forEach((part) => file.append(part));
 	let importOptions = {
 		file,
-		parentItemID: options.parentID
+		parentItemID: options.parentID,
+		title: options.title
 	};
 	Object.assign(importOptions, options);
 	return Zotero.Attachments.importFromFile(importOptions);
@@ -893,6 +919,62 @@ function importTextAttachment() {
 
 function importHTMLAttachment() {
 	return importFileAttachment('test.html', { contentType: 'text/html', charset: 'utf-8' });
+}
+
+
+async function importPDFAttachment(parentItem, options = {}) {
+	var attachment = await importFileAttachment(
+		'test.pdf',
+		{
+			contentType: 'application/pdf',
+			parentID: parentItem ? parentItem.id : null,
+			title: options.title
+		}
+	);
+	return attachment;
+}
+
+
+async function createAnnotation(type, parentItem, options = {}) {
+	var annotation = new Zotero.Item('annotation');
+	annotation.parentID = parentItem.id;
+	annotation.annotationType = type;
+	if (type == 'highlight') {
+		annotation.annotationText = Zotero.Utilities.randomString();
+	}
+	annotation.annotationComment = Zotero.Utilities.randomString();
+	var page = Zotero.Utilities.rand(1, 100).toString().padStart(5, '0');
+	var pos = Zotero.Utilities.rand(1, 10000).toString().padStart(6, '0');
+	annotation.annotationSortIndex = `${page}|${pos}|00000`;
+	annotation.annotationPosition = JSON.stringify({
+		pageIndex: 123,
+		rects: [
+			[314.4, 412.8, 556.2, 609.6]
+		]
+	});
+	if (options.isExternal) {
+		annotation.annotationIsExternal = options.isExternal;
+	}
+	if (options.tags) {
+		annotation.setTags(options.tags);
+	}
+	await annotation.saveTx();
+	return annotation;
+}
+
+
+async function createEmbeddedImage(parentItem, options = {}) {
+	var attachment = await Zotero.Attachments.importEmbeddedImage({
+		blob: await File.createFromFileName(
+			OS.Path.join(getTestDataDirectory().path, 'test.png')
+		),
+		parentItemID: parentItem.id
+	});
+	if (options.tags) {
+		attachment.setTags(options.tags);
+		await attachment.saveTx();
+	}
+	return attachment;
 }
 
 

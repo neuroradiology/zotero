@@ -61,9 +61,6 @@ tab {
 	border-top: 1px solid hsla(0, 0%, 0%, 0.2);
 	border-right: 1px solid hsla(0, 0%, 0%, 0.2);
 	border-left: 1px solid hsla(0, 0%, 0%, 0.2);
-	-moz-border-top-colors: none;
-	-moz-border-right-colors: none;
-	-moz-border-left-colors: none;
 }
 /* Fixes misc Ubuntu 16.10 rendering issue fixes. */
 #zotero-prefs menulist dropmarker{
@@ -73,13 +70,15 @@ tab {
 	-moz-appearance: textfield;
 }
 
-#zotero-prefs #noteFontSize {
-	min-width: 3.8em;
-}
-
 #zotero-pane splitter {
 	border: 0;
 	width: 6px;
 	background-color: transparent;
 	background-image: none;
+}
+
+#zotero-context-splitter-stacked {
+	-moz-appearance: none;
+	background-color: #ececec;
+	border-top: 1px solid hsla(0, 0%, 0%, 0.2);
 }

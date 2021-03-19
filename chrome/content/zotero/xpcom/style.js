@@ -648,8 +648,7 @@ Zotero.Style = function (style, path) {
 		Zotero.Styles.ns).replace(/(.+)T([^\+]+)\+?.*/, "$1 $2");
 	this.locale = Zotero.Utilities.xpathText(doc, '/csl:style/@default-locale',
 		Zotero.Styles.ns) || null;
-	var shortID = this.styleID.match(/\/?([^/]+)$/)[1];
-	this._isAPA = /^apa($|-)/.test(shortID);
+	
 	this._class = doc.documentElement.getAttribute("class");
 	this._usesAbbreviation = !!Zotero.Utilities.xpath(doc,
 		'//csl:text[(@variable="container-title" and @form="short") or (@variable="container-title-short")][1]',
@@ -687,11 +686,16 @@ Zotero.Style = function (style, path) {
  */
 Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviations) {
 	if(!locale) {
-		var locale = Zotero.Prefs.get('export.lastLocale') || Zotero.locale;
+		var locale = Zotero.locale;
 		if(!locale) {
 			var locale = 'en-US';
 		}
 	}
+	
+	// APA and some similar styles capitalize the first word of subtitles
+	var uppercaseSubtitlesRE = /^apa($|-)|^academy-of-management($|-)|^(freshwater-science)/;
+	var shortIDMatches = this.styleID.match(/\/?([^/]+)$/);
+	var uppercaseSubtitles = !!shortIDMatches && uppercaseSubtitlesRE.test(shortIDMatches[1]);
 	
 	// determine version of parent style
 	var overrideLocale = false; // to force dependent style locale
@@ -712,23 +716,30 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 			overrideLocale = true;
 			locale = this.locale;
 		}
-	} else {
+		
+		// Turn on uppercase subtitles if parent style matches
+		if (!uppercaseSubtitles) {
+			let shortIDMatches = parentStyle.styleID.match(/\/?([^/]+)$/);
+			uppercaseSubtitles = !!shortIDMatches && uppercaseSubtitlesRE.test(shortIDMatches[1]);
+		}
+	}
+	else {
 		var version = this._version;
 	}
 	
 	if(version === "0.8") {
 		// get XSLT processor from updateCSL.xsl file
 		if(!Zotero.Styles.xsltProcessor) {
-			let protHandler = Components.classes["@mozilla.org/network/protocol;1?name=chrome"]
-				.createInstance(Components.interfaces.nsIProtocolHandler);
-			let channel = protHandler.newChannel(protHandler.newURI("chrome://zotero/content/updateCSL.xsl", "UTF-8", null));
+			let xsl = Zotero.File.getContentsFromURL("chrome://zotero/content/updateCSL.xsl");
 			let updateXSLT = Components.classes["@mozilla.org/xmlextras/domparser;1"]
 				.createInstance(Components.interfaces.nsIDOMParser)
-				.parseFromStream(channel.open(), "UTF-8", channel.contentLength, "application/xml");
+				.parseFromString(xsl, "application/xml");
 			
+			// XSLTProcessor is no longer available in XPCOM, so get from hidden window
+			let XSLTProcessor = Cc["@mozilla.org/appshell/appShellService;1"]
+				.getService(Ci.nsIAppShellService).hiddenDOMWindow.XSLTProcessor;
 			// load XSLT file into XSLTProcessor
-			Zotero.Styles.xsltProcessor = Components.classes["@mozilla.org/document-transformer;1?type=xslt"]
-				.createInstance(Components.interfaces.nsIXSLTProcessor);
+			Zotero.Styles.xsltProcessor = new XSLTProcessor();
 			Zotero.Styles.xsltProcessor.importStylesheet(updateXSLT);
 		}
 		
@@ -749,7 +760,7 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 		var citeproc = new Zotero.CiteProc.CSL.Engine(
 			new Zotero.Cite.System({
 				automaticJournalAbbreviations,
-				uppercaseSubtitles: this._isAPA
+				uppercaseSubtitles
 			}),
 			xml,
 			locale,

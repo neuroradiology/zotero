@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Zapri">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "Z">
+<!ENTITY manageAttachments.label "Upravljaj priponke">
+<!ENTITY convertToStored.label "Pretvori povezane datoteke v shranjene datoteke ...">
 <!ENTITY importCmd.label "Uvozi ...">
 <!ENTITY importCmd.key "U">
 <!ENTITY importFromClipboardCmd.label "Uvozi z odložišča">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "b">
 
 
+<!ENTITY viewMenu.label "Pogled">
+<!ENTITY layout.label "Postavitev">
+<!ENTITY standardView.label "Navadni pogled">
+<!ENTITY stackedView.label "Naloženi pogled">
+<!ENTITY collectionsPane.label "Podokno zbirk">
+<!ENTITY itemPane.label "Podokno vnosa">
+<!ENTITY tagSelector.label "Izbirnik značk">
+<!ENTITY recursiveCollections.label "Pokaži vnose v podzbirkah">
+<!ENTITY fontSize.label "Velikost pisave">
+<!ENTITY noteFontSize.label "Velikost pisave opomb">
+
+
 <!ENTITY toolsMenu.label "Orodja">
 <!ENTITY toolsMenu.accesskey "d">
 <!ENTITY installConnector.label "Namesti konektor za brskalnik">
 <!ENTITY installConnector.accesskey "K">
 <!ENTITY addons.label "Dodatki">
+<!ENTITY developer.label "Razvijalec">
 
 
 <!ENTITY minimizeWindow.key "k">

@@ -24,7 +24,7 @@
 */
 
 // Timeout for test to complete
-var TEST_RUN_TIMEOUT = 60000;
+var TEST_RUN_TIMEOUT = 15000;
 var EXPORTED_SYMBOLS = ["Zotero_TranslatorTesters"];
 
 // For debugging specific translators by label
@@ -193,13 +193,15 @@ var Zotero_TranslatorTesters = new function() {
  * @param {String} type The type of tests to run (web, import, export, or search)
  * @param {Function} [debugCallback] A function to call to write debug output. If not present,
  *     Zotero.debug will be used.
+ * @param {Object} [translatorProvider] Used by Scaffold to override Zotero.Translators
  */
-var Zotero_TranslatorTester = function(translator, type, debugCallback) {
+var Zotero_TranslatorTester = function(translator, type, debugCallback, translatorProvider) {
 	this.type = type;
 	this.translator = translator;
 	this.output = "";
 	this.isSupported = this.translator.runMode === Zotero.Translator.RUN_MODE_IN_BROWSER;
 	this.translator.runMode = Zotero.Translator.RUN_MODE_IN_BROWSER;
+	this.translatorProvider = translatorProvider;
 	
 	this.tests = [];
 	this.pending = [];
@@ -240,7 +242,7 @@ var Zotero_TranslatorTester = function(translator, type, debugCallback) {
 	}
 };
 
-Zotero_TranslatorTester.DEFER_DELAY = 20000; // Delay for deferred tests
+Zotero_TranslatorTester.DEFER_DELAY = 5000; // Delay for deferred tests
 
 /**
  * Removes document objects, which contain cyclic references, and other fields to be ignored from items
@@ -254,6 +256,8 @@ Zotero_TranslatorTester._sanitizeItem = function(item, testItem, keepValidFields
 			var attachment = item.attachments[i];
 			if(attachment.document) {
 				delete attachment.document;
+				// Mirror connector/server itemDone() behavior from translate.js
+				attachment.mimeType = 'text/html';
 			}
 			
 			if(attachment.url) {
@@ -411,6 +415,36 @@ Zotero_TranslatorTester.prototype._runTestsRecursively = function(testDoneCallba
  * @param {Function} testDoneCallback - A callback to be executed when test is complete
  */
 Zotero_TranslatorTester.prototype.fetchPageAndRunTest = function (test, testDoneCallback) {
+	// Scaffold
+	if (Zotero.isFx) {
+		let browser = Zotero.HTTP.loadDocuments(
+			test.url,
+			(doc) => {
+				if (test.defer) {
+					Zotero.debug("Waiting " + (Zotero_TranslatorTester.DEFER_DELAY / 1000)
+						+ " second(s) for page content to settle");
+				}
+				setTimeout(() => {
+					// Use cookies from document in translator HTTP requests
+					this._cookieSandbox = new Zotero.CookieSandbox(null, test.url, doc.cookie);
+					
+					this.runTest(test, doc, function (obj, test, status, message) {
+						Zotero.Browser.deleteHiddenBrowser(browser);
+						testDoneCallback(obj, test, status, message);
+					});
+				}, test.defer ? Zotero_TranslatorTester.DEFER_DELAY : 0);
+			},
+			null,
+			(e) => {
+				Zotero.Browser.deleteHiddenBrowser(browser);
+				testDoneCallback(this, test, "failed", "Translation failed to initialize: " + e);
+			},
+			true
+		);
+		browser.docShell.allowMetaRedirects = true;
+		return
+	}
+	
 	if (typeof process === 'object' && process + '' === '[object process]'){
 		this._cookieSandbox = require('request').jar();
 	}
@@ -441,7 +475,9 @@ Zotero_TranslatorTester.prototype.runTest = function(test, doc, testDoneCallback
 	
 	var me = this;
 	var translate = Zotero.Translate.newInstance(this.type);
-	
+	if (this.translatorProvider) {
+		translate.setTranslatorProvider(this.translatorProvider);
+	}
 	if(this.type === "web") {
 		translate.setDocument(doc);
 	} else if(this.type === "import") {
@@ -602,7 +638,18 @@ Zotero_TranslatorTester.prototype.newTest = function(doc, testReadyCallback) {
 	
 	var me = this;
 	var translate = Zotero.Translate.newInstance(this.type);
+	if (this.translatorProvider) {
+		translate.setTranslatorProvider(this.translatorProvider);
+	}
 	translate.setDocument(doc);
+	// Use cookies from document
+	if (doc.cookie) {
+		translate.setCookieSandbox(new Zotero.CookieSandbox(
+			null,
+			doc.location.href,
+			doc.cookie
+		));
+	}
 	translate.setTranslator(this.translator);
 	translate.setHandler("debug", this._debug);
 	translate.setHandler("select", function(obj, items, callback) {

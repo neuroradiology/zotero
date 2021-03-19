@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "모두 선택 해제">
 <!ENTITY zotero.general.edit "편집">
 <!ENTITY zotero.general.delete "삭제">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "확인">
 <!ENTITY zotero.general.cancel "취소">
 <!ENTITY zotero.general.refresh "새로고침">
@@ -18,6 +19,9 @@
 <!ENTITY zotero.general.close "닫기">
 <!ENTITY zotero.general.minimize "최소화">
 <!ENTITY zotero.general.other "기타...">
+<!ENTITY zotero.general.bigger "더 크게">
+<!ENTITY zotero.general.smaller "더 작게">
+<!ENTITY zotero.general.reset "재설정">
 
 
 <!ENTITY zotero.errorReport.title "Zotero 오류 보고">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "중복 보기">
 <!ENTITY zotero.collections.showUnfiledItems "미분류 항목 보기">
+<!ENTITY zotero.collections.showRetractedItems "철회된 항목 표시">
 
 <!ENTITY zotero.items.itemType "항목 형식">
 <!ENTITY zotero.items.type_column "항목 형식">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "라이브러리로 표시">
 <!ENTITY zotero.items.menu.attach.note "노트 추가">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "첨부 추가">
 <!ENTITY zotero.items.menu.attach.link.uri "URL로 링크 걸기">
 <!ENTITY zotero.items.menu.attach.file "파일의 사본 첨부...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "불러오기...">
 <!ENTITY zotero.toolbar.importFromClipboard "클립보드에서 불러오기">
 <!ENTITY zotero.toolbar.export.label "라이브러리 내보내기...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF 스캔...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF 스캔">
 <!ENTITY zotero.toolbar.timeline.label "연표 만들기">
 <!ENTITY zotero.toolbar.preferences.label "환경설정...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "지원 및 도움말">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "파일의 사본을 보존...">
 <!ENTITY zotero.toolbar.attachment.weblink "현재 페이지로 링크 저장">
 <!ENTITY zotero.toolbar.attachment.snapshot "현재 페이지의 스냅샷을 촬영">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "표시할 태그가 없음">
 <!ENTITY zotero.tagSelector.loadingTags "태그 불러오는 중...">
@@ -170,6 +178,9 @@
 
 <!ENTITY zotero.lookup.description "라이브러리에 추가할 ISBN, DOI, PMID 또는 arXiv ID를 입력하세요:">
 <!ENTITY zotero.lookup.button.search "검색">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "항목 선택">
 <!ENTITY zotero.selectitems.intro.label "라이브러리에 추가하고 싶은 항목 선택">
@@ -203,7 +214,7 @@
 <!ENTITY zotero.import.lastModified "마지막 수정 시간">
 <!ENTITY zotero.import.size "크기">
 <!ENTITY zotero.import.createCollection "컬렉션 및 항목을 새 컬렉션으로 불러오기">
-<!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.fileHandling "파일 처리 방법">
 
 <!ENTITY zotero.exportOptions.title "내보내기...">
 <!ENTITY zotero.exportOptions.format.label "형식:">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "업데이트 대기 중인 인용 항목이 문서에서 강조 표시됩니다">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "큰 문서라면 업데이트를 중지하여 인용 삽입 속도를 높일 수 있습니다. 새로고침을 클릭하여 수동으로 인용 정보를 업데이트하세요.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "MEDLINE 저널 약자 사용">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "&quot;저널 약자&quot; 필드가 무시됩니다.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "다른 워드 프로세서로 전환...">
 
 <!ENTITY zotero.integration.showEditor.label "편집자 보이기">
 <!ENTITY zotero.integration.classicView.label "클래식 뷰">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "URI로 링크 걸기">
 <!ENTITY zotero.attachLink.label.link "링크:">
 <!ENTITY zotero.attachLink.label.title "제목:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">

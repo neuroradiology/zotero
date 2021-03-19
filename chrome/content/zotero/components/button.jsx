@@ -1,8 +1,33 @@
+/*
+    ***** BEGIN LICENSE BLOCK *****
+    
+    Copyright © 2019 Corporation for Digital Scholarship
+                     Vienna, Virginia, USA
+                     https://digitalscholar.org
+    
+    This file is part of Zotero.
+    
+    Zotero is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    Zotero is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with Zotero.  If not, see <http://www.gnu.org/licenses/>.
+    
+    ***** END LICENSE BLOCK *****
+*/
+
 'use strict'
 
 const React = require('react')
 const { PureComponent, createElement: create } = React
-const { injectIntl, intlShape } = require('react-intl')
+const { injectIntl } = require('react-intl')
 const { IconDownChevron } = require('./icons')
 const cx = require('classnames')
 const {
@@ -19,13 +44,6 @@ ButtonGroup.propTypes = {
 }
 
 class Button extends PureComponent {
-	componentDidMount() {
-		if (!Zotero.isNode && this.title) {
-			// Workaround for XUL tooltips
-			this.container.setAttribute('tooltiptext', this.title);
-		}
-	}
-
 	get classes() {
 		return ['btn', this.props.className, `btn-${this.props.size}`, {
 			'btn-icon': this.props.icon != null,
@@ -74,8 +92,23 @@ class Button extends PureComponent {
 		}
 
 		if (!this.props.isDisabled) {
-			attr.onMouseDown = this.handleMouseDown
+			attr.onMouseDown = (event) => {
+				// Hide tooltip on mousedown
+				if (this.title) {
+					window.Zotero_Tooltip.stop();
+				}
+				return this.handleMouseDown(event);
+			};
 			attr.onClick = this.handleClick
+			// Fake tooltip behavior as long as 'title' doesn't work for HTML-in-XUL elements
+			if (this.title) {
+				attr.onMouseOver = () => {
+					window.Zotero_Tooltip.start(this.title);
+				};
+				attr.onMouseOut = () => {
+					window.Zotero_Tooltip.stop();
+				};
+			}
 		}
 
 		return attr
@@ -108,7 +141,6 @@ class Button extends PureComponent {
 	static propTypes = {
 		className: string,
 		icon: element,
-		intl: intlShape.isRequired,
 		isActive: bool,
 		isDisabled: bool,
 		isMenu: bool,

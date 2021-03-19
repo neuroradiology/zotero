@@ -47,6 +47,18 @@ describe("Zotero.DataObjectUtilities", function() {
 			assert.equal(obj.conditions[0].value, 'B');
 			assert.equal(obj.conditions[1].value, 'en');
 		})
+		
+		it("should blank out deleted properties", function () {
+			var patchBase = {
+				title: 'Test',
+				place: ''
+			};
+			var obj = {};
+			obj = Zotero.DataObjectUtilities.patch(patchBase, obj);
+			assert.propertyVal(obj, 'title', '');
+			// place was already empty, so it shouldn't be included
+			assert.notProperty(obj, 'place');
+		});
 	})
 	
 	describe("#diff()", function () {

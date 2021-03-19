@@ -36,6 +36,10 @@ Zotero.Items = function() {
 	// but otherwise it can be just a simple property
 	Zotero.defineProperty(this, "_primaryDataSQLParts", {
 		get: function () {
+			var itemTypeAttachment = Zotero.ItemTypes.getID('attachment');
+			var itemTypeNote = Zotero.ItemTypes.getID('note');
+			var itemTypeAnnotation = Zotero.ItemTypes.getID('annotation');
+			
 			return {
 				itemID: "O.itemID",
 				itemTypeID: "O.itemTypeID",
@@ -46,14 +50,25 @@ Zotero.Items = function() {
 				version: "O.version",
 				synced: "O.synced",
 				
+				createdByUserID: "createdByUserID",
+				lastModifiedByUserID: "lastModifiedByUserID",
+				
 				firstCreator: _getFirstCreatorSQL(),
 				sortCreator: _getSortCreatorSQL(),
 				
 				deleted: "DI.itemID IS NOT NULL AS deleted",
 				inPublications: "PI.itemID IS NOT NULL AS inPublications",
 				
-				parentID: "(CASE O.itemTypeID WHEN 14 THEN IAP.itemID WHEN 1 THEN INoP.itemID END) AS parentID",
-				parentKey: "(CASE O.itemTypeID WHEN 14 THEN IAP.key WHEN 1 THEN INoP.key END) AS parentKey",
+				parentID: `(CASE O.itemTypeID `
+					+ `WHEN ${itemTypeAttachment} THEN IAP.itemID `
+					+ `WHEN ${itemTypeNote} THEN INoP.itemID `
+					+ `WHEN ${itemTypeAnnotation} THEN IAnP.itemID `
+					+ `END) AS parentID`,
+				parentKey: `(CASE O.itemTypeID `
+					+ `WHEN ${itemTypeAttachment} THEN IAP.key `
+					+ `WHEN ${itemTypeNote} THEN INoP.key `
+					+ `WHEN ${itemTypeAnnotation} THEN IAnP.key `
+					+ `END) AS parentKey`,
 				
 				attachmentCharset: "CS.charset AS attachmentCharset",
 				attachmentLinkMode: "IA.linkMode AS attachmentLinkMode",
@@ -61,7 +76,8 @@ Zotero.Items = function() {
 				attachmentPath: "IA.path AS attachmentPath",
 				attachmentSyncState: "IA.syncState AS attachmentSyncState",
 				attachmentSyncedModificationTime: "IA.storageModTime AS attachmentSyncedModificationTime",
-				attachmentSyncedHash: "IA.storageHash AS attachmentSyncedHash"
+				attachmentSyncedHash: "IA.storageHash AS attachmentSyncedHash",
+				attachmentLastProcessedModificationTime: "IA.lastProcessedModificationTime AS attachmentLastProcessedModificationTime",
 			};
 		}
 	}, {lazy: true});
@@ -72,9 +88,12 @@ Zotero.Items = function() {
 		+ "LEFT JOIN items IAP ON (IA.parentItemID=IAP.itemID) "
 		+ "LEFT JOIN itemNotes INo ON (O.itemID=INo.itemID) "
 		+ "LEFT JOIN items INoP ON (INo.parentItemID=INoP.itemID) "
+		+ "LEFT JOIN itemAnnotations IAn ON (O.itemID=IAn.itemID) "
+		+ "LEFT JOIN items IAnP ON (IAn.parentItemID=IAnP.itemID) "
 		+ "LEFT JOIN deletedItems DI ON (O.itemID=DI.itemID) "
 		+ "LEFT JOIN publicationsItems PI ON (O.itemID=PI.itemID) "
-		+ "LEFT JOIN charsets CS ON (IA.charsetID=CS.charsetID)";
+		+ "LEFT JOIN charsets CS ON (IA.charsetID=CS.charsetID)"
+		+ "LEFT JOIN groupItems GI ON (O.itemID=GI.itemID)";
 	
 	this._relationsTable = "itemRelations";
 	
@@ -86,30 +105,6 @@ Zotero.Items = function() {
 	this.hasDeleted = Zotero.Promise.coroutine(function* (libraryID) {
 		var sql = "SELECT COUNT(*) > 0 FROM items JOIN deletedItems USING (itemID) WHERE libraryID=?";
 		return !!(yield Zotero.DB.valueQueryAsync(sql, [libraryID]));
-	});
-	
-	
-	/**
-	 * Return items marked as deleted
-	 *
-	 * @param {Integer} libraryID - Library to search
-	 * @param {Boolean} [asIDs] - Return itemIDs instead of Zotero.Item objects
-	 * @return {Promise<Zotero.Item[]|Integer[]>}
-	 */
-	this.getDeleted = Zotero.Promise.coroutine(function* (libraryID, asIDs, days) {
-		var sql = "SELECT itemID FROM items JOIN deletedItems USING (itemID) "
-				+ "WHERE libraryID=?";
-		if (days) {
-			sql += " AND dateDeleted<=DATE('NOW', '-" + parseInt(days) + " DAYS')";
-		}
-		var ids = yield Zotero.DB.columnQueryAsync(sql, [libraryID]);
-		if (!ids.length) {
-			return [];
-		}
-		if (asIDs) {
-			return ids;
-		}
-		return this.getAsync(ids);
 	});
 	
 	
@@ -498,6 +493,88 @@ Zotero.Items = function() {
 	});
 	
 	
+	this._loadAnnotations = async function (libraryID, ids, idSQL) {
+		var sql = "SELECT itemID, IA.parentItemID, IA.type, IA.text, IA.comment, IA.color, "
+			+ "IA.sortIndex, IA.isExternal "
+			+ "FROM items JOIN itemAnnotations IA USING (itemID) "
+			+ "WHERE libraryID=?" + idSQL;
+		var params = [libraryID];
+		await Zotero.DB.queryAsync(
+			sql,
+			params,
+			{
+				noCache: ids.length != 1,
+				onRow: function (row) {
+					let itemID = row.getResultByIndex(0);
+					
+					let item = this._objectCache[itemID];
+					if (!item) {
+						throw new Error("Item " + itemID + " not found");
+					}
+					
+					item._parentItemID = row.getResultByIndex(1);
+					var typeID = row.getResultByIndex(2);
+					var type;
+					switch (typeID) {
+						case Zotero.Annotations.ANNOTATION_TYPE_HIGHLIGHT:
+							type = 'highlight';
+							break;
+						
+						case Zotero.Annotations.ANNOTATION_TYPE_NOTE:
+							type = 'note';
+							break;
+						
+						case Zotero.Annotations.ANNOTATION_TYPE_IMAGE:
+							type = 'image';
+							break;
+						
+						default:
+							throw new Error(`Unknown annotation type id ${typeID}`);
+					}
+					item._annotationType = type;
+					item._annotationText = row.getResultByIndex(3);
+					item._annotationComment = row.getResultByIndex(4);
+					item._annotationColor = row.getResultByIndex(5);
+					item._annotationSortIndex = row.getResultByIndex(6);
+					item._annotationIsExternal = !!row.getResultByIndex(7);
+					
+					item._loaded.annotation = true;
+					item._clearChanged('annotation');
+				}.bind(this)
+			}
+		);
+	};
+	
+	
+	this._loadAnnotationsDeferred = async function (libraryID, ids, idSQL) {
+		var sql = "SELECT itemID, IA.position, IA.pageLabel FROM items "
+			+ "JOIN itemAnnotations IA USING (itemID) "
+			+ "WHERE libraryID=?" + idSQL;
+		var params = [libraryID];
+		await Zotero.DB.queryAsync(
+			sql,
+			params,
+			{
+				noCache: ids.length != 1,
+				onRow: function (row) {
+					let itemID = row.getResultByIndex(0);
+					
+					let item = this._objectCache[itemID];
+					if (!item) {
+						throw new Error("Item " + itemID + " not found");
+					}
+					
+					item._annotationPosition = row.getResultByIndex(1);
+					item._annotationPageLabel = row.getResultByIndex(2);
+					
+					item._loaded.annotationDeferred = true;
+					item._clearChanged('annotationDeferred');
+				}.bind(this)
+			}
+		);
+	};
+	
+	
 	this._loadChildItems = Zotero.Promise.coroutine(function* (libraryID, ids, idSQL) {
 		var params = [libraryID];
 		var rows = [];
@@ -518,6 +595,9 @@ Zotero.Items = function() {
 			});
 		};
 		
+		//
+		// Attachments
+		//
 		var sql = "SELECT parentItemID, A.itemID, value AS title, "
 			+ "CASE WHEN DI.itemID IS NULL THEN 0 ELSE 1 END AS trashed "
 			+ "FROM itemAttachments A "
@@ -621,9 +701,56 @@ Zotero.Items = function() {
 			ids.forEach(id => setNoteItem(id, []));
 		}
 		
-		// Mark all top-level items as having child items loaded
-		sql = "SELECT itemID FROM items I WHERE libraryID=?" + idSQL + " AND itemID NOT IN "
-			+ "(SELECT itemID FROM itemAttachments UNION SELECT itemID FROM itemNotes)";
+		//
+		// Annotations
+		//
+		sql = "SELECT parentItemID, IAn.itemID, "
+			+ "text || ' - ' || comment AS title, " // TODO: Make better
+			+ "CASE WHEN DI.itemID IS NULL THEN 0 ELSE 1 END AS trashed "
+			+ "FROM itemAnnotations IAn "
+			+ "JOIN items I ON (IAn.parentItemID=I.itemID) "
+			+ "LEFT JOIN deletedItems DI USING (itemID) "
+			+ "WHERE libraryID=?"
+			+ (ids.length ? " AND parentItemID IN (" + ids.map(id => parseInt(id)).join(", ") + ")" : "")
+			+ " ORDER BY parentItemID, sortIndex";
+		var setAnnotationItem = function (itemID, rows) {
+			var item = this._objectCache[itemID];
+			if (!item) {
+				throw new Error("Item " + itemID + " not loaded");
+			}
+			rows.sort((a, b) => a.sortIndex - b.sortIndex);
+			item._annotations = {
+				rows,
+				withTrashed: null,
+				withoutTrashed: null
+			};
+		}.bind(this);
+		lastItemID = null;
+		rows = [];
+		yield Zotero.DB.queryAsync(
+			sql,
+			params,
+			{
+				noCache: ids.length != 1,
+				onRow: function (row) {
+					onRow(row, setAnnotationItem);
+				}
+			}
+		);
+		// Process unprocessed rows
+		if (lastItemID) {
+			setAnnotationItem(lastItemID, rows);
+		}
+		// Otherwise clear existing entries for passed items
+		else if (ids.length) {
+			ids.forEach(id => setAnnotationItem(id, []));
+		}
+		
+		// Mark either all passed items or all items as having child items loaded
+		sql = "SELECT itemID FROM items I WHERE libraryID=?";
+		if (idSQL) {
+			sql += idSQL;
+		}
 		yield Zotero.DB.queryAsync(
 			sql,
 			params,
@@ -748,6 +875,29 @@ Zotero.Items = function() {
 	});
 	
 	
+	/**
+	 * Move child items from one item to another
+	 *
+	 * @param {Zotero.Item} fromItem
+	 * @param {Zotero.Item} toItem
+	 * @return {Promise}
+	 */
+	this.moveChildItems = async function (fromItem, toItem) {
+		// Annotations on files
+		if (fromItem.isFileAttachment()) {
+			await Zotero.DB.executeTransaction(async function () {
+				let annotations = fromItem.getAnnotations();
+				for (let annotation of annotations) {
+					annotation.parentItemID = toItem.id;
+					await annotation.save();
+				}
+			}.bind(this));
+		}
+		
+		// TODO: Other things as necessary
+	};
+	
+	
 	this.merge = function (item, otherItems) {
 		Zotero.debug("Merging items");
 		
@@ -820,7 +970,21 @@ Zotero.Items = function() {
 				// Add tags to master
 				var tags = otherItem.getTags();
 				for (let j = 0; j < tags.length; j++) {
-					item.addTag(tags[j].tag);
+					let tagName = tags[j].tag;
+					if (item.hasTag(tagName)) {
+						let type = item.getTagType(tagName);
+						// If existing manual tag, leave that
+						if (type == 0) {
+							continue;
+						}
+						// Otherwise, add the non-master item's tag, which may be manual, in which
+						// case it will remain at the end
+						item.addTag(tagName, tags[j].type);
+					}
+					// If no existing tag, add with the type from the non-master item
+					else {
+						item.addTag(tagName, tags[j].type);
+					}
 				}
 				
 				// Add relation to track merge
@@ -1224,6 +1388,9 @@ Zotero.Items = function() {
 			return _firstCreatorSQL;
 		}
 		
+		var editorCreatorTypeID = Zotero.CreatorTypes.getID('editor');
+		var contributorCreatorTypeID = Zotero.CreatorTypes.getID('contributor');
+		
 		/* This whole block is to get the firstCreator */
 		var localizedAnd = Zotero.getString('general.and');
 		var localizedEtAl = Zotero.getString('general.etAl'); 
@@ -1266,50 +1433,58 @@ Zotero.Items = function() {
 			
 			// Then try editors
 			"CASE (" +
-				"SELECT COUNT(*) FROM itemCreators WHERE itemID=O.itemID AND creatorTypeID IN (3)" +
+				"SELECT COUNT(*) FROM itemCreators " +
+				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID}` +
 			") " +
 			"WHEN 0 THEN NULL " +
 			"WHEN 1 THEN (" +
 				"SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3)" +
+				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID}` +
 			") " +
 			"WHEN 2 THEN (" +
 				"SELECT " +
 				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1)" +
+				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
+				"ORDER BY orderIndex LIMIT 1)" +
 				" || ' " + localizedAnd + " ' || " +
 				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1,1) " +
+				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
+				"ORDER BY orderIndex LIMIT 1,1) " +
 			") " +
 			"ELSE (" +
 				"SELECT " +
 				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1)" +
+				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
+				"ORDER BY orderIndex LIMIT 1)" +
 				" || ' " + localizedEtAl + "' " +
 			") " +
 			"END, " +
 			
 			// Then try contributors
 			"CASE (" +
-				"SELECT COUNT(*) FROM itemCreators WHERE itemID=O.itemID AND creatorTypeID IN (2)" +
+				"SELECT COUNT(*) FROM itemCreators " +
+				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID}` +
 			") " +
 			"WHEN 0 THEN NULL " +
 			"WHEN 1 THEN (" +
 				"SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2)" +
+				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID}` +
 			") " +
 			"WHEN 2 THEN (" +
 				"SELECT " +
 				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1)" +
+				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
+				"ORDER BY orderIndex LIMIT 1)" +
 				" || ' " + localizedAnd + " ' || " +
 				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1,1) " +
+				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
+				"ORDER BY orderIndex LIMIT 1,1) " +
 			") " +
 			"ELSE (" +
 				"SELECT " +
 				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1)" +
+				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
+				"ORDER BY orderIndex LIMIT 1)" +
 				" || ' " + localizedEtAl + "' " + 
 			") " +
 			"END" +
@@ -1329,11 +1504,14 @@ Zotero.Items = function() {
 			return _sortCreatorSQL;
 		}
 		
+		var editorCreatorTypeID = Zotero.CreatorTypes.getID('editor');
+		var contributorCreatorTypeID = Zotero.CreatorTypes.getID('contributor');
+		
 		var nameSQL = "lastName || ' ' || firstName ";
 		
-		var sql = "COALESCE(" +
+		var sql = "COALESCE("
 			// First try for primary creator types
-			"CASE (" +
+			+ "CASE (" +
 				"SELECT COUNT(*) FROM itemCreators IC " +
 				"LEFT JOIN itemTypeCreatorTypes ITCT " +
 				"ON (IC.creatorTypeID=ITCT.creatorTypeID AND ITCT.itemTypeID=O.itemTypeID) " +
@@ -1374,69 +1552,81 @@ Zotero.Items = function() {
 				"LEFT JOIN itemTypeCreatorTypes ITCT " +
 				"ON (IC.creatorTypeID=ITCT.creatorTypeID AND ITCT.itemTypeID=O.itemTypeID) " +
 				"WHERE itemID=O.itemID AND primaryField=1 ORDER BY orderIndex LIMIT 2,1)" +
-			") " +
-			"END, " +
+			") "
+			+ "END, "
 			
 			// Then try editors
-			"CASE (" +
-				"SELECT COUNT(*) FROM itemCreators WHERE itemID=O.itemID AND creatorTypeID IN (3)" +
-			") " +
-			"WHEN 0 THEN NULL " +
-			"WHEN 1 THEN (" +
-				"SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3)" +
-			") " +
-			"WHEN 2 THEN (" +
-				"SELECT " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1)" +
-				" || ' ' || " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1,1) " +
-			") " +
-			"ELSE (" +
-				"SELECT " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1)" +
-				" || ' ' || " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 1,1)" +
-				" || ' ' || " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (3) ORDER BY orderIndex LIMIT 2,1)" +
-			") " +
-			"END, " +
+			+ "CASE ("
+				+ "SELECT COUNT(*) FROM itemCreators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID}`
+			+ ") "
+			+ "WHEN 0 THEN NULL "
+			+ "WHEN 1 THEN ("
+				+ "SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID}`
+			+ ") "
+			+ "WHEN 2 THEN ("
+				+ "SELECT "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1)"
+				+ " || ' ' || "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1,1) "
+			+ ") "
+			+ "ELSE ("
+				+ "SELECT "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1)"
+				+ " || ' ' || "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1,1)"
+				+ " || ' ' || "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 2,1)"
+			+ ") "
+			+ "END, "
 			
 			// Then try contributors
-			"CASE (" +
-				"SELECT COUNT(*) FROM itemCreators WHERE itemID=O.itemID AND creatorTypeID IN (2)" +
-			") " +
-			"WHEN 0 THEN NULL " +
-			"WHEN 1 THEN (" +
-				"SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2)" +
-			") " +
-			"WHEN 2 THEN (" +
-				"SELECT " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1)" +
-				" || ' ' || " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1,1) " +
-			") " +
-			"ELSE (" +
-				"SELECT " +
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1)" +
-				" || ' ' || " + 
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 1,1)" +
-				" || ' ' || " + 
-				"(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators " +
-				"WHERE itemID=O.itemID AND creatorTypeID IN (2) ORDER BY orderIndex LIMIT 2,1)" +
-			") " +
-			"END" +
-		") AS sortCreator";
+			+ "CASE ("
+				+ "SELECT COUNT(*) FROM itemCreators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID}`
+			+ ") "
+			+ "WHEN 0 THEN NULL "
+			+ "WHEN 1 THEN ("
+				+ "SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID}`
+			+ ") "
+			+ "WHEN 2 THEN ("
+				+ "SELECT "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1)"
+				+ " || ' ' || "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1,1) "
+			+ ") "
+			+ "ELSE ("
+				+ "SELECT "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1)"
+				+ " || ' ' || "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 1,1)"
+				+ " || ' ' || "
+				+ "(SELECT " + nameSQL + " FROM itemCreators NATURAL JOIN creators "
+				+ `WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} `
+				+ "ORDER BY orderIndex LIMIT 2,1)"
+			+ ") "
+			+ "END"
+		+ ") AS sortCreator";
 		
 		_sortCreatorSQL = sql;
 		return sql;

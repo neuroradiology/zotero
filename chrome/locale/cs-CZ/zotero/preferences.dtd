@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Obecné">
 
-<!ENTITY zotero.preferences.userInterface "Uživatelské rozhraní">
-<!ENTITY zotero.preferences.layout "Rozvržení:">
-<!ENTITY zotero.preferences.layout.standard "Standardní">
-<!ENTITY zotero.preferences.layout.stacked "Zaplněný">
-<!ENTITY zotero.preferences.fontSize "Velikost písma:">
-<!ENTITY zotero.preferences.fontSize.small "Malá">
-<!ENTITY zotero.preferences.fontSize.medium "Střední">
-<!ENTITY zotero.preferences.fontSize.large "Velká">
-<!ENTITY zotero.preferences.fontSize.xlarge "Extra velká">
-<!ENTITY zotero.preferences.fontSize.notes "Velikost písma poznámek:">
-
 <!ENTITY zotero.preferences.fileHandling "Nakládání se souborem">
 <!ENTITY zotero.preferences.automaticSnapshots "Automaticky udělat snímek při vytváření položky z internetových stránek">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Automaticky připojit propojené PDF a ostatní soubory při ukládání položek">
-<!ENTITY zotero.preferences.autoRecognizeFiles "Atuomaticky získat metadata pro PDF">
+<!ENTITY zotero.preferences.autoRecognizeFiles "Automaticky získat metadata pro PDF">
 <!ENTITY zotero.preferences.autoRenameFiles "Automaticky přejmenovat přiložené soubory podle rodičovských metadat">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Přejmenovat propojené soubory">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Otevřít PDF pomocí">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Systémové výchozí hodnoty">
 
@@ -88,10 +77,10 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Sloučit místní data s vzdálenými daty; historie synchronizace se bude ignorovat">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Obnovit z Online knihovny">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Přepsat lokální data Zotero daty z online knihovny.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Obnovit do Online knihovny">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Nahradit online knihovnu">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Přepsat online knihovnu daty z lokálního Zotera">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Resetovat historii synchronizace souborů">
-<!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Compare all attachment files with the storage service">
+<!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Porovnat všechny připojené soubory se vzdáleným úložištěm">
 <!ENTITY zotero.preferences.sync.reset "Resetování">
 <!ENTITY zotero.preferences.sync.reset.button "Reset...">
 
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Získat další styly...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Otevřít/Zavřít Zotero panel">
 <!ENTITY zotero.preferences.keys.saveToZotero "Uložit do Zotera (ikona v adresním řádku)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Zapnutí celoobrazového módu">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Přejít do panelu Knihovny">

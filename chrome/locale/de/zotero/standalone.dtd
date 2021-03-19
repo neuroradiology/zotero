@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Schließen">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
+<!ENTITY manageAttachments.label "Anhänge verwalten">
+<!ENTITY convertToStored.label "Link auf Datei in gespeicherten Kopie konvertieren…">
 <!ENTITY importCmd.label "Importieren...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Importieren aus Zwischenablage">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY viewMenu.label "Ansicht">
+<!ENTITY layout.label "Layout">
+<!ENTITY standardView.label "Standard Ansicht">
+<!ENTITY stackedView.label "Gestapelte Ansicht">
+<!ENTITY collectionsPane.label "Sammlungsbereich">
+<!ENTITY itemPane.label "Eintragungsbereich">
+<!ENTITY tagSelector.label "Tag-Auswahl">
+<!ENTITY recursiveCollections.label "Einträge aus Untersammlung anzeigen">
+<!ENTITY fontSize.label "Schriftgröße">
+<!ENTITY noteFontSize.label "Schriftgröße Notizen">
+
+
 <!ENTITY toolsMenu.label "Werkzeuge">
 <!ENTITY toolsMenu.accesskey "W">
 <!ENTITY installConnector.label "Browsererweiterungen installieren">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Add-ons">
+<!ENTITY developer.label "Entwickler">
 
 
 <!ENTITY minimizeWindow.key "m">

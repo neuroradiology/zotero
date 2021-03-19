@@ -24,6 +24,8 @@
 */
 
 
+Components.utils.import("resource://gre/modules/Services.jsm");
+
 var ZoteroAdvancedSearch = new function() {
 	this.onLoad = onLoad;
 	this.search = search;
@@ -170,10 +172,6 @@ var ZoteroAdvancedSearch = new function() {
 					var newWindow = wm.getMostRecentWindow("navigator:browser");
 					var b = newWindow.getBrowser();
 					return;
-				}
-				
-				if (lastWin.ZoteroOverlay) {
-					lastWin.ZoteroOverlay.toggleDisplay(true);
 				}
 				
 				lastWin.ZoteroPane.selectItem(item.getID(), false, true);

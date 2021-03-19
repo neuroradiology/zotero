@@ -28,8 +28,8 @@
 <!-- <!DOCTYPE bindings SYSTEM "chrome://zotero/locale/itembox.dtd"> -->
 
 <bindings xmlns="http://www.mozilla.org/xbl"
-		  xmlns:xbl="http://www.mozilla.org/xbl"
-		  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+		  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+		  xmlns:html="http://www.w3.org/1999/xhtml">
 	
 	<binding id="item-box">
 		<resources>
@@ -291,6 +291,8 @@
 						return;
 					}
 					
+					this.updateRetracted();
+					
 					if (this.clickByItem) {
 						var itemBox = document.getAnonymousNodes(this)[0];
 						itemBox.setAttribute('onclick',
@@ -308,6 +310,7 @@
 						}
 						
 						this.itemTypeMenu.parentNode.hidden = false;
+						this.itemTypeMenu.setAttribute('ztabindex', '0');
 					}
 					else {
 						this.itemTypeMenu.parentNode.hidden = true;
@@ -385,9 +388,7 @@
 							
 							if (fieldIsClickable
 									&& !Zotero.Items.isPrimaryField(fieldName)
-									&& (Zotero.ItemFields.isFieldOfBase(Zotero.ItemFields.getID(fieldName), 'date')
-										// TEMP - filingDate
-										|| fieldName == 'filingDate')
+									&& Zotero.ItemFields.isDate(fieldName)
 									// TEMP - NSF
 									&& fieldName != 'dateSent') {
 								this.addDateRow(fieldNames[i], this.item.getField(fieldName, true), tabindex);
@@ -412,21 +413,29 @@
 						
 						if (fieldName) {
 							label.setAttribute("value", prefix +
-								Zotero.ItemFields.getLocalizedString(this.item.itemTypeID, fieldName));
+								Zotero.ItemFields.getLocalizedString(fieldName));
 						}
 						
 						// TEMP - NSF (homepage)
-						if ((fieldName == 'url' || fieldName == 'homepage') && val) {
+						if ((fieldName == 'url' || fieldName == 'homepage')
+								// Only make plausible HTTP URLs clickable
+								&& Zotero.Utilities.isHTTPURL(val, true)) {
 							label.classList.add("pointer");
 							// TODO: make getFieldValue non-private and use below instead
-							label.setAttribute("onclick", "ZoteroPane_Local.loadURI(this.nextSibling.firstChild ? this.nextSibling.firstChild.nodeValue : this.nextSibling.value, event)");
+							label.setAttribute("onclick", "Zotero.launchURL(this.nextSibling.firstChild ? this.nextSibling.firstChild.nodeValue : this.nextSibling.value)");
 							label.setAttribute("tooltiptext", Zotero.getString('locate.online.tooltip'));
 						}
 						else if (fieldName == 'DOI' && val && typeof val == 'string') {
 							// Pull out DOI, in case there's a prefix
 							var doi = Zotero.Utilities.cleanDOI(val);
 							if (doi) {
-								doi = "https://doi.org/" + encodeURIComponent(doi);
+								doi = "https://doi.org/"
+									// Encode some characters that are technically valid in DOIs,
+									// though generally not used. '/' doesn't need to be encoded.
+									+  doi.replace(/#/g, '%23')
+										.replace(/\?/g, '%3f')
+										.replace(/%/g, '%25')
+										.replace(/"/g, '%22');
 								label.classList.add("pointer");
 								label.setAttribute("onclick", "ZoteroPane_Local.loadURI('" + doi + "', event)");
 								label.setAttribute("tooltiptext", Zotero.getString('locate.online.tooltip'));
@@ -643,7 +652,7 @@
 					
 					for (var i=0; i<itemTypes.length; i++) {
 						var name = itemTypes[i].name;
-						if (name != 'attachment' && name != 'note') {
+						if (name != 'attachment' && name != 'note' && name != 'annotation') {
 							this.itemTypeMenu.appendItem(itemTypes[i].localized, itemTypes[i].id);
 						}
 					}
@@ -889,7 +898,7 @@
 				<body>
 				<![CDATA[
 					var label = document.createElement("label");
-					label.setAttribute("value", Zotero.ItemFields.getLocalizedString(this.item.itemTypeID, field));
+					label.setAttribute("value", Zotero.ItemFields.getLocalizedString(field));
 					label.setAttribute("fieldname", field);
 					label.setAttribute("onclick", "this.nextSibling.firstChild.blur()");
 					
@@ -1100,6 +1109,11 @@
 				<parameter name="menu"/>
 				<body><![CDATA[
 				return (async function () {
+					var functionsToRun = [];
+					if (this.eventHandlers.itemtypechange && this.eventHandlers.itemtypechange.length) {
+						functionsToRun = [...this.eventHandlers.itemtypechange];
+					}
+					
 					if (itemTypeID == this.item.itemTypeID) {
 						return true;
 					}
@@ -1150,7 +1164,7 @@
 						var fieldNames = "";
 						for (var i=0; i<fieldsToDelete.length; i++) {
 							fieldNames += "\n - " +
-								Zotero.ItemFields.getLocalizedString(this.item.itemTypeID, fieldsToDelete[i]);
+								Zotero.ItemFields.getLocalizedString(fieldsToDelete[i]);
 						}
 						
 						var promptService = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
@@ -1172,9 +1186,7 @@
 							this.refresh();
 						}
 						
-						if (this.eventHandlers['itemtypechange'] && this.eventHandlers['itemtypechange'].length) {
-							this.eventHandlers['itemtypechange'].forEach(f => f.bind(this)());
-						}
+						functionsToRun.forEach(f => f.bind(this)());
 						
 						return true;
 					}
@@ -1207,7 +1219,7 @@
 					);
 					valueElement.parentNode.replaceChild(newValueElement, valueElement);
 					
-					var text = Zotero.ItemFields.getLocalizedString(this.item.itemTypeID, 'abstractNote');
+					var text = Zotero.ItemFields.getLocalizedString('abstractNote');
 					// Add '(...)' before "Abstract" for collapsed abstracts
 					if (valueText && cur) {
 						text = '(\u2026) ' + text;
@@ -1428,8 +1440,8 @@
 						this._creatorCount--;
 						return;
 					}
-					this.item.removeCreator(index);
 					await this.blurOpenField();
+					this.item.removeCreator(index);
 					await this.item.saveTx();
 				}.bind(this))();
 				]]></body>
@@ -1609,25 +1621,23 @@
 				<parameter name="textbox"/>
 				<parameter name="stayFocused"/>
 				<body><![CDATA[
-					var comment = false;
 					var controller = textbox.controller;
 					if (!controller.matchCount) return;
 					
-					for (var i=0; i<controller.matchCount; i++)
-					{
-						if (controller.getValueAt(i) == textbox.value)
-						{
-							comment = controller.getCommentAt(i);
+					var id = false;
+					for (let i = 0; i < controller.matchCount; i++) {
+						if (controller.getCommentAt(i) == textbox.value) {
+							id = controller.getLabelAt(i);
 							break;
 						}
 					}
 					
 					// No result selected
-					if (!comment) {
+					if (!id) {
 						return;
 					}
 					
-					var [creatorID, numFields] = comment.split('-');
+					var [creatorID, numFields] = id.split('-');
 					
 					// If result uses two fields, save both
 					if (numFields==2)
@@ -1759,6 +1769,10 @@
 								this._focusNextField(this._lastTabIndex, true);
 							}
 							else {
+								// If on the last field, allow default tab action
+								if (this._lastTabIndex == this._tabIndexMaxFields) {
+									return;
+								}
 								this._focusNextField(++this._lastTabIndex);
 							}
 							return false;
@@ -1805,11 +1819,13 @@
 					var tabindex = textbox.getAttribute('ztabindex');
 					
 					//var value = t.value;
-					var value = textbox.value;
+					var value = textbox.value.trim();
 					
 					var elem;
 					var [field, creatorIndex, creatorField] = fieldName.split('-');
 					var newVal;
+
+					creatorIndex = parseInt(creatorIndex);
 					
 					// Creator fields
 					if (field == 'creator') {
@@ -1819,9 +1835,9 @@
 						otherFields[creatorField] = value;
 						var lastName = otherFields.lastName.trim();
 						
-						//Handle \n\r and \n delimited entries
+						//Handle \n\r and \n delimited entries and a single line containing a tab
 						var rawNameArray = lastName.split(/\r\n?|\n/);
-						if (rawNameArray.length > 1) {
+						if (rawNameArray.length > 1 || rawNameArray[0].includes('\t')) {
 							//Save tab direction and add creator flags since they are reset in the 
 							//process of adding multiple authors
 							var tabDirectionBuffer = this._tabDirection;
@@ -1911,6 +1927,9 @@
 						if (value != '') {
 							switch (fieldName) {
 								case 'accessDate':
+									// Parse 'yesterday'/'today'/'tomorrow'
+									value = Zotero.Date.parseDescriptiveString(value);
+									
 									// Allow "now" to use current time
 									if (value == 'now') {
 										value = Zotero.Date.dateToSQL(new Date(), true);
@@ -1955,18 +1974,8 @@
 								default:
 									// TODO: generalize to all date rows/fields
 									if (Zotero.ItemFields.isFieldOfBase(fieldName, 'date')) {
-										// Parse 'yesterday'/'today'/'tomorrow' and convert to dates,
-										// since it doesn't make sense for those to be actual metadata values
-										var lc = value.toLowerCase();
-										if (lc == 'yesterday' || lc == Zotero.getString('date.yesterday')) {
-											value = Zotero.Date.dateToSQL(new Date(new Date().getTime() - 86400000)).substr(0, 10);
-										}
-										else if (lc == 'today' || lc == Zotero.getString('date.today')) {
-											value = Zotero.Date.dateToSQL(new Date()).substr(0, 10);
-										}
-										else if (lc == 'tomorrow' || lc == Zotero.getString('date.tomorrow')) {
-											value = Zotero.Date.dateToSQL(new Date(new Date().getTime() + 86400000)).substr(0, 10);
-										}
+										// Parse 'yesterday'/'today'/'tomorrow'
+										value = Zotero.Date.parseDescriptiveString(value);
 									}
 							}
 						}
@@ -2077,7 +2086,17 @@
 								throw ("Invalid transform mode '" + mode + "' in zoteroitembox.textTransform()");
 						}
 						this._setFieldValue(label, newVal);
-						this._modifyField(label.getAttribute('fieldname'), newVal);
+						var fieldName = label.getAttribute('fieldname');
+						this._modifyField(fieldName, newVal);
+						
+						// If this is a title field, convert the Short Title too
+						var isTitle = Zotero.ItemFields.getBaseIDFromTypeAndField(
+							this.item.itemTypeID, fieldName) == Zotero.ItemFields.getID('title');
+						var shortTitleVal = this.item.getField('shortTitle');
+						if (isTitle && newVal.toLowerCase().startsWith(shortTitleVal.toLowerCase())) {
+							this._modifyField('shortTitle', newVal.substr(0, shortTitleVal.length));
+						}
+						
 						if (this.saveOnEdit) {
 							// If a field is open, blur it, which will trigger a save and cause
 							// the saveTx() to be a no-op
@@ -2303,7 +2322,14 @@
 						return false;
 					}
 					
-					next.click();
+					// Drop-down needs to be focused
+					if (next.id == 'item-type-menu') {
+						next.focus();
+					}
+					// Fields need to be clicked
+					else {
+						next.click();
+					}
 					
 					// 1) next.parentNode is always null for some reason
 					// 2) For some reason it's necessary to scroll to the next element when
@@ -2371,6 +2397,144 @@
 					}
 				]]>
 				</body>
+			</method>
+			
+			
+			<method name="updateRetracted">
+				<body><![CDATA[
+					// Create the real function here so we can use Zotero.serial(). updateRetracted()
+					// isn't awaited in refresh(), so we want to make sure successive invocations
+					// don't overlap.
+					if (!this._updateRetracted) {
+						this._updateRetracted = Zotero.serial(async function (item) {
+							var htmlNS = 'http://www.w3.org/1999/xhtml';
+							
+							var show = Zotero.Retractions.isRetracted(item);
+							if (!show) {
+								this._id('retraction-box').hidden = true;
+								return;
+							}
+							var data = await Zotero.Retractions.getData(item);
+							
+							this._id('retraction-box').hidden = false;
+							this._id('retraction-header-text').textContent
+								= Zotero.getString('retraction.banner');
+							
+							// Date
+							if (data.date) {
+								this._id('retraction-date').hidden = false;
+								this._id('retraction-date').textContent = Zotero.getString(
+									'retraction.date',
+									data.date.toLocaleDateString()
+								);
+							}
+							else {
+								this._id('retraction-date').hidden = true;
+							}
+							
+							// Reasons
+							var allowHiding = false;
+							if (data.reasons.length) {
+								let elem = this._id('retraction-reasons');
+								elem.hidden = false;
+								elem.textContent = '';
+								for (let reason of data.reasons) {
+									let dt = document.createElementNS(htmlNS, 'dt');
+									let dd = document.createElementNS(htmlNS, 'dd');
+									
+									dt.textContent = reason;
+									dd.textContent = Zotero.Retractions.getReasonDescription(reason);
+									
+									elem.appendChild(dt);
+									elem.appendChild(dd);
+									
+									if (reason == 'Retract and Replace') {
+										allowHiding = true;
+									}
+								}
+							}
+							else {
+								this._id('retraction-reasons').hidden = true;
+							}
+							
+							// Retraction DOI or PubMed ID
+							if (data.doi || data.pmid) {
+								let div = this._id('retraction-notice');
+								div.textContent = '';
+								let a = document.createElementNS(htmlNS, 'a');
+								a.textContent = Zotero.getString('retraction.notice');
+								if (data.doi) {
+									a.href = 'https://doi.org/' + data.doi;
+								}
+								else {
+									a.href = `https://www.ncbi.nlm.nih.gov/pubmed/${data.pmid}/`;
+								}
+								div.appendChild(a);
+							}
+							else {
+								this._id('retraction-notice').hidden = true;
+							}
+							
+							// Links
+							if (data.urls.length) {
+								let div = this._id('retraction-links');
+								div.hidden = false;
+								div.textContent = '';
+								
+								let p = document.createElementNS(htmlNS, 'p');
+								p.textContent = Zotero.getString('retraction.details');
+								
+								let ul = document.createElementNS(htmlNS, 'ul');
+								for (let url of data.urls) {
+									let li = document.createElementNS(htmlNS, 'li');
+									let a = document.createElementNS(htmlNS, 'a');
+									url = url.replace(/^http:/, 'https:');
+									a.href = url;
+									a.textContent = url;
+									li.appendChild(a);
+									ul.appendChild(li);
+								}
+								
+								div.appendChild(p);
+								div.appendChild(ul);
+							}
+							else {
+								this._id('retraction-links').hidden = true;
+							}
+							
+							let creditElem = this._id('retraction-credit');
+							if (!creditElem.childNodes.length) {
+								let text = Zotero.getString(
+									'retraction.credit',
+									'<a href="https://retractionwatch.com">Retraction Watch</a>'
+								);
+								let parts = Zotero.Utilities.parseMarkup(text);
+								for (let part of parts) {
+									if (part.type == 'text') {
+										creditElem.appendChild(document.createTextNode(part.text));
+									}
+									else if (part.type == 'link') {
+										let a = document.createElementNS(htmlNS, 'a');
+										a.href = part.attributes.href;
+										a.textContent = part.text;
+										creditElem.appendChild(a);
+									}
+								}
+							}
+							
+							let hideElem = this._id('retraction-hide');
+							hideElem.firstChild.textContent = Zotero.getString('retraction.replacedItem.hide');
+							hideElem.hidden = !allowHiding;
+							hideElem.firstChild.onclick = (event) => {
+								ZoteroPane.promptToHideRetractionForReplacedItem(item);
+							};
+							
+							Zotero.Utilities.Internal.updateHTMLInXUL(this._id('retraction-box'));
+						}.bind(this));
+					}
+					
+					return this._updateRetracted(this.item);
+				]]></body>
 			</method>
 			
 			
@@ -2455,14 +2619,10 @@
 							}
 						}.bind(document.getBindingParent(this))();"/>
 					<menupopup id="zotero-field-transform-menu">
-						<menu label="&zotero.item.textTransform;">
-							<menupopup>
-								<menuitem label="&zotero.item.textTransform.titlecase;" class="menuitem-non-iconic"
-									oncommand="document.getBindingParent(this).textTransform(document.popupNode, 'title')"/>
-								<menuitem label="&zotero.item.textTransform.sentencecase;" class="menuitem-non-iconic"
-									oncommand="document.getBindingParent(this).textTransform(document.popupNode, 'sentence')"/>
-							</menupopup>
-						</menu>
+						<menuitem label="&zotero.item.textTransform.titlecase;" class="menuitem-non-iconic"
+							oncommand="document.getBindingParent(this).textTransform(document.popupNode, 'title')"/>
+						<menuitem label="&zotero.item.textTransform.sentencecase;" class="menuitem-non-iconic"
+							oncommand="document.getBindingParent(this).textTransform(document.popupNode, 'sentence')"/>
 					</menupopup>
 					<menupopup id="zotero-creator-transform-menu"
 						onpopupshowing="var row = Zotero.getAncestorByTagName(document.popupNode, 'row');
@@ -2484,6 +2644,25 @@
 					</menupopup>
 					<zoteroguidancepanel id="zotero-author-guidance" about="authorMenu" position="after_end" x="-25"/>
 				</popupset>
+				<div xmlns="http://www.w3.org/1999/xhtml"
+						id="retraction-box"
+						hidden="hidden">
+					<div id="retraction-header">
+						<div id="retraction-header-text"/>
+					</div>
+					<div id="retraction-details">
+						<p id="retraction-date"/>
+						
+						<dl id="retraction-reasons"/>
+						
+						<p id="retraction-notice"/>
+						
+						<div id="retraction-links"/>
+						
+						<p id="retraction-credit"/>
+						<div id="retraction-hide"><button/></div>
+					</div>
+				</div>
 				<grid flex="1">
 					<columns>
 						<column/>

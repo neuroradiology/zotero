@@ -282,16 +282,18 @@ describe("Item pane", function () {
 			
 			// Wait for the editor
 			yield new Zotero.Promise((resolve, reject) => {
-				noteEditor.noteField.onInit(() => resolve());
-			})
-			assert.equal(noteEditor.noteField.value, '');
-			
+				noteEditor.onInit(() => resolve());
+			});
+			assert.equal(noteEditor._editorInstance._iframeWindow.wrappedJSObject.getDataSync(), null);
 			item.setNote('<p>Test</p>');
 			yield item.saveTx();
 			
-			assert.equal(noteEditor.noteField.value, '<p>Test</p>');
-		})
-	})
+			// Wait for asynchronous editor update
+			do {
+				yield Zotero.Promise.delay(10);
+			} while(noteEditor._editorInstance._iframeWindow.wrappedJSObject.getDataSync().html != '<div data-schema-version="1"><p>Test</p></div>');
+		});
+	});
 	
 	describe("Feed buttons", function() {
 		describe("Mark as Read/Unread", function() {
@@ -314,6 +316,55 @@ describe("Item pane", function () {
 				yield item.toggleRead(false);
 				assert.equal(button.getAttribute('label'), Zotero.getString('pane.item.markAsRead'));
 			});
+		});
+	});
+	
+	describe("Duplicates Merge pane", function () {
+		// Same as test in itemsTest, but via UI, which makes a copy via toJSON()/fromJSON()
+		it("should transfer merge-tracking relations when merging two pairs into one item", async function () {
+			var item1 = await createDataObject('item', { title: 'A' });
+			var item2 = await createDataObject('item', { title: 'B' });
+			var item3 = await createDataObject('item', { title: 'C' });
+			var item4 = await createDataObject('item', { title: 'D' });
+			
+			var uris = [item2, item3, item4].map(item => Zotero.URI.getItemURI(item));
+			
+			var p;
+			
+			var zp = win.ZoteroPane;
+			await zp.selectItems([item1.id, item2.id]);
+			zp.mergeSelectedItems();
+			p = waitForItemEvent('modify');
+			doc.getElementById('zotero-duplicates-merge-button').click();
+			await p;
+			
+			assert.sameMembers(
+				item1.getRelations()[Zotero.Relations.replacedItemPredicate],
+				[uris[0]]
+			);
+			
+			await zp.selectItems([item3.id, item4.id]);
+			zp.mergeSelectedItems();
+			p = waitForItemEvent('modify');
+			doc.getElementById('zotero-duplicates-merge-button').click();
+			await p;
+			
+			assert.sameMembers(
+				item3.getRelations()[Zotero.Relations.replacedItemPredicate],
+				[uris[2]]
+			);
+			
+			await zp.selectItems([item1.id, item3.id]);
+			zp.mergeSelectedItems();
+			p = waitForItemEvent('modify');
+			doc.getElementById('zotero-duplicates-merge-button').click();
+			await p;
+			
+			// Remaining item should include all other URIs
+			assert.sameMembers(
+				item1.getRelations()[Zotero.Relations.replacedItemPredicate],
+				uris
+			);
 		});
 	});
 })

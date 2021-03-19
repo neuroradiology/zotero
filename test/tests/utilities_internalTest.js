@@ -59,6 +59,15 @@ describe("Zotero.Utilities.Internal", function () {
 	});
 	
 	
+	describe("#decodeUTF8()", function () {
+		it("should properly decode binary string", async function () {
+			let text = String.fromCharCode.apply(null, new Uint8Array([226, 130, 172]));
+			let utf8 = Zotero.Utilities.Internal.decodeUTF8(text);
+			assert.equal(utf8, "€");
+		});
+	});
+	
+	
 	describe("#delayGenerator", function () {
 		var spy;
 		
@@ -114,32 +123,206 @@ describe("Zotero.Utilities.Internal", function () {
 	
 	
 	describe("#extractExtraFields()", function () {
+		it("should ignore 'type: note' and 'type: attachment'", function () {
+			var str = 'type: note';
+			var { itemType, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.isNull(itemType);
+			assert.equal(extra, 'type: note');
+		});
+		
+		it("should use the first mapped Zotero type for a CSL type", function () {
+			var str = 'type: personal_communication';
+			var { itemType, fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(itemType, 'letter');
+		});
+		
 		it("should extract a field", function () {
 			var val = '10.1234/abcdef';
 			var str = `DOI: ${val}`;
-			var fields = Zotero.Utilities.Internal.extractExtraFields(str);
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
 			assert.equal(fields.size, 1);
-			assert.equal(fields.get('DOI').value, val);
+			assert.equal(fields.get('DOI'), val);
+			assert.strictEqual(extra, '');
+		});
+		
+		it("should extract a field for a given item", function () {
+			var item = createUnsavedDataObject('item', { itemType: 'journalArticle' });
+			var val = '10.1234/abcdef';
+			var str = `DOI: ${val}`;
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str, item);
+			assert.equal(fields.size, 1);
+			assert.equal(fields.get('DOI'), val);
+			assert.strictEqual(extra, '');
+		});
+		
+		it("should extract a CSL field", function () {
+			var val = '10.1234/abcdef';
+			var str = `container-title: ${val}`;
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(fields.size, Zotero.Schema.CSL_TEXT_MAPPINGS['container-title'].length);
+			assert.equal(fields.get('publicationTitle'), val);
+			assert.strictEqual(extra, '');
+		});
+		
+		it("should extract a CSL field for a given item type", function () {
+			var item = createUnsavedDataObject('item', { itemType: 'journalArticle' });
+			var val = '10.1234/abcdef';
+			var str = `container-title: ${val}`;
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str, item);
+			assert.equal(fields.size, 1);
+			assert.equal(fields.get('publicationTitle'), val);
+			assert.strictEqual(extra, '');
 		});
 		
 		it("should extract a field with different case", function () {
 			var val = '10.1234/abcdef';
 			var str = `doi: ${val}`;
-			var fields = Zotero.Utilities.Internal.extractExtraFields(str);
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
 			assert.equal(fields.size, 1);
-			assert.equal(fields.get('DOI').value, val);
+			assert.equal(fields.get('DOI'), val);
+			assert.strictEqual(extra, '');
 		});
 		
 		it("should extract a field with other fields, text, and whitespace", function () {
-			var originalDateVal = '1989';
-			var doiVal = '10.1234/abcdef';
-			var str = `\nOriginal Date: ${originalDateVal}\nDOI: ${doiVal}\n\n`;
-			var fields = Zotero.Utilities.Internal.extractExtraFields(str);
+			var date = '2020-04-01';
+			var doi = '10.1234/abcdef';
+			var str = `Line 1\nDate: ${date}\nFoo: Bar\nDOI: ${doi}\n\nLine 2`;
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(fields.size, 2);
+			assert.equal(fields.get('date'), date);
+			assert.equal(fields.get('DOI'), doi);
+			assert.equal(extra, 'Line 1\nFoo: Bar\n\nLine 2');
+		});
+		
+		it("should extract the first instance of a field", function () {
+			var date1 = '2020-04-01';
+			var date2 = '2020-04-02';
+			var str = `Date: ${date1}\nDate: ${date2}`;
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
 			assert.equal(fields.size, 1);
-			assert.equal(fields.get('DOI').value, doiVal);
+			assert.equal(fields.get('date'), date1);
+			assert.equal(extra, "Date: " + date2);
+		});
+		
+		it("shouldn't extract a field from a line that begins with a whitespace", function () {
+			var str = '\n number-of-pages: 11';
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(fields.size, 0);
+		});
+		
+		it("shouldn't extract a field that already exists on the item", function () {
+			var item = createUnsavedDataObject('item', { itemType: 'book' });
+			item.setField('numPages', 10);
+			var str = 'number-of-pages: 11';
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str, item);
+			assert.equal(fields.size, 0);
+		});
+		
+		it("should extract an author and add it to existing creators", function () {
+			var item = createUnsavedDataObject('item', { itemType: 'book' });
+			item.setCreator(0, { creatorType: 'author', name: 'Foo' });
+			var str = 'author: Bar';
+			var { fields, creators, extra } = Zotero.Utilities.Internal.extractExtraFields(str, item);
+			assert.equal(fields.size, 0);
+			assert.lengthOf(creators, 1);
+			assert.equal(creators[0].creatorType, 'author');
+			assert.equal(creators[0].name, 'Bar');
+		});
+		
+		it("should extract a CSL date field", function () {
+			var str = 'issued: 2000';
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(fields.size, 1);
+			assert.equal(fields.get('date'), 2000);
+			assert.strictEqual(extra, '');
+		});
+		
+		it("should extract a CSL name", function () {
+			var str = 'container-author: Last || First';
+			var { creators, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.lengthOf(creators, 1);
+			assert.propertyVal(creators[0], 'creatorType', 'bookAuthor');
+			assert.propertyVal(creators[0], 'firstName', 'First');
+			assert.propertyVal(creators[0], 'lastName', 'Last');
+			assert.strictEqual(extra, '');
+		});
+		
+		it("should extract a CSL name that's valid for a given item type", function () {
+			var item = createUnsavedDataObject('item', { itemType: 'bookSection' });
+			var str = 'container-author: Last || First';
+			var { creators, extra } = Zotero.Utilities.Internal.extractExtraFields(str, item);
+			assert.lengthOf(creators, 1);
+			assert.propertyVal(creators[0], 'creatorType', 'bookAuthor');
+			assert.propertyVal(creators[0], 'firstName', 'First');
+			assert.propertyVal(creators[0], 'lastName', 'Last');
+			assert.strictEqual(extra, '');
+		});
+		
+		it("shouldn't extract a CSL name that's not valid for a given item type", function () {
+			var item = createUnsavedDataObject('item', { itemType: 'journalArticle' });
+			var str = 'container-author: Last || First';
+			var { creators, extra } = Zotero.Utilities.Internal.extractExtraFields(str, item);
+			assert.lengthOf(creators, 0);
+			assert.strictEqual(extra, str);
+		});
+		
+		it("should extract the citeproc-js cheater syntax", function () {
+			var issued = '{:number-of-pages:11}\n{:issued:2014}';
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(issued);
+			assert.equal(fields.size, 2);
+			assert.equal(fields.get('numPages'), 11);
+			assert.equal(fields.get('date'), 2014);
+			assert.strictEqual(extra, '');
+		});
+		
+		it("should ignore empty creator in citeproc-js cheater syntax", function () {
+			var str = '{:author: }\n';
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(fields.size, 0);
+			assert.strictEqual(extra, str);
+		});
+		
+		it("should ignore both Event Place and Publisher Place (temporary)", function () {
+			var str = "Event Place: Foo\nPublisher Place: Bar";
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			Zotero.debug([...fields.entries()]);
+			assert.equal(fields.size, 0);
+			assert.equal(extra, "Event Place: Foo\nPublisher Place: Bar");
 		});
 	});
 	
+	describe("#combineExtraFields", function () {
+		var originalDate = "1887";
+		var publicationPlace = "New York";
+		var doi = '10.1234/123456789';
+		var fieldMap = new Map();
+		fieldMap.set('originalDate', originalDate);
+		fieldMap.set('publicationPlace', publicationPlace);
+		fieldMap.set('DOI', doi);
+		var fieldStr = `DOI: ${doi}\nOriginal Date: ${originalDate}\nPublication Place: ${publicationPlace}`;
+		
+		it("should create 'field: value' pairs from field map", function () {
+			var extra = "";
+			var newExtra = ZUI.combineExtraFields(extra, fieldMap);
+			assert.equal(newExtra, fieldStr);
+		});
+		
+		it("should add fields above existing Extra content", function () {
+			var extra = "This is a note.";
+			var newExtra = ZUI.combineExtraFields(extra, fieldMap);
+			assert.equal(newExtra, fieldStr + '\n' + extra);
+		});
+		
+		it("should replace existing fields", function () {
+			var extra = "This is a note.\nOriginal Date: 1886\nFoo: Bar";
+			var newExtra = ZUI.combineExtraFields(extra, fieldMap);
+			assert.equal(
+				newExtra,
+				fieldStr.split(/\n/).filter(x => !x.startsWith('Original Date')).join("\n")
+					+ "\nThis is a note.\nOriginal Date: 1887\nFoo: Bar"
+			);
+		});
+	});
 	
 	describe("#extractIdentifiers()", function () {
 		it("should extract ISBN-10", async function () {
@@ -199,6 +382,69 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.propertyVal(identifiers[2], "arXiv", "hep-ex/9809001");
 			assert.propertyVal(identifiers[3], "arXiv", "math.GT/0309135");
 		});
+	});
+	
+	describe("#resolveLocale()", function () {
+		var availableLocales;
+		
+		before(function () {
+			availableLocales = Services.locale.getAvailableLocales();
+		});
+		
+		function resolve(locale) {
+			return Zotero.Utilities.Internal.resolveLocale(locale, availableLocales);
+		}
+		
+		it("should return en-US for en-US", function () {
+			assert.equal(resolve('en-US'), 'en-US');
+		});
+		
+		it("should return en-US for en", function () {
+			assert.equal(resolve('en'), 'en-US');
+		});
+		
+		it("should return fr-FR for fr-FR", function () {
+			assert.equal(resolve('fr-FR'), 'fr-FR');
+		});
+		
+		it("should return fr-FR for fr", function () {
+			assert.equal(resolve('fr'), 'fr-FR');
+		});
+		
+		it("should return ar for ar", function () {
+			assert.equal(resolve('ar'), 'ar');
+		});
+		
+		it("should return pt-PT for pt", function () {
+			assert.equal(resolve('pt'), 'pt-PT');
+		});
+		
+		it("should return zh-CN for zh-CN", function () {
+			assert.equal(resolve('zh-CN'), 'zh-CN');
+		});
+		
+		it("should return zh-TW for zh-TW", function () {
+			assert.equal(resolve('zh-TW'), 'zh-TW');
+		});
+		
+		it("should return zh-CN for zh", function () {
+			assert.equal(resolve('zh'), 'zh-CN');
+		});
+	});
+	
+	describe("#camelToTitleCase()", function () {
+		it("should convert 'fooBar' to 'Foo Bar'", function () {
+			assert.equal(Zotero.Utilities.Internal.camelToTitleCase('fooBar'), 'Foo Bar');
+		});
+		
+		it("should keep all-caps strings intact", function () {
+			assert.equal(Zotero.Utilities.Internal.camelToTitleCase('DOI'), 'DOI');
+		});
+		
+		it("should convert 'fooBAR' to 'Foo BAR'", function () {
+			assert.equal(Zotero.Utilities.Internal.camelToTitleCase('fooBAR'), 'Foo BAR');
+		});
+
 	});
 	
 	describe("#getNextName()", function () {

@@ -8,23 +8,12 @@
 
 <!ENTITY zotero.preferences.prefpane.general "Xeral">
 
-<!ENTITY zotero.preferences.userInterface "Interface de usuario">
-<!ENTITY zotero.preferences.layout "Interface:">
-<!ENTITY zotero.preferences.layout.standard "Estándar">
-<!ENTITY zotero.preferences.layout.stacked "Acumulada">
-<!ENTITY zotero.preferences.fontSize "Tamaño da tipografía:">
-<!ENTITY zotero.preferences.fontSize.small "Pequena">
-<!ENTITY zotero.preferences.fontSize.medium "Mediana">
-<!ENTITY zotero.preferences.fontSize.large "Grande">
-<!ENTITY zotero.preferences.fontSize.xlarge "Extra grande">
-<!ENTITY zotero.preferences.fontSize.notes "Tamaño da tipografía das notas:">
-
 <!ENTITY zotero.preferences.fileHandling "Xestión de ficheiros">
 <!ENTITY zotero.preferences.automaticSnapshots "Cando se crean elementos a partir de páxinas web facer capturas automaticamente">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Anexar automaticamente os PDFs e outros ficheiros asociados ao gardar os elementos">
 <!ENTITY zotero.preferences.autoRecognizeFiles "Obter os metadados dos PDFs de xeito automático">
 <!ENTITY zotero.preferences.autoRenameFiles "Mudarlle o nome aos ficheiros anexos de xeito automático empregando os metadatos dos elementos ligados.">
-<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
+<!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Renomear os ficheiros ligados">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Abrir os PDFs con">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Predefinido no sistema">
 
@@ -87,9 +76,9 @@
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory "Reiniciar o historial de sincronización de datos">
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Xunguir os datos locais cos datos do servidor, esquecéndose do historial de sincronización.">
 <!ENTITY zotero.preferences.sync.reset.restoreFromServer "Restaurar a partir da librería en liña">
-<!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Sobreescribir a librería local de Zotero cos datos da libraría en liña.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Restaurar a libraría en liña">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Sobreescribir a librería en liña cos datos locais de Zotero">
+<!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Sobrescribir a librería local de Zotero cos datos da libraría en liña.">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer "Substituír a librería en liña">
+<!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Sobrescribir a librería en liña cos datos locais de Zotero">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Reiniciar o historial de sincronización de ficheiros">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Comparar todos os ficheiros anexos co servizo de almacenamento">
 <!ENTITY zotero.preferences.sync.reset "Reiniciar">
@@ -137,7 +126,6 @@
 <!ENTITY zotero.preferences.cite.styles.styleManager.csl "CSL">
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Obter máis estilos...">
 
-<!ENTITY zotero.preferences.keys.openZotero "Abrir/Pechar o panel de Zotero">
 <!ENTITY zotero.preferences.keys.saveToZotero "Gardar en Zotero (icona na barra de direccións)">
 <!ENTITY zotero.preferences.keys.toggleFullscreen "Cambiar ao modo de pantalla completa">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Foco no panel de bibliotecas">
@@ -175,7 +163,7 @@
 <!ENTITY zotero.preferences.proxies.a_variable "&#37;a - Calquera cadea">
 
 <!ENTITY zotero.preferences.prefpane.advanced "Avanzado">
-<!ENTITY zotero.preferences.advanced.filesAndFolders "Ficheiros e cartafois">
+<!ENTITY zotero.preferences.advanced.filesAndFolders "Ficheiros e cartafoles">
 <!ENTITY zotero.preferences.advanced.keys "Atallos">
 
 <!ENTITY zotero.preferences.advanced.advancedConfiguration "Configuración avanzada">

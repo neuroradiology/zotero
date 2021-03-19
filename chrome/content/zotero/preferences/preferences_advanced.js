@@ -24,6 +24,7 @@
 */
 
 Components.utils.import("resource://gre/modules/Services.jsm");
+import FilePicker from 'zotero/filePicker';
 
 Zotero_Preferences.Advanced = {
 	_openURLResolvers: null,
@@ -32,9 +33,21 @@ Zotero_Preferences.Advanced = {
 	init: function () {
 		Zotero_Preferences.Keys.init();
 		
-		// Show Memory Info button if the Error Console menu option is enabled
-		if (Zotero.Prefs.get('devtools.errorconsole.enabled', true)) {
+		// Show Memory Info button
+		if (Zotero.Prefs.get('debug.memoryInfo')) {
 			document.getElementById('memory-info').hidden = false;
+		}
+
+		// This might not work for checkboxes if we later need to create them
+		// with html
+		var inputs = document.querySelectorAll('input[data-preference]');
+		for (let input of inputs) {
+			let preferenceName = input.dataset.preference;
+			input.addEventListener('change', function () {
+				let value = input.value;
+				Zotero.Prefs.set(preferenceName, value);
+			});
+			input.value = Zotero.Prefs.get(preferenceName);
 		}
 		
 		this.onDataDirLoad();
@@ -366,7 +379,7 @@ Zotero_Preferences.Advanced = {
 		yield Zotero.DataDirectory.choose(
 			true,
 			!newUseDataDir,
-			() => Zotero_Preferences.openURL('https://zotero.org/support/zotero_data')
+			() => Zotero_Preferences.openURL('https://www.zotero.org/support/zotero_data')
 		);
 		radiogroup.selectedIndex = this._usingDefaultDataDir() ? 0 : 1;
 	}),
@@ -469,22 +482,17 @@ Zotero_Preferences.Advanced = {
 	
 	
 	refreshLocale: function () {
-		var matchOS = Zotero.Prefs.get('intl.locale.matchOS', true);
 		var autoLocaleName, currentValue;
 		
 		// If matching OS, get the name of the current locale
-		if (matchOS) {
+		if (Zotero.Prefs.get('intl.locale.requested', true) === '') {
 			autoLocaleName = this._getAutomaticLocaleMenuLabel();
 			currentValue = 'automatic';
 		}
 		// Otherwise get the name of the locale specified in the pref
 		else {
-			let branch = Services.prefs.getBranch("");
-			let locale = branch.getComplexValue(
-				'general.useragent.locale', Components.interfaces.nsIPrefLocalizedString
-			);
 			autoLocaleName = Zotero.getString('zotero.preferences.locale.automatic');
-			currentValue = locale;
+			currentValue = Zotero.locale;
 		}
 		
 		// Populate menu
@@ -502,19 +510,18 @@ Zotero_Preferences.Advanced = {
 	},
 	
 	onLocaleChange: function () {
+		var requestedLocale = Services.locale.getRequestedLocale();
 		var menu = document.getElementById('locale-menu');
 		if (menu.value == 'automatic') {
 			// Changed if not already set to automatic (unless we have the automatic locale name,
 			// meaning we just switched away to the same manual locale and back to automatic)
-			var changed = !Zotero.Prefs.get('intl.locale.matchOS', true)
-				&& menu.label != this._getAutomaticLocaleMenuLabel();
-			Zotero.Prefs.set('intl.locale.matchOS', true, true);
+			var changed = requestedLocale && menu.label != this._getAutomaticLocaleMenuLabel();
+			Services.locale.setRequestedLocales(null);
 		}
 		else {
 			// Changed if moving to a locale other than the current one
 			var changed = Zotero.locale != menu.value
-			Zotero.Prefs.set('intl.locale.matchOS', false, true);
-			Zotero.Prefs.set('general.useragent.locale', menu.value, true);
+			Services.locale.setRequestedLocales([menu.value]);
 		}
 		
 		if (!changed) {
@@ -554,37 +561,47 @@ Zotero_Preferences.Attachment_Base_Directory = {
 	},
 	
 	
-	choosePath: Zotero.Promise.coroutine(function* () {
+	choosePath: async function () {
 		var oldPath = this.getPath();
 		
 		//Prompt user to choose new base path
+		var fp = new FilePicker();
 		if (oldPath) {
-			var oldPathFile = Zotero.File.pathToFile(oldPath);
+			fp.displayDirectory = oldPath;
 		}
-		var nsIFilePicker = Components.interfaces.nsIFilePicker;
-		var fp = Components.classes["@mozilla.org/filepicker;1"]
-					.createInstance(nsIFilePicker);
-		if (oldPathFile) {
-			fp.displayDirectory = oldPathFile;
-		}
-		fp.init(window, Zotero.getString('attachmentBasePath.selectDir'), nsIFilePicker.modeGetFolder);
-		fp.appendFilters(nsIFilePicker.filterAll);
-		if (fp.show() != nsIFilePicker.returnOK) {
+		fp.init(window, Zotero.getString('attachmentBasePath.selectDir'), fp.modeGetFolder);
+		fp.appendFilters(fp.filterAll);
+		if (await fp.show() != fp.returnOK) {
 			return false;
 		}
-		var newPath = OS.Path.normalize(fp.file.path);
+		var newPath = fp.file;
 		
 		if (oldPath && oldPath == newPath) {
 			Zotero.debug("Base directory hasn't changed");
 			return false;
 		}
 		
-		return this.changePath(newPath);
-	}),
+		try {
+			return await this.changePath(newPath);
+		}
+		catch (e) {
+			Zotero.logError(e);
+			Zotero.alert(null, Zotero.getString('general.error'), e.message);
+		}
+	},
 	
 	
 	changePath: Zotero.Promise.coroutine(function* (basePath) {
 		Zotero.debug(`New base directory is ${basePath}`);
+		
+		if (Zotero.File.directoryContains(Zotero.DataDirectory.dir, basePath)) {
+			throw new Error(
+				Zotero.getString(
+					'zotero.preferences.advanced.baseDirectory.withinDataDir',
+					Zotero.appName
+				)
+			);
+		}
 		
 		// Find all current attachments with relative attachment paths
 		var sql = "SELECT itemID FROM itemAttachments WHERE linkMode=? AND path LIKE ?";
@@ -703,7 +720,7 @@ Zotero_Preferences.Attachment_Base_Directory = {
 			return false;
 		}
 		
-		// Set new data directory
+		// Set new base directory
 		Zotero.debug("Setting base directory to " + basePath);
 		Zotero.Prefs.set('baseAttachmentPath', basePath);
 		Zotero.Prefs.set('saveRelativeAttachmentPath', true);

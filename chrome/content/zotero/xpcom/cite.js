@@ -172,7 +172,7 @@ Zotero.Cite = {
 			var maxOffset = parseInt(bib[0].maxoffset);
 			var entrySpacing = parseInt(bib[0].entryspacing);
 			var lineSpacing = parseInt(bib[0].linespacing);
-			var hangingIndent = parseInt(bib[0].hangingindent);
+			var hangingIndent = bib[0].hangingindent;
 			var secondFieldAlign = bib[0]["second-field-align"];
 			
 			// Validate input
@@ -387,6 +387,7 @@ Zotero.Cite = {
 			case 'title':
 			case 'title-short':
 			case 'translator':
+			case 'type':
 			case 'version':
 			case 'volume':
 			case 'year-suffix':
@@ -407,9 +408,21 @@ Zotero.Cite = {
 				field = 'archive_location';
 				break;
 			
-			// Don't change other lines
 			default:
-				field = originalField;
+				// See if this is a Zotero field written out (e.g., "Publication Title"), and if so
+				// convert to its associated CSL field
+				var zoteroField = originalField.replace(/ ([A-Z])/, '$1');
+				// If second character is lowercase (so not an acronym), lowercase first letter too
+				if (zoteroField[1] && zoteroField[1] == zoteroField[1].toLowerCase()) {
+					zoteroField = zoteroField[0].toLowerCase() + zoteroField.substr(1);
+				}
+				if (Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE[zoteroField]) {
+					field = Zotero.Schema.CSL_FIELD_MAPPINGS_REVERSE[zoteroField];
+				}
+				// Don't change other lines
+				else {
+					field = originalField;
+				}
 			}
 			return field + value;
 		});
@@ -673,23 +686,8 @@ Zotero.Cite.Locale = {
 		if (str) {
 			return str;
 		}
-		var uri = `chrome://zotero/content/locale/csl/locales-${locale}.xml`;
 		try {
-			let protHandler = Components.classes["@mozilla.org/network/protocol;1?name=chrome"]
-				.createInstance(Components.interfaces.nsIProtocolHandler);
-			let channel = protHandler.newChannel(protHandler.newURI(uri));
-			let cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"]
-				.createInstance(Components.interfaces.nsIConverterInputStream);
-			cstream.init(channel.open(), "UTF-8", 0, 0);
-			let obj = {};
-			let read = 0;
-			let str = "";
-			do {
-				// Read as much as we can and put it in obj.value
-				read = cstream.readString(0xffffffff, obj);
-				str += obj.value;
-			} while (read != 0);
-			cstream.close();
+			str = Zotero.File.getResource(`chrome://zotero/content/locale/csl/locales-${locale}.xml`);
 			this._cache.set(locale, str);
 			return str;
 		}

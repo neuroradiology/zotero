@@ -18,20 +18,24 @@ describe("Zotero.CollectionTreeView", function() {
 	});
 	
 	describe("#refresh()", function () {
-		it("should show Duplicate Items and Unfiled Items by default", function* () {
+		it("should show Duplicate Items and Unfiled Items by default and shouldn't show Retracted Items", function* () {
 			Zotero.Prefs.clear('duplicateLibraries');
 			Zotero.Prefs.clear('unfiledLibraries');
+			Zotero.Prefs.clear('retractedLibraries');
 			yield cv.refresh();
 			assert.ok(cv.getRowIndexByID("D" + userLibraryID));
 			assert.ok(cv.getRowIndexByID("U" + userLibraryID));
+			assert.isFalse(cv.getRowIndexByID("R" + userLibraryID));
 		});
 		
-		it("shouldn't show Duplicate Items and Unfiled Items if hidden", function* () {
+		it("shouldn't show virtual collections if hidden", function* () {
 			Zotero.Prefs.set('duplicateLibraries', `{"${userLibraryID}": false}`);
 			Zotero.Prefs.set('unfiledLibraries', `{"${userLibraryID}": false}`);
+			Zotero.Prefs.set('retractedLibraries', `{"${userLibraryID}": false}`);
 			yield cv.refresh();
 			assert.isFalse(cv.getRowIndexByID("D" + userLibraryID));
 			assert.isFalse(cv.getRowIndexByID("U" + userLibraryID));
+			assert.isFalse(cv.getRowIndexByID("R" + userLibraryID));
 		});
 		
 		it("should maintain open state of group", function* () {
@@ -864,6 +868,26 @@ describe("Zotero.CollectionTreeView", function() {
 				assert.isFalse(yield canDrop('item', 'L' + group.libraryID, [item.id]));
 			})
 			
+			it("should copy an item from a read-only group to an editable group", async function () {
+				var group1 = await createGroup();
+				var item = await createDataObject('item', { libraryID: group1.libraryID });
+				group1.editable = false;
+				await group1.saveTx();
+				var group2 = await createGroup();
+				
+				await cv.selectLibrary(group1.libraryID);
+				await waitForItemsLoad(win);
+				
+				await drop('item', 'L' + group2.libraryID, [item.id]);
+				
+				assert.isFalse(await item.getLinkedItem(group2.libraryID));
+				// New collection should link back to original
+				assert.ok(await item.getLinkedItem(group2.libraryID, true));
+				
+				await group1.eraseTx();
+				await group2.eraseTx();
+			});
+			
 			it("should remove a linked, trashed item in a group from the trash and collections", function* () {
 				var group = yield getGroup();
 				var collection = yield createDataObject('collection', { libraryID: group.libraryID });
@@ -1118,6 +1142,32 @@ describe("Zotero.CollectionTreeView", function() {
 				assert.isFalse(newCollectionA.hasItem(newItemB));
 				assert.isFalse(newCollectionB.hasItem(newItemA));
 			})
+			
+			it("should copy a collection from a read-only group to another group", async function () {
+				var group1 = await createGroup();
+				var collection = await createDataObject('collection', { libraryID: group1.libraryID });
+				var item = await createDataObject('item', { libraryID: group1.libraryID, collections: [collection.id] });
+				group1.editable = false;
+				await group1.saveTx();
+				
+				var group2 = await createGroup();
+				
+				await cv.selectCollection(collection.id);
+				await waitForItemsLoad(win);
+				
+				await drop('collection', 'L' + group2.libraryID, [collection.id]);
+				
+				assert.isFalse(await collection.getLinkedCollection(group2.libraryID));
+				// New collection should link back to original
+				assert.ok(await collection.getLinkedCollection(group2.libraryID, true));
+				
+				assert.isFalse(await item.getLinkedItem(group2.libraryID));
+				// New item should link back to original
+				assert.ok(await item.getLinkedItem(group2.libraryID, true));
+				
+				await group1.eraseTx();
+				await group2.eraseTx();
+			});
 		})
 
 

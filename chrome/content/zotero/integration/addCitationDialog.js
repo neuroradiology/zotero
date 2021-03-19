@@ -23,6 +23,8 @@
     ***** END LICENSE BLOCK *****
 */
 
+Components.utils.import("resource://gre/modules/Services.jsm");
+
 var Zotero_Citation_Dialog = new function () {
 	// Array value [0] is property name.
 	// Array value [1] is default value of property.
@@ -600,6 +602,39 @@ var Zotero_Citation_Dialog = new function () {
 			io.citation.properties.custom = citation;
 		}
 		
+		if (io.citation.citationItems.length) {
+			for (let item of io.citation.citationItems) {
+				if (Zotero.Retractions.isRetracted({ id: parseInt(item.id) })) {
+					if (Zotero.Retractions.shouldShowCitationWarning({ id: parseInt(item.id) })) {
+						var ps = Services.prompt;
+						var buttonFlags = ps.BUTTON_POS_0 * ps.BUTTON_TITLE_IS_STRING
+							+ ps.BUTTON_POS_1 * ps.BUTTON_TITLE_CANCEL
+							+ ps.BUTTON_POS_2 * ps.BUTTON_TITLE_IS_STRING;
+						var checkbox = { value: false };
+						var result = ps.confirmEx(null,
+							Zotero.getString('general.warning'),
+							Zotero.getString('retraction.citeWarning.text1') + '\n\n'
+								+ Zotero.getString('retraction.citeWarning.text2'),
+							buttonFlags,
+							Zotero.getString('general.continue'),
+							null,
+							Zotero.getString('pane.items.showItemInLibrary'),
+							Zotero.getString('retraction.citationWarning.dontWarn'), checkbox);
+						if (result > 0) {
+							if (result == 2) {
+								_showItemInLibrary(parseInt(item.id));
+							}
+							return false;
+						}
+						if (checkbox.value) {
+							Zotero.Retractions.disableCitationWarningsForItem({ id: parseInt(item.id) });
+						}
+					}
+					item.ignoreRetraction = true;
+				}
+			}
+		}
+		
 		io.accept();
 		_accepted = true;
 		return true;
@@ -799,5 +834,25 @@ var Zotero_Citation_Dialog = new function () {
 	 */
 	function _clearCitationList() {
 		while(_citationList.firstChild) _citationList.removeChild(_citationList.firstChild);
+	}
+	
+	async function _showItemInLibrary(id) {
+		var pane = Zotero.getActiveZoteroPane();
+		// Open main window if it's not open (Mac)
+		if (!pane) {
+			let win = Zotero.openMainWindow();
+			await new Zotero.Promise((resolve) => {
+				let onOpen = function () {
+					win.removeEventListener('load', onOpen);
+					resolve();
+				};
+				win.addEventListener('load', onOpen);
+			});
+			pane = win.ZoteroPane;
+		}
+		pane.selectItem(id);
+		
+		// Pull window to foreground
+		Zotero.Utilities.Internal.activate(pane.document.defaultView);
 	}
 }

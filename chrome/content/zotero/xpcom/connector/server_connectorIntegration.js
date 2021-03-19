@@ -56,14 +56,23 @@ Zotero.Server.Endpoints['/connector/document/respond'].prototype = {
 	supportedDataTypes: ["application/json"],
 	permitBookmarklet: true,
 	
-	init: function(data, sendResponse) {
-		data = JSON.parse(data);
+	init: function (data, sendResponse) {
+		// Earlier version of the gdocs plugin used to double-encode the JSON data
+		try {
+			data = JSON.parse(data);
+		}
+		catch (e) {}
 		if (data && data.error) {
 			// Apps Script stack is a JSON object
 			if (typeof data.stack != "string") {
 				data.stack = JSON.stringify(data.stack);
 			}
-			Zotero.HTTPIntegrationClient.deferredResponse.reject(data);
+			let error = data;
+			if (data.error == 'Alert') {
+				error = new Zotero.Exception.Alert(data.message);
+				error.stack = data.stack;
+			}
+			Zotero.HTTPIntegrationClient.deferredResponse.reject(error);
 		} else {
 			Zotero.HTTPIntegrationClient.deferredResponse.resolve(data);
 		}
@@ -74,10 +83,11 @@ Zotero.Server.Endpoints['/connector/document/respond'].prototype = {
 // For managing macOS integration and progress window focus
 Zotero.Server.Endpoints['/connector/sendToBack'] = function() {};
 Zotero.Server.Endpoints['/connector/sendToBack'].prototype = {
-	supportedMethods: ["POST"],
+	supportedMethods: ["POST", "GET"],
 	supportedDataTypes: ["application/json"],
 	permitBookmarklet: true,
-	init: function() {
+	init: function (requestData) {
 		Zotero.Utilities.Internal.sendToBack();
+		return 200;
 	},
 };

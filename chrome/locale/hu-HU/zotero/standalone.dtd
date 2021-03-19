@@ -23,6 +23,8 @@
 <!ENTITY closeCmd.label "Bezárás">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "B">
+<!ENTITY manageAttachments.label "Csatolmányok kezelése">
+<!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
 <!ENTITY importCmd.label "Importálás...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Importálás Vágólapról">
@@ -42,11 +44,24 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY viewMenu.label "Nézet">
+<!ENTITY layout.label "Layout">
+<!ENTITY standardView.label "Alapértelmezett nézet">
+<!ENTITY stackedView.label "Stacked View">
+<!ENTITY collectionsPane.label "Collections Pane">
+<!ENTITY itemPane.label "Item Pane">
+<!ENTITY tagSelector.label "Tag Selector">
+<!ENTITY recursiveCollections.label "Show Items from Subcollections">
+<!ENTITY fontSize.label "Betűméret">
+<!ENTITY noteFontSize.label "Jegyzet betűmérete">
+
+
 <!ENTITY toolsMenu.label "Eszközök">
 <!ENTITY toolsMenu.accesskey "E">
 <!ENTITY installConnector.label "Böngészőmodul telepítése">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Kiegészítők">
+<!ENTITY developer.label "Fejlesztő eszközök">
 
 
 <!ENTITY minimizeWindow.key "m">
@@ -80,7 +95,7 @@
 <!ENTITY debugOutputLogging.submit "Kimenet elküldése">
 <!ENTITY debugOutputLogging.view " Kimenet megtekintése">
 <!ENTITY debugOutputLogging.clear " Output törlése">
-<!ENTITY debugOutputLogging.restartWithLoggingEnabled "Restart with Logging Enabled…">
+<!ENTITY debugOutputLogging.restartWithLoggingEnabled "Indítsa újra a naplózást engedélyezve…">
 
 <!ENTITY helpCheckForUpdates.label "Frissítések keresése…">
 <!ENTITY helpCheckForUpdates.accesskey "F">

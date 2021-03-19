@@ -6,18 +6,22 @@
 <!ENTITY zotero.general.deselectAll "Fravælg alle">
 <!ENTITY zotero.general.edit "Rediger">
 <!ENTITY zotero.general.delete "Slet">
+<!ENTITY zotero.general.moveToTrash "Move to Trash">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Annullér">
 <!ENTITY zotero.general.refresh "Opdatér">
 <!ENTITY zotero.general.saveAs "Gem som...">
-<!ENTITY zotero.general.options "Options">
+<!ENTITY zotero.general.options "Indstillinger">
 <!ENTITY zotero.general.advancedOptions.label "Avancerede indstillinger">
 <!ENTITY zotero.general.tools "Tools">
 <!ENTITY zotero.general.more "Mere">
 <!ENTITY zotero.general.loading "Indlæser...">
 <!ENTITY zotero.general.close "Luk">
 <!ENTITY zotero.general.minimize "Minimér">
-<!ENTITY zotero.general.other "Other…">
+<!ENTITY zotero.general.other "Andet...">
+<!ENTITY zotero.general.bigger "Bigger">
+<!ENTITY zotero.general.smaller "Smaller">
+<!ENTITY zotero.general.reset "Reset">
 
 
 <!ENTITY zotero.errorReport.title "Zotero fejlrapport">
@@ -50,6 +54,7 @@
 
 <!ENTITY zotero.toolbar.duplicate.label "Vis dubletter">
 <!ENTITY zotero.collections.showUnfiledItems "Vis ukategoriserede elementer">
+<!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "Type">
 <!ENTITY zotero.items.type_column "Elementtype">
@@ -86,6 +91,7 @@
 
 <!ENTITY zotero.items.menu.showInLibrary "Vis i bibliotek">
 <!ENTITY zotero.items.menu.attach.note "Tilføj note">
+<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Vedhæft">
 <!ENTITY zotero.items.menu.attach.link.uri "Vedhæft link til URI...">
 <!ENTITY zotero.items.menu.attach.file "Vedhæft en gemt kopi af ...">
@@ -116,7 +122,7 @@
 <!ENTITY zotero.toolbar.import.label "Importér...">
 <!ENTITY zotero.toolbar.importFromClipboard "Hent fra udklipsholder">
 <!ENTITY zotero.toolbar.export.label "Eksportér bibliotek...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF-scanning...">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "Opret tidslinie">
 <!ENTITY zotero.toolbar.preferences.label "Indstillinger...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Support og dokumentation">
@@ -151,6 +157,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Gem kopi af filen...">
 <!ENTITY zotero.toolbar.attachment.weblink "Gem link til den aktuelle side">
 <!ENTITY zotero.toolbar.attachment.snapshot "Tag kopi af den aktuelle side">
+<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Der er ingen mærker at vise">
 <!ENTITY zotero.tagSelector.loadingTags "Indlæser mærker...">
@@ -168,8 +176,11 @@
 <!ENTITY zotero.tagColorChooser.setColor "Sæt farve:">
 <!ENTITY zotero.tagColorChooser.removeColor "Fjern farve">
 
-<!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
+<!ENTITY zotero.lookup.description "Indtast ISBN'er, DOI'er, PMID'er, eller arXiv ID'er som skal tilføjes til dit bibliotek:">
 <!ENTITY zotero.lookup.button.search "Søg">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "Vælg elementer">
 <!ENTITY zotero.selectitems.intro.label "Vælg de elementer, du ønsker at tilføje til dit bibliotek">
@@ -195,15 +206,15 @@
 
 <!ENTITY zotero.progress.title "Fremdrift">
 
-<!ENTITY zotero.import "Import">
-<!ENTITY zotero.import.whereToImportFrom "Where do you want to import from?">
-<!ENTITY zotero.import.source.file "A file (BibTeX, RIS, Zotero RDF, etc.)">
-<!ENTITY zotero.import.importing "Importing…">
+<!ENTITY zotero.import "Importér">
+<!ENTITY zotero.import.whereToImportFrom "Hvor vil du importere fra?">
+<!ENTITY zotero.import.source.file "En fil (BibTeX, RIS, Zotero RDF osv.)">
+<!ENTITY zotero.import.importing "Importerer…">
 <!ENTITY zotero.import.database "Database">
-<!ENTITY zotero.import.lastModified "Last Modified">
-<!ENTITY zotero.import.size "Size">
-<!ENTITY zotero.import.createCollection "Place imported collections and items into new collection">
-<!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.lastModified "Sidst ændret">
+<!ENTITY zotero.import.size "Størrelse">
+<!ENTITY zotero.import.createCollection "Placér importerede samlinger og nye elementer i den nye samling">
+<!ENTITY zotero.import.fileHandling "Filhåndtering">
 
 <!ENTITY zotero.exportOptions.title "Eksportér...">
 <!ENTITY zotero.exportOptions.format.label "Format:">
@@ -243,9 +254,10 @@
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "Referencer, som afventer opdatering, vil blive fremhævet i dokumentet.">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "Ved at deaktivere opdateringer kan indsættelse af referencer i store dokumenter gøres hurtigere. Klik Opdatér for at opdatere referencer manuelt.">
 
-
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Brug MEDLINE's tidsskriftforkortelser">
 <!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "Feltet “Journal Abbr” vil blive ignoreret.">
+
+<!ENTITY zotero.integration.prefs.exportDocument "Switch to a Different Word Processor…">
 
 <!ENTITY zotero.integration.showEditor.label "Vis editor">
 <!ENTITY zotero.integration.classicView.label "Klassisk visning">
@@ -317,3 +329,9 @@
 <!ENTITY zotero.attachLink.title "Tilføj link til URI">
 <!ENTITY zotero.attachLink.label.link "Link:">
 <!ENTITY zotero.attachLink.label.title "Titel:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
