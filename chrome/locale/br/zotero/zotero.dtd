@@ -6,7 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Diziuzañ pep-tra">
 <!ENTITY zotero.general.edit "Aozañ">
 <!ENTITY zotero.general.delete "Dilemel">
-<!ENTITY zotero.general.moveToTrash "Move to Trash">
+<!ENTITY zotero.general.moveToTrash "Kas d'ar pod-lastez">
 <!ENTITY zotero.general.ok "Mat eo">
 <!ENTITY zotero.general.cancel "Nullañ">
 <!ENTITY zotero.general.refresh "Freskaat">
@@ -15,6 +15,7 @@
 <!ENTITY zotero.general.advancedOptions.label "Dibarzhioù araokaet">
 <!ENTITY zotero.general.tools "Ostilhoù">
 <!ENTITY zotero.general.more "Muioc'h">
+<!ENTITY zotero.general.moreInformation "Muioc'h a ditouroù">
 <!ENTITY zotero.general.loading "O kargañ...">
 <!ENTITY zotero.general.close "Serriñ">
 <!ENTITY zotero.general.minimize "Bihanaat">
@@ -45,53 +46,22 @@
 <!ENTITY zotero.upgrade.changeLogLink "renabl ar cheñchamantoù">
 <!ENTITY zotero.upgrade.changeLogAfterLink "evit dizoloiñ ar pezh a zo nevez.">
 
-<!ENTITY zotero.tabs.info.label "Titou">
 <!ENTITY zotero.tabs.notes.label "Notennoù">
 <!ENTITY zotero.tabs.attachments.label "Pezhioù-stag">
-<!ENTITY zotero.tabs.tags.label "Balizoù">
-<!ENTITY zotero.tabs.related.label "Kevreet">
-<!ENTITY zotero.notes.separate "Aozit en ur prenestr distag">
 
 <!ENTITY zotero.toolbar.duplicate.label "Diskouez an doublennoù">
 <!ENTITY zotero.collections.showUnfiledItems "Diskouez an elfennoù amrummet">
 <!ENTITY zotero.collections.showRetractedItems "Diskouez an elfennoù skrizet">
 
 <!ENTITY zotero.items.itemType "Doare elfenn">
-<!ENTITY zotero.items.type_column "Doare elfenn">
-<!ENTITY zotero.items.title_column "Titl">
 <!ENTITY zotero.items.creator_column "Krouer">
-<!ENTITY zotero.items.date_column "Deiziad">
 <!ENTITY zotero.items.year_column "Bloavezh">
-<!ENTITY zotero.items.publisher_column "Embanner">
-<!ENTITY zotero.items.publication_column "Embannadenn">
-<!ENTITY zotero.items.journalAbbr_column "Berradur anv kelaouenn">
-<!ENTITY zotero.items.language_column "Yezh">
-<!ENTITY zotero.items.accessDate_column "Gwelet d'an/ar/al">
-<!ENTITY zotero.items.libraryCatalog_column "Dastumad levraoueg">
-<!ENTITY zotero.items.callNumber_column "Niver-envel">
-<!ENTITY zotero.items.rights_column "Aotreadurioù">
-<!ENTITY zotero.items.dateAdded_column "Deiziad ouzhpennañ">
 <!ENTITY zotero.items.dateModified_column "Deiziad kemmañ">
-<!ENTITY zotero.items.extra_column "Traoù dibarr">
-<!ENTITY zotero.items.archive_column "Dielloù">
-<!ENTITY zotero.items.archiveLocation_column "Lec'hiadur en diell">
-<!ENTITY zotero.items.place_column "Lec'h">
-<!ENTITY zotero.items.volume_column "Levrenn">
-<!ENTITY zotero.items.edition_column "Embannadur">
-<!ENTITY zotero.items.pages_column "Pajennoù">
-<!ENTITY zotero.items.issue_column "Niverenn">
-<!ENTITY zotero.items.series_column "Dastumad">
-<!ENTITY zotero.items.seriesTitle_column "Titl an dastumad">
-<!ENTITY zotero.items.court_column "Lez-varn">
-<!ENTITY zotero.items.medium_column "Media/Stumm">
-<!ENTITY zotero.items.genre_column "Doare">
-<!ENTITY zotero.items.system_column "Sistem">
 <!ENTITY zotero.items.moreColumns.label "Muioc'h a vannoù">
 <!ENTITY zotero.items.restoreColumnOrder.label "Adsevel urzh ar bannoù">
 
 <!ENTITY zotero.items.menu.showInLibrary "Diskouez el levraoueg:">
 <!ENTITY zotero.items.menu.attach.note "Ouzhpennañ un notenn">
-<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Ouzhpennañ ur pezh-stag">
 <!ENTITY zotero.items.menu.attach.link.uri "Stagañ ul liamm betek un URI…">
 <!ENTITY zotero.items.menu.attach.file "Stagañ un eilenn enrollet eus ur restr...">
@@ -101,7 +71,6 @@
 <!ENTITY zotero.items.menu.duplicateItem "Eilskrivañ an elfenn">
 <!ENTITY zotero.items.menu.mergeItems "Kendeuziñ an elfennoù...">
 <!ENTITY zotero.items.menu.unrecognize "Nullañ an adpakañ metaroadennoù">
-<!ENTITY zotero.items.menu.reportMetadata "Danevelliñ metaroadennoù direizh">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Dibabit stumm an elfenn da implijout evel elfenn mestr:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Diuzañ ar maeziennoù da virout diwar stummoù all an elfenn:">
@@ -112,7 +81,6 @@
 <!ENTITY zotero.toolbar.removeItem.label "Dilemel an elfenn...">
 <!ENTITY zotero.toolbar.newLibrary.label "Levraoueg nevez">
 <!ENTITY zotero.toolbar.newCollection.label "Dastumadeg nevez...">
-<!ENTITY zotero.toolbar.markFeedRead.label "Merkañ ar froud evel lennet">
 <!ENTITY zotero.toolbar.newGroup "Strollad nevez...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Is-dastumadeg nevez...">
 <!ENTITY zotero.toolbar.newSavedSearch.label "Klask enrollet nevez...">
@@ -134,7 +102,6 @@
 <!ENTITY zotero.toolbar.feeds.new "Froud nevez">
 <!ENTITY zotero.toolbar.feeds.new.fromURL "Adalek an URL...">
 <!ENTITY zotero.toolbar.feeds.new.fromOPML "Adalek ur restr OPML...">
-<!ENTITY zotero.toolbar.feeds.refresh "Freskaat ar froud">
 <!ENTITY zotero.toolbar.feeds.edit "Aozañ ar froud...">
 
 <!ENTITY zotero.item.add "Ouzhpennañ">
@@ -142,8 +109,8 @@
 <!ENTITY zotero.item.textTransform "Treuzfurmiñ an destenn">
 <!ENTITY zotero.item.textTransform.titlecase "Al lizherennoù kentañ e pennlizherennoù">
 <!ENTITY zotero.item.textTransform.sentencecase "Lizherenn gentañ ar frazenn e pennlizherenn">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Eilpennañ Anv-bihan/Anv-Familh">
-<!ENTITY zotero.item.viewOnline "Diskouez enlinenn">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Swap First/Last">
+<!ENTITY zotero.item.creatorTransform.fixCase "Fix Case">
 <!ENTITY zotero.item.copyAsURL "Eilañ evel URL">
 <!ENTITY zotero.item.deletePermanently "Dilemel da virviken...">
 
@@ -157,8 +124,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Stokañ un eilenn eus ar restr...">
 <!ENTITY zotero.toolbar.attachment.weblink "Enrollañ al liamm d'ar bajenn a-vremañ">
 <!ENTITY zotero.toolbar.attachment.snapshot "Kemer un dapadenn-skramm eus ar bajenn a-vremañ">
-<!ENTITY zotero.toolbar.context.item "Item">
-<!ENTITY zotero.toolbar.context.notes "Notes">
+<!ENTITY zotero.toolbar.context.item "Elfenn">
+<!ENTITY zotero.toolbar.context.notes "Notennoù">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Baliz ebet da ziskouez">
 <!ENTITY zotero.tagSelector.loadingTags "O kargañ ar balizoù...">
@@ -169,6 +136,7 @@
 <!ENTITY zotero.tagSelector.assignColor "Dereiñ ul liv...">
 <!ENTITY zotero.tagSelector.renameTag "Adenvel ar baliz...">
 <!ENTITY zotero.tagSelector.deleteTag "Dilemel ar baliz...">
+<!ENTITY zotero.tagSelector.splitTag "Split…">
 
 <!ENTITY zotero.tagColorChooser.title "Dereiñ ul liv hag ul lec'hiadur d'ar baliz">
 <!ENTITY zotero.tagColorChooser.color "Liv:">
@@ -176,7 +144,7 @@
 <!ENTITY zotero.tagColorChooser.setColor "Termeniñ al liv">
 <!ENTITY zotero.tagColorChooser.removeColor "Dilemel al liv">
 
-<!ENTITY zotero.lookup.description "Ebarzhiñ anaouadurioù ISBN, PMID, pe arXiv da ouzhpennañ d'ho levraoueg:">
+<!ENTITY zotero.lookup.description "Ebarzhiñ anaouadurioù ISBNoù, DOIoù, PMIDs, arXiv pe c'hoazh bibcodes ADS evit gellout ouzhpennañ d'ho levraoueg:">
 <!ENTITY zotero.lookup.button.search "Klask">
 
 <!ENTITY zotero.createParent.title "Krouiñ un elfenn kar">
@@ -209,12 +177,15 @@
 <!ENTITY zotero.import "Emporzhiañ">
 <!ENTITY zotero.import.whereToImportFrom "Deus pelec'h ho peus c'hoant emporzhiañ?">
 <!ENTITY zotero.import.source.file "Ur restr (BibTeX, RIS, Zotero RDF, hag all hag all...)">
+<!ENTITY zotero.import.source.folder "A folder of PDFs or other files">
+<!ENTITY zotero.import.onlineImport "emporzhiañ enlinenn">
 <!ENTITY zotero.import.importing "Oc'h emporzhiañ...">
 <!ENTITY zotero.import.database "Diaz-roadennoù">
 <!ENTITY zotero.import.lastModified "Kemm diwezhañ">
 <!ENTITY zotero.import.size "Ment">
 <!ENTITY zotero.import.createCollection "Plasit an dastumadegoù hag an teuliadoù emporzhiet e-barzh un dastumadeg nevez">
 <!ENTITY zotero.import.fileHandling "Meradur ar restroù">
+<!ENTITY zotero.import.online.newItemsOnly "Download new items only; don’t update previously imported items">
 
 <!ENTITY zotero.exportOptions.title "Ezporzhiañ...">
 <!ENTITY zotero.exportOptions.format.label "Stumm:">
@@ -225,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Mirout ar mammennoù rummet">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Dilemel an aozer">
+<!ENTITY zotero.citation.suppressAuthor.label "Lezel a-gostez an Aozer">
 <!ENTITY zotero.citation.prefix.label "Rakger:">
 <!ENTITY zotero.citation.suffix.label "Lostger:">
 <!ENTITY zotero.citation.editorWarning.label "Kemenn-diwall: Ma aozit un arroudenn en aozer, ne vo ket gouest ken da velezouriñ ar cheñchadurioù en ho tiaz-roadennoù pe ar stil arroudenniñ.">
@@ -335,3 +306,28 @@
 <!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
 <!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
 <!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+
+<!ENTITY zotero.pdfReader.firstPage "Pajenn gentañ">
+<!ENTITY zotero.pdfReader.lastPage "Pajenn ziwezhañ">
+<!ENTITY zotero.pdfReader.back "Distreiñ">
+<!ENTITY zotero.pdfReader.forward "Kent">
+<!ENTITY zotero.pdfReader.handTool "Ostilh dorn">
+<!ENTITY zotero.pdfReader.verticalScrolling "Dibunañ a-blom">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Dibunañ a-blaen">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Dibunañ dre vloc'had">
+<!ENTITY zotero.pdfReader.noSpreads "No Spreads">
+<!ENTITY zotero.pdfReader.oddSpreads "Odd Spreads">
+<!ENTITY zotero.pdfReader.evenSpreads "Even Spreads">
+<!ENTITY zotero.pdfReader.scrolled "Scrolled">
+<!ENTITY zotero.pdfReader.paginated "Paginated">
+<!ENTITY zotero.pdfReader.zoomIn "Zoumañ">
+<!ENTITY zotero.pdfReader.zoomOut "Dizoumañ">
+<!ENTITY zotero.pdfReader.zoomReset "Reset Zoom">
+<!ENTITY zotero.pdfReader.zoomAuto "Em-adventañ">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Zoom to Page Width">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Zoom to Page Height">
+<!ENTITY zotero.pdfReader.splitVertically "Rannañ a-blom">
+<!ENTITY zotero.pdfReader.splitHorizontally "Rannañ a-blaen">
+<!ENTITY zotero.pdfReader.transferFromPDF "Import Annotations…">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Rotate Page Left">
+<!ENTITY zotero.pdfReader.rotatePageRight "Rotate Page Right">

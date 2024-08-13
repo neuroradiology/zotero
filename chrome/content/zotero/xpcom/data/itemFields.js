@@ -38,6 +38,7 @@ Zotero.ItemFields = new function() {
 	var _typeFieldIDsByBase = {};
 	var _typeFieldNamesByBase = {};
 	var _baseFieldIDsByTypeAndField = {};
+	var _autocompleteFields = null;
 	
 	// Privileged methods
 	this.getName = getName;
@@ -76,11 +77,9 @@ Zotero.ItemFields = new function() {
 		var baseFields = yield Zotero.DB.columnQueryAsync(sql);
 		
 		for (let field of fields) {
-			let isBaseField = baseFields.includes(field.fieldID);
 			let label = field.label || Zotero.Schema.globalSchemaLocale.fields[field.fieldName];
-			// If string not available, use the field name, except for some base fields that aren't
-			// used in the UI and therefore aren't localized
-			if (!label && !['number', 'type', 'medium'].includes(field.fieldName)) {
+			// If string not available, use the field name
+			if (!label) {
 				Zotero.logError(`Localized string not available for field '${field.fieldName}'`);
 				label = Zotero.Utilities.Internal.camelToTitleCase(field.fieldName);
 			}
@@ -156,6 +155,8 @@ Zotero.ItemFields = new function() {
 			case 'dateModified':
 			case 'itemType':
 				return Zotero.Schema.globalSchemaLocale.fields[field];
+			case 'feed':
+				return Zotero.getString('itemFields.feed');
 		}
 		
 		// TODO: different labels for different item types
@@ -347,37 +348,42 @@ Zotero.ItemFields = new function() {
 	
 	
 	this.isAutocompleteField = function (field) {
-		field = this.getName(field);
-		
-		var autoCompleteFields = [
-			'journalAbbreviation',
-			'series',
-			'seriesTitle',
-			'seriesText',
-			'libraryCatalog',
-			'callNumber',
-			'archive',
-			'archiveLocation',
-			'language',
-			'programmingLanguage',
-			'rights',
-			
-			// TEMP - NSF
-			'programDirector',
-			'institution',
-			'discipline'
-		];
-		
-		// Add the type-specific versions of these base fields
-		var baseACFields = ['publisher', 'publicationTitle', 'type', 'medium', 'place'];
-		autoCompleteFields = autoCompleteFields.concat(baseACFields);
-		
-		for (var i=0; i<baseACFields.length; i++) {
-			var add = Zotero.ItemFields.getTypeFieldsFromBase(baseACFields[i], true)
-			autoCompleteFields = autoCompleteFields.concat(add);
+		var fieldName = this.getName(field);
+		if (!fieldName) {
+			Zotero.logError(`Can't check autocomplete for invalid field '${field}'`);
+			return false;
 		}
 		
-		return autoCompleteFields.indexOf(field) != -1;
+		if (!_autocompleteFields) {
+			_autocompleteFields = new Set([
+				'journalAbbreviation',
+				'series',
+				'seriesTitle',
+				'seriesText',
+				'libraryCatalog',
+				'callNumber',
+				'archive',
+				'archiveLocation',
+				'language',
+				'programmingLanguage',
+				'rights',
+
+				// TEMP - NSF
+				'programDirector',
+				'institution',
+				'discipline'
+			]);
+
+			// Add the type-specific versions of base fields
+			for (let baseField of ['publisher', 'publicationTitle', 'type', 'medium', 'place']) {
+				_autocompleteFields.add(baseField);
+				for (let typeField of Zotero.ItemFields.getTypeFieldsFromBase(baseField, true)) {
+					_autocompleteFields.add(typeField);
+				}
+			}
+		}
+		
+		return _autocompleteFields.has(fieldName);
 	}
 	
 	
@@ -389,7 +395,8 @@ Zotero.ItemFields = new function() {
 		var fields = [
 			'title',
 			...this.getTypeFieldsFromBase('title', true),
-			'bookTitle'
+			'publicationTitle',
+			...this.getTypeFieldsFromBase('publicationTitle', true),
 		];
 		return fields.indexOf(field) != -1;
 	}
@@ -411,6 +418,68 @@ Zotero.ItemFields = new function() {
 	}
 	
 	
+	/**
+	 * Guess the text direction of a field, using the item's language field if available.
+	 *
+	 * @param {number} itemTypeID
+	 * @param {string | number} field
+	 * @param {string} [itemLanguage]
+	 * @returns {'auto' | 'ltr' | 'rtl'}
+	 */
+	this.getDirection = function (itemTypeID, field, itemLanguage) {
+		field = this.getName(this.getBaseIDFromTypeAndField(itemTypeID, field) || field);
+		switch (field) {
+			// Certain fields containing IDs, numbers, and data: always LTR
+			case 'ISBN':
+			case 'ISSN':
+			case 'DOI':
+			case 'url':
+			case 'callNumber':
+			case 'volume':
+			case 'numberOfVolumes':
+			case 'issue':
+			case 'runningTime':
+			case 'number':
+			case 'versionNumber':
+			case 'applicationNumber':
+			case 'priorityNumbers':
+			case 'codeNumber':
+			case 'pages':
+			case 'numPages':
+			case 'seriesNumber':
+			case 'edition':
+			case 'citationKey':
+			case 'language':
+			case 'extra':
+				return 'ltr';
+			// Primary fields: follow app locale
+			case 'dateAdded':
+			case 'dateModified':
+			case 'accessDate':
+				return Zotero.dir;
+			// Everything else: guess based on the language if we have one; otherwise auto
+			default:
+				if (itemLanguage) {
+					let languageCode = Zotero.Utilities.Item.languageToISO6391(itemLanguage);
+					try {
+						let locale = new Intl.Locale(languageCode).maximize();
+						// https://www.w3.org/International/questions/qa-scripts#directions
+						// TODO: Remove this once Fx supports Intl.Locale#getTextInfo()
+						if (['Adlm', 'Arab', 'Aran', 'Rohg', 'Hebr', 'Mand', 'Mend', 'Nkoo', 'Hung', 'Samr', 'Syrc', 'Thaa', 'Yezi']
+								.includes(locale.script)) {
+							return 'rtl';
+						}
+					}
+					catch (e) {
+						Zotero.logError(e);
+					}
+					return 'ltr';
+				}
+				return 'auto';
+		}
+	};
+
+
 	/**
 	* Check whether a field is valid, throwing an exception if not
 	* (since it should never actually happen)

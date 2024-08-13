@@ -1,4 +1,11 @@
 describe("Zotero.Search", function() {
+	describe("#name", function () {
+		it("should fail if empty", async function () {
+			var s = new Zotero.Search();
+			assert.throws(() => s.name = '');
+		});
+	});
+	
 	describe("#addCondition()", function () {
 		it("should convert old-style 'collection' condition value", function* () {
 			var col = yield createDataObject('collection');
@@ -158,6 +165,23 @@ describe("Zotero.Search", function() {
 		});
 		
 		describe("Conditions", function () {
+			describe("title", function () {
+				// TEMP
+				it("shouldn't match parent attachments with annotations for 'title' 'does not contain' condition", async function () {
+					var attachment = await importPDFAttachment();
+					var title = "Attachment Title";
+					attachment.setField('title', title);
+					await attachment.saveTx();
+					await createAnnotation('highlight', attachment);
+					
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.addCondition('title', 'doesNotContain', title);
+					var matches = await s.search();
+					assert.notInclude(matches, attachment.id);
+				});
+			});
+			
 			describe("collection", function () {
 				it("should find item in collection", function* () {
 					var col = yield createDataObject('collection');
@@ -215,6 +239,38 @@ describe("Zotero.Search", function() {
 					s.addCondition('recursive', 'true');
 					var matches = await s.search();
 					assert.lengthOf(matches, 0);
+				});
+			});
+			
+			describe("tag", function () {
+				// TEMP
+				it("should match parent attachments for annotation tags", async function () {
+					var attachment = await importPDFAttachment();
+					var annotation = await createAnnotation('highlight', attachment);
+					var tag = Zotero.Utilities.randomString();
+					annotation.addTag(tag);
+					await annotation.saveTx();
+					
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.addCondition('tag', 'is', tag);
+					var matches = await s.search();
+					assert.sameMembers(matches, [attachment.id]);
+				});
+				
+				// TEMP
+				it("shouldn't match parent attachments with annotations for 'tag' 'is not' condition", async function () {
+					var attachment = await importPDFAttachment();
+					await createAnnotation('highlight', attachment);
+					var tag = Zotero.Utilities.randomString();
+					attachment.addTag(tag);
+					await attachment.saveTx();
+					
+					var s = new Zotero.Search();
+					s.libraryID = userLibraryID;
+					s.addCondition('tag', 'isNot', tag);
+					var matches = await s.search();
+					assert.notInclude(matches, attachment.id);
 				});
 			});
 			
@@ -371,7 +427,8 @@ describe("Zotero.Search", function() {
 					s.addCondition('joinMode', 'any');
 					s.addCondition('annotationText', 'contains', str);
 					var matches = await s.search();
-					assert.sameMembers(matches, [annotation.id]);
+					// TEMP: Match parent attachment
+					assert.sameMembers(matches, [attachment.id]);
 				});
 			});
 			
@@ -386,7 +443,8 @@ describe("Zotero.Search", function() {
 					s.addCondition('joinMode', 'any');
 					s.addCondition('annotationComment', 'contains', str);
 					var matches = await s.search();
-					assert.sameMembers(matches, [annotation.id]);
+					// TEMP: Match parent attachment
+					assert.sameMembers(matches, [attachment.id]);
 				});
 			});
 			
@@ -524,6 +582,89 @@ describe("Zotero.Search", function() {
 					assert.include(matches, item1.id);
 					assert.notInclude(matches, item2.id);
 				});
+				it("should include items belonging only to trashed collections", async function () {
+					var collection = await createDataObject('collection');
+					var item = await createDataObject('item', { collections: [collection.id] });
+					
+					var s = new Zotero.Search;
+					s.libraryID = Zotero.Libraries.userLibraryID;
+					s.addCondition('unfiled', 'true');
+
+					// item belonging to a non-trashed collection is not unfiled
+					var matches = await s.search();
+					assert.notInclude(matches, item.id);
+
+					collection.deleted = true;
+					await collection.saveTx();
+
+					// item that only belongs to a trashed collection is unfiled
+					matches = await s.search();
+					assert.include(matches, item.id);
+				});
+			});
+			
+			describe("Quick search", function () {
+				describe("All Fields & Tags", function () {
+					it("should match parent attachment for annotation tag", async function () {
+						var attachment = await importPDFAttachment();
+						var annotation = await createAnnotation('highlight', attachment);
+						var tag = Zotero.Utilities.randomString();
+						annotation.addTag(tag);
+						await annotation.saveTx();
+						
+						var s = new Zotero.Search();
+						s.libraryID = userLibraryID;
+						s.addCondition('quicksearch-fields', 'contains', tag);
+						var matches = await s.search();
+						// TEMP: Match parent attachment
+						assert.sameMembers(matches, [attachment.id]);
+					});
+				})
+				
+				describe("Everything", function () {
+					it("should match parent attachment for annotation comment", async function () {
+						var attachment = await importPDFAttachment();
+						var annotation = await createAnnotation('highlight', attachment);
+						var comment = annotation.annotationComment;
+						
+						var s = new Zotero.Search();
+						s.libraryID = userLibraryID;
+						s.addCondition('quicksearch-everything', 'contains', comment);
+						var matches = await s.search();
+						// TEMP: Match parent attachment
+						assert.sameMembers(matches, [attachment.id]);
+					});
+				});
+			});
+			
+			describe("deleted", function () {
+				describe("if not present", function () {
+					it("should not match regular items in trash with annotated child attachments", async function () {
+						var item = await createDataObject('item');
+						item.deleted = true;
+						await item.saveTx();
+						var attachment = await importPDFAttachment(item);
+						await createAnnotation('highlight', attachment);
+						
+						var s = new Zotero.Search();
+						s.libraryID = userLibraryID;
+						var matches = await s.search();
+						assert.notInclude(matches, attachment.id);
+					});
+					
+					it("should not match regular items with annotated child attachments in trash", async function () {
+						var item = await createDataObject('item');
+						var attachment = await importPDFAttachment(item);
+						attachment.deleted = true;
+						await attachment.saveTx();
+						await createAnnotation('highlight', attachment);
+						
+						var s = new Zotero.Search();
+						s.libraryID = userLibraryID;
+						var matches = await s.search();
+						assert.notInclude(matches, attachment.id);
+					});
+				});
 			});
 		});
 	});
@@ -538,6 +679,13 @@ describe("Zotero.Search", function() {
 			search.deleted = false;
 			await search.saveTx();
 			assert.isFalse(search.deleted);
+		});
+		it("should permanently delete", async function () {
+			var search = await createDataObject('search');
+			assert.isFalse(search.deleted);
+			await search.eraseTx();
+			search = await Zotero.Searches.getAsync(search.id);
+			assert.isFalse(search);
 		});
 	});
 	

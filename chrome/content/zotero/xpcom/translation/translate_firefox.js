@@ -384,12 +384,10 @@ Zotero.Translate.SandboxManager = function(sandboxLocation) {
 			FIRST_ORDERED_NODE_TYPE: 9
 		},
 		DOMParser: function() {
-			return Components.classes["@mozilla.org/xmlextras/domparser;1"]
-				.createInstance(Components.interfaces.nsIDOMParser);
+			return new DOMParser();
 		},
 		XMLSerializer: function() {
-			return Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
-				.createInstance(Components.interfaces.nsIDOMSerializer);
+			return new XMLSerializer();
 		}
 	};
 };
@@ -677,18 +675,12 @@ Zotero.Translate.IO.Read.prototype = {
 	},
 	
 	"_initRDF":function() {
-		// get URI
-		var IOService = Components.classes['@mozilla.org/network/io-service;1']
-						.getService(Components.interfaces.nsIIOService);
-		var fileHandler = IOService.getProtocolHandler("file")
-						  .QueryInterface(Components.interfaces.nsIFileProtocolHandler);
-		var baseURI = fileHandler.getURLSpecFromFile(this.file);
-		
 		Zotero.debug("Translate: Initializing RDF data store");
 		this._dataStore = new Zotero.RDF.AJAW.IndexedFormula();
 		var parser = new Zotero.RDF.AJAW.RDFParser(this._dataStore);
 		try {
 			var nodes = Zotero.Translate.IO.parseDOMXML(this._rawStream, this._charset, this.file.fileSize);
+			let baseURI = Zotero.File.pathToFileURI(this.file);
 			parser.parse(nodes, baseURI);
 			
 			this.RDF = new Zotero.Translate.IO._RDFSandbox(this._dataStore);
@@ -809,8 +801,19 @@ Zotero.Translate.IO.Write.prototype = {
 		this._charset = charset;
 	},
 	
+	/**
+	 * Set a function to modify data on each write()
+	 */
+	setDataProcessor: function (processor) {
+		this._processor = processor;
+	},
+	
 	"write":function(data) {
 		if(!this._charset) this.setCharacterSet("UTF-8");
+		
+		if (this._processor) {
+			data = this._processor(data);
+		}
 		
 		if(!this._writtenToStream && this._charset.substr(this._charset.length-4) == "xBOM"
 		   && BOMs[this._charset.substr(0, this._charset.length-4).toUpperCase()]) {

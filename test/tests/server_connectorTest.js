@@ -4,6 +4,7 @@ describe("Connector Server", function () {
 	Components.utils.import("resource://zotero-unit/httpd.js");
 	var win, connectorServerPath, testServerPath, httpd;
 	var testServerPort = 16213;
+	var snapshotHTML = "<html><head><title>Title</title><body>Body</body></html>";
 	
 	before(function* () {
 		this.timeout(20000);
@@ -24,6 +25,16 @@ describe("Connector Server", function () {
 		testServerPath = 'http://127.0.0.1:' + testServerPort;
 		httpd = new HttpServer();
 		httpd.start(testServerPort);
+		
+		httpd.registerPathHandler(
+			"/snapshot",
+			{
+				handle: function (request, response) {
+					response.setStatusLine(null, 200, "OK");
+					response.write(snapshotHTML);
+				}
+			}
+		);
 	});
 	
 	afterEach(function* () {
@@ -57,7 +68,7 @@ describe("Connector Server", function () {
 			);
 
 			assert.isTrue(Zotero.Translators.get.calledWith('dummy-translator'));
-			let translatorCode = yield translator.getCode();
+			let translatorCode = yield Zotero.Translators.getCodeForTranslator(translator);
 			assert.equal(response.response, translatorCode);
 
 			Zotero.Translators.get.restore();
@@ -96,7 +107,7 @@ describe("Connector Server", function () {
 		// TODO: Test cookies
 		it("should save a translated item to the current selected collection", function* () {
 			var collection = yield createDataObject('collection');
-			yield waitForItemsLoad(win);
+			yield select(win, collection);
 			
 			var body = {
 				items: [
@@ -167,8 +178,7 @@ describe("Connector Server", function () {
 			var group = yield createGroup({
 				editable: false
 			});
-			yield selectLibrary(win, group.libraryID);
-			yield waitForItemsLoad(win);
+			yield select(win, group);
 			
 			var body = {
 				items: [
@@ -237,7 +247,7 @@ describe("Connector Server", function () {
 					}
 				],
 				uri: "https://www-example-com.proxy.example.com/path",
-				proxy: {scheme: 'https://%h.proxy.example.com/%p', dotsToHyphens: true}
+				proxy: {scheme: 'https://%h.proxy.example.com/%p'}
 			};
 			
 			var promise = waitForItemEvent('add');
@@ -359,7 +369,7 @@ describe("Connector Server", function () {
 			
 			it("should download a translated PDF", async function () {
 				var collection = await createDataObject('collection');
-				await waitForItemsLoad(win);
+				await select(win, collection);
 				
 				var sessionID = Zotero.Utilities.randomString();
 				
@@ -443,6 +453,7 @@ describe("Connector Server", function () {
 					assert.lengthOf(response.items, 1);
 					let item = response.items[0];
 					if (item.attachments.length) {
+						await Zotero.Promise.delay(10);
 						let attachments = item.attachments;
 						assert.lengthOf(attachments, 1);
 						let attachment = attachments[0];
@@ -472,7 +483,6 @@ describe("Connector Server", function () {
 							continue;
 						}
 					}
-					await Zotero.Promise.delay(10);
 				}
 				
 				// Legacy endpoint should show 100
@@ -502,7 +512,7 @@ describe("Connector Server", function () {
 			
 			it("should download open-access PDF if no PDF provided", async function () {
 				var collection = await createDataObject('collection');
-				await waitForItemsLoad(win);
+				await select(win, collection);
 				
 				var sessionID = Zotero.Utilities.randomString();
 				
@@ -594,7 +604,7 @@ describe("Connector Server", function () {
 			
 			it("should download open-access PDF if a translated PDF fails", async function () {
 				var collection = await createDataObject('collection');
-				await waitForItemsLoad(win);
+				await select(win, collection);
 				
 				var sessionID = Zotero.Utilities.randomString();
 				
@@ -750,7 +760,7 @@ describe("Connector Server", function () {
 	describe("/connector/saveSingleFile", function () {
 		it("should save a webpage item with /saveSnapshot", async function () {
 			var collection = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection);
 
 			// Promise for item save
 			let promise = waitForItemEvent('add');
@@ -826,7 +836,7 @@ describe("Connector Server", function () {
 
 		it("should save a webpage item with /saveItems", async function () {
 			let collection = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection);
 
 			let title = Zotero.Utilities.randomString();
 			let sessionID = Zotero.Utilities.randomString();
@@ -919,7 +929,7 @@ describe("Connector Server", function () {
 		it("should override SingleFileZ from old connector in /saveSnapshot", async function () {
 			Components.utils.import("resource://gre/modules/FileUtils.jsm");
 			var collection = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection);
 
 			// Promise for item save
 			let promise = waitForItemEvent('add');
@@ -1012,7 +1022,7 @@ describe("Connector Server", function () {
 
 		it("should override SingleFileZ from old connector in /saveItems", async function () {
 			let collection = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection);
 
 			let prefix = '/' + Zotero.Utilities.randomString() + '/';
 			let uri = OS.Path.join(getTestDataDirectory().path, 'snapshot');
@@ -1121,7 +1131,7 @@ describe("Connector Server", function () {
 
 		it("should handle race condition with /saveItems", async function () {
 			let collection = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection);
 
 			let pdfURL = testServerPath + '/pdf';
 			let nonOADOI = '10.2222/bcde';
@@ -1285,7 +1295,7 @@ describe("Connector Server", function () {
 	describe("/connector/saveSnapshot", function () {
 		it("should save a webpage item and snapshot to the current selected collection", function* () {
 			var collection = yield createDataObject('collection');
-			yield waitForItemsLoad(win);
+			yield select(win, collection);
 
 			// saveSnapshot saves parent and child before returning
 			var ids1, ids2;
@@ -1333,7 +1343,7 @@ describe("Connector Server", function () {
 		
 		it("should save a PDF to the current selected collection and retrieve metadata", async function () {
 			var collection = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection);
 			
 			var file = getTestDataDirectory();
 			file.append('test.pdf');
@@ -1397,8 +1407,7 @@ describe("Connector Server", function () {
 			var group = yield createGroup({
 				editable: false
 			});
-			yield selectLibrary(win, group.libraryID);
-			yield waitForItemsLoad(win);
+			yield select(win, group);
 			
 			var promise = waitForItemEvent('add');
 			var reqPromise = Zotero.HTTP.request(
@@ -1409,8 +1418,8 @@ describe("Connector Server", function () {
 						"Content-Type": "application/json"
 					},
 					body: JSON.stringify({
-						url: "http://example.com",
-						html: "<html><head><title>Title</title><body>Body</body></html>"
+						url: testServerPath + '/snapshot',
+						html: snapshotHTML
 					}),
 					successCodes: false
 				}
@@ -1434,7 +1443,6 @@ describe("Connector Server", function () {
 	describe("/connector/savePage", function() {
 		before(async function () {
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 		});
 		
 		it("should return 500 if no translator available for page", function* () {
@@ -1486,7 +1494,7 @@ describe("Connector Server", function () {
 		it("should update collections and tags of item saved via /saveItems", async function () {
 			var collection1 = await createDataObject('collection');
 			var collection2 = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection2);
 			
 			var sessionID = Zotero.Utilities.randomString();
 			var body = {
@@ -1570,7 +1578,7 @@ describe("Connector Server", function () {
 			
 			var collection1 = await createDataObject('collection');
 			var collection2 = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection2);
 			
 			var file = getTestDataDirectory();
 			file.append('test.pdf');
@@ -1626,7 +1634,7 @@ describe("Connector Server", function () {
 			
 			var collection1 = await createDataObject('collection');
 			var collection2 = await createDataObject('collection');
-			await waitForItemsLoad(win);
+			await select(win, collection2);
 			
 			// saveSnapshot saves parent and child before returning
 			var ids1, ids2;
@@ -1645,7 +1653,7 @@ describe("Connector Server", function () {
 					},
 					body: JSON.stringify({
 						sessionID,
-						url: "http://example.com",
+						url: testServerPath + '/snapshot',
 						html: "<html><head><title>Title</title><body>Body</body></html>"
 					})
 				}
@@ -1678,9 +1686,9 @@ describe("Connector Server", function () {
 		});
 		
 		it("should move item saved via /saveItems to another library", async function () {
+			let addItemsSpy = sinon.spy(Zotero.Server.Connector.SaveSession.prototype, 'addItems');
 			var group = await createGroup({ editable: true, filesEditable: false });
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 			
 			var sessionID = Zotero.Utilities.randomString();
 			var body = {
@@ -1726,6 +1734,16 @@ describe("Connector Server", function () {
 			var item1 = Zotero.Items.get(ids1[0]);
 			// Attachment
 			await waitForItemEvent('add');
+			
+			// There's an additional addItems call in saveItems that is not async returned and runs
+			// after attachment notifier add event callbacks are run, so we have to do some
+			// hacky waiting here, otherwise we get some crazy race-conditions due to
+			// collection changing being debounced
+			let callCount = addItemsSpy.callCount;
+			while (addItemsSpy.callCount <= callCount) {
+				await Zotero.Promise.delay(50);
+			}
+			await addItemsSpy.lastCall.returnValue;
 			
 			var req = await reqPromise;
 			assert.equal(req.status, 201);
@@ -1779,12 +1797,13 @@ describe("Connector Server", function () {
 			assert.isFalse(Zotero.Items.exists(item2.id));
 			assert.equal(item3.libraryID, Zotero.Libraries.userLibraryID);
 			assert.equal(item3.numAttachments(), 1);
+			
+			addItemsSpy.restore();
 		});
 		
 		it("should move item saved via /saveSnapshot to another library", async function () {
 			var group = await createGroup({ editable: true, filesEditable: false });
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 			var sessionID = Zotero.Utilities.randomString();
 			
 			// saveSnapshot saves parent and child before returning
@@ -1804,7 +1823,7 @@ describe("Connector Server", function () {
 					},
 					body: JSON.stringify({
 						sessionID,
-						url: "http://example.com",
+						url: testServerPath + '/snapshot',
 						html: "<html><head><title>Title</title><body>Body</body></html>"
 					})
 				}
@@ -1867,7 +1886,6 @@ describe("Connector Server", function () {
 		it("should save item saved via /saveSnapshot and /saveSingleFile to another library", async function () {
 			let group = await createGroup({ editable: true, filesEditable: false });
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 			let sessionID = Zotero.Utilities.randomString();
 
 			// Wait for /saveSnapshot and /saveSingleFile to items
@@ -1995,7 +2013,6 @@ describe("Connector Server", function () {
 		it("should resave item saved via /saveSnapshot and /saveSingleFile when moved to filesEditable library", async function () {
 			let group = await createGroup({ editable: true, filesEditable: false });
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 			let sessionID = Zotero.Utilities.randomString();
 
 			// Wait for /saveSnapshot to save parent item
@@ -2117,7 +2134,6 @@ describe("Connector Server", function () {
 		it("should save item saved via /saveItems and /saveSingleFile to another library", async function () {
 			let group = await createGroup({ editable: true, filesEditable: false });
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 			let sessionID = Zotero.Utilities.randomString();
 
 			// Wait for /saveItems and /saveSingleFile to items
@@ -2264,7 +2280,6 @@ describe("Connector Server", function () {
 		it("should save item saved via /saveItems and /saveSingleFile when moved to filesEditable library", async function () {
 			let group = await createGroup({ editable: true, filesEditable: false });
 			await selectLibrary(win);
-			await waitForItemsLoad(win);
 			let sessionID = Zotero.Utilities.randomString();
 
 			// Wait for /saveItems to save parent item
@@ -2436,8 +2451,7 @@ describe("Connector Server", function () {
 		
 		it('should import a style with application/vnd.citationstyles.style+xml content-type', function* () {
 			sinon.stub(Zotero.Styles, 'install').callsFake(function(style) {
-				var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-					.createInstance(Components.interfaces.nsIDOMParser),
+				var parser = new DOMParser(),
 				doc = parser.parseFromString(style, "application/xml");
 				
 				return Zotero.Promise.resolve({
@@ -2465,8 +2479,7 @@ describe("Connector Server", function () {
 		
 		it('should accept text/plain request with X-Zotero-Connector-API-Version or Zotero-Allowed-Request', async function () {
 			sinon.stub(Zotero.Styles, 'install').callsFake(function(style) {
-				var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-					.createInstance(Components.interfaces.nsIDOMParser),
+				var parser = new DOMParser(),
 				doc = parser.parseFromString(style, "application/xml");
 				
 				return Zotero.Promise.resolve({
@@ -2563,9 +2576,9 @@ describe("Connector Server", function () {
 			assert.equal(req.status, 403);
 		});
 		
-		it('should import resources (BibTeX) into selected collection', function* () {
-			var collection = yield createDataObject('collection');
-			yield waitForItemsLoad(win);
+		it('should import resources (BibTeX) into selected collection', async function () {
+			var collection = await createDataObject('collection');
+			await select(win, collection);
 			
 			var resource = `@book{test1,
   title={Test1},
@@ -2576,7 +2589,7 @@ describe("Connector Server", function () {
 }`;
 			
 			var addedItemIDsPromise = waitForItemEvent('add');
-			var req = yield Zotero.HTTP.request(
+			var req = await Zotero.HTTP.request(
 				'POST',
 				endpoint,
 				{
@@ -2590,19 +2603,18 @@ describe("Connector Server", function () {
 			assert.equal(req.status, 201);
 			assert.equal(JSON.parse(req.responseText)[0].title, 'Test1');
 			
-			let itemIDs = yield addedItemIDsPromise;
+			let itemIDs = await addedItemIDsPromise;
 			assert.isTrue(collection.hasItem(itemIDs[0]));
 			var item = Zotero.Items.get(itemIDs[0]);
 			assert.sameDeepMembers(item.getTags(), [{ tag: 'A', type: 1 }, { tag: 'B', type: 1 }]);
 		});
 		
 		
-		it('should switch to My Library if read-only library is selected', function* () {
-			var group = yield createGroup({
+		it('should switch to My Library if read-only library is selected', async function () {
+			var group = await createGroup({
 				editable: false
 			});
-			yield selectLibrary(win, group.libraryID);
-			yield waitForItemsLoad(win);
+			await select(win, group);
 			
 			var resource = `@book{test1,
   title={Test1},
@@ -2612,7 +2624,7 @@ describe("Connector Server", function () {
 }`;
 			
 			var addedItemIDsPromise = waitForItemEvent('add');
-			var req = yield Zotero.HTTP.request(
+			var req = await Zotero.HTTP.request(
 				'POST',
 				endpoint,
 				{
@@ -2631,9 +2643,191 @@ describe("Connector Server", function () {
 				Zotero.Libraries.userLibraryID
 			);
 			
-			let itemIDs = yield addedItemIDsPromise;
+			let itemIDs = await addedItemIDsPromise;
 			var item = Zotero.Items.get(itemIDs[0]);
 			assert.equal(item.libraryID, Zotero.Libraries.userLibraryID);
+		});
+	});
+	
+	describe('/connector/request', function () {
+		let endpoint;
+		
+		before(function () {
+			endpoint = connectorServerPath + '/connector/request';
+		});
+		
+		beforeEach(function () {
+			Zotero.Server.Connector.Request.enableValidation = true;
+		});
+
+		after(function () {
+			Zotero.Server.Connector.Request.enableValidation = true;
+		});
+		
+		it('should reject GET requests', async function () {
+			let req = await Zotero.HTTP.request(
+				'GET',
+				endpoint,
+				{
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						method: 'GET',
+						url: 'https://www.example.com/'
+					}),
+					successCodes: false
+				}
+			);
+			assert.equal(req.status, 400);
+			assert.include(req.responseText, 'Endpoint does not support method');
+		});
+
+		it('should not make requests to arbitrary hosts', async function () {
+			let req = await Zotero.HTTP.request(
+				'POST',
+				endpoint,
+				{
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						method: 'GET',
+						url: `http://localhost:${Zotero.Prefs.get('httpServer.port')}/`
+					}),
+					successCodes: false
+				}
+			);
+			assert.equal(req.status, 400);
+			assert.include(req.responseText, 'Unsupported URL');
+
+			req = await Zotero.HTTP.request(
+				'POST',
+				endpoint,
+				{
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						method: 'GET',
+						url: `http://www.example.com/`
+					}),
+					successCodes: false
+				}
+			);
+			assert.equal(req.status, 400);
+			assert.include(req.responseText, 'Unsupported URL');
+		});
+
+		it('should reject requests with non-Mozilla/ user agents', async function () {
+			let req = await Zotero.HTTP.request(
+				'POST',
+				endpoint,
+				{
+					headers: {
+						'content-type': 'application/json',
+						'user-agent': 'BadBrowser/1.0'
+					},
+					body: JSON.stringify({
+						method: 'GET',
+						url: `https://www.worldcat.org/api/nonexistent`
+					}),
+					successCodes: false
+				}
+			);
+			assert.equal(req.status, 400);
+			assert.include(req.responseText, 'Unsupported User-Agent');
+		});
+
+		it('should allow a request to an allowed host', async function () {
+			let stub = sinon.stub(Zotero.HTTP, 'request');
+			// First call: call original
+			stub.callThrough();
+			// Second call (call from within /connector/request handler): return the following
+			stub.onSecondCall().returns({
+				status: 200,
+				getAllResponseHeaders: () => '',
+				response: 'it went through'
+			});
+			
+			let req = await Zotero.HTTP.request(
+				'POST',
+				endpoint,
+				{
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						method: 'GET',
+						url: `https://www.worldcat.org/api/nonexistent`
+					})
+				}
+			);
+			assert.equal(req.status, 200);
+			assert.equal(JSON.parse(req.responseText).body, 'it went through');
+			
+			stub.restore();
+		});
+
+		it('should return response in translator request() format with lowercase headers', async function () {
+			let testEndpointPath = '/test/header';
+			
+			httpd.registerPathHandler(
+				testEndpointPath,
+				{
+					handle: function (request, response) {
+						response.setStatusLine(null, 200, 'OK');
+						response.setHeader('X-Some-Header', 'Header value');
+						response.write('body');
+					}
+				}
+			);
+			
+			Zotero.Server.Connector.Request.enableValidation = false;
+			let req = await Zotero.HTTP.request(
+				'POST',
+				endpoint,
+				{
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						method: 'GET',
+						url: testServerPath + testEndpointPath
+					}),
+					responseType: 'json'
+				}
+			);
+			
+			assert.equal(req.response.status, 200);
+			assert.equal(req.response.headers['x-some-header'], 'Header value');
+			assert.equal(req.response.body, 'body');
+		});
+
+		it('should set Referer', async function () {
+			let testEndpointPath = '/test/referer';
+			let referer = 'https://www.example.com/';
+
+			httpd.registerPathHandler(
+				testEndpointPath,
+				{
+					handle: function (request, response) {
+						assert.equal(request.getHeader('Referer'), referer);
+						response.setStatusLine(null, 200, 'OK');
+						response.write('');
+					}
+				}
+			);
+
+			Zotero.Server.Connector.Request.enableValidation = false;
+			let req = await Zotero.HTTP.request(
+				'POST',
+				endpoint,
+				{
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						method: 'GET',
+						url: testServerPath + testEndpointPath,
+						options: {
+							headers: {
+								Referer: referer
+							}
+						}
+					})
+				}
+			);
+
+			assert.equal(JSON.parse(req.response).status, 200);
 		});
 	});
 });

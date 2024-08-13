@@ -29,14 +29,9 @@
 
 var EXPORTED_SYMBOLS = ["ZoteroPluginInstaller"];
 
-var Zotero = Components.classes["@zotero.org/Zotero;1"]
-				// Currently uses only nsISupports
-				//.getService(Components.interfaces.chnmIZoteroService).
-				.getService(Components.interfaces.nsISupports)
-				.wrappedJSObject;
+var { Zotero } = ChromeUtils.importESModule("chrome://zotero/content/zotero.mjs");
 
 Components.utils.import("resource://gre/modules/Services.jsm");
-Components.utils.import("resource://gre/modules/AddonManager.jsm");
 
 var installationInProgress = false;
 var _runningTimers = [];
@@ -63,54 +58,35 @@ var ZoteroPluginInstaller = function(addon, failSilently, force) {
 
 	this.prefPaneDoc = null;
 	
-	var me = this;
-	var extensionIDs = [this._addon.EXTENSION_ID].concat(this._addon.REQUIRED_ADDONS.map(req => req.id));
-	Zotero.debug("PluginInstaller: fetching addon info");
-	AddonManager.getAddonsByIDs(extensionIDs, function(addons) {
-		Zotero.debug("PluginInstaller: addon info fetched");
-		me._addonInfo = addons[0];
-		me._addonInfoAvailable();
-	});
+	this.init();
 };
 
 ZoteroPluginInstaller.prototype = {
-	_errorDisplayed: false,
-	
-	_addonInfoAvailable: function() {
+	init: async function() {
+		if (this._initialized) return;
+		Zotero.debug("PluginInstaller: fetching addon info");
+		Zotero.debug("PluginInstaller: addon info fetched");
+		
 		try {
-			this._version = this._addonInfo.version;
-			
-			try {
-				this._addon.verifyNotCorrupt(this);
-			} catch(e) {
-				Zotero.debug("Not installing +this._addon.EXTENSION_STRING+:  "+e.toString());
-				return;
-			}
-			
-			var version = this.prefBranch.getCharPref("version");			
-			if(this.force || (
-					(
-						Services.vc.compare(version, this._addon.LAST_INSTALLED_FILE_UPDATE) < 0
-						|| (!Zotero.isStandalone && !this.prefBranch.getBoolPref("installed"))
-					)
-					&& !this.prefBranch.getBoolPref("skipInstallation")
-				)) {
-					
-				var me = this;
+			this._version = (await Zotero.File.getContentsFromURLAsync(this._addon.VERSION_FILE)).trim();
+			var version = this.prefBranch.getCharPref("version");
+			if (this.force || (Services.vc.compare(version, this._addon.LAST_INSTALLED_FILE_UPDATE) < 0
+					&& !this.prefBranch.getBoolPref("skipInstallation"))) {
 				if (installationInProgress) {
 					Zotero.debug(`${this._addon.APP} extension installation is already in progress`);
 					return;
 				}
-				
+
 				installationInProgress = true;
 				if(!this._addon.DISABLE_PROGRESS_WINDOW) {
 					this._progressWindow = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
 						.getService(Components.interfaces.nsIWindowWatcher)
-						.openWindow(null, "chrome://"+this._addon.EXTENSION_DIR+"/content/progress.xul", '',
-							"chrome,resizable=no,close=no,centerscreen", null);	
-					this._progressWindow.addEventListener("load", function() { me._firstRunListener() }, false);
+						.openWindow(null, "chrome://zotero/content/progressWindow.xhtml", '',
+							"chrome,resizable=no,close=no,centerscreen", null);
+					this._progressWindow.addEventListener("load", () => { this._firstRunListener() }, false);
 				} else {
-					this._addon.install(this);
+					let result = this._addon.install(this);
+					if (result.then) await result;
 				}
 			}
 		} catch(e) {
@@ -118,25 +94,21 @@ ZoteroPluginInstaller.prototype = {
 		} finally {
 			installationInProgress = false;
 		}
+		
+		this._initialized = true;
 	},
+	_errorDisplayed: false,
 	
 	isInstalled: function() {
-		while(!this._version) Zotero.mainThread.processNextEvent(true);
-		return this.prefBranch.getCharPref("version") == this._version && 
-			this.prefBranch.getBoolPref("installed");
-	},
-	
-	getAddonPath: function(addonID) {
-		return this._addonInfo.getResourceURI().
-			QueryInterface(Components.interfaces.nsIFileURL).file;
+		return this.prefBranch.getBoolPref("installed");
 	},
 	
 	setProgressWindowLabel: function(value) {
-		if(this._progressWindow) this._progressWindowLabel.value = value;
+		if (this._progressWindow) this._progressWindowLabel.value = value;
 	},
 	
 	closeProgressWindow: function(value) {
-		if(this._progressWindow) this._progressWindow.close();
+		if (this._progressWindow) this._progressWindow.close();
 	},
 	
 	success: function() {
@@ -148,10 +120,11 @@ ZoteroPluginInstaller.prototype = {
 		if(this.force && !this._addon.DISABLE_PROGRESS_WINDOW) {
 			var addon = this._addon;
 			setTimeout(function() {
-				Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
-					.getService(Components.interfaces.nsIPromptService)
-					.alert(null, addon.EXTENSION_STRING,
-					Zotero.getString("zotero.preferences.wordProcessors.installationSuccess"));
+				Services.prompt.alert(
+					null,
+					addon.EXTENSION_STRING,
+					Zotero.getString("zotero.preferences.wordProcessors.installationSuccess")
+				);
 			}, 0);
 		}
 	},
@@ -168,10 +141,18 @@ ZoteroPluginInstaller.prototype = {
 		this._errorDisplayed = true;
 		var addon = this._addon;
 		setTimeout(function() {
-			Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
-				.getService(Components.interfaces.nsIPromptService)
-				.alert(null, addon.EXTENSION_STRING,
-				(error ? error : Zotero.getString("zotero.preferences.wordProcessors.installationError", [addon.APP, Zotero.appName])));
+			var ps = Services.prompt;
+			var buttonFlags = ps.BUTTON_POS_0 * ps.BUTTON_TITLE_OK
+				+ (ps.BUTTON_POS_1) * (ps.BUTTON_TITLE_IS_STRING);
+			var result = ps.confirmEx(null,
+				addon.EXTENSION_STRING,
+				(error ? error : Zotero.getString("zotero.preferences.wordProcessors.installationError", [addon.APP, Zotero.appName])),
+				buttonFlags, null,
+				Zotero.getString('zotero.preferences.wordProcessors.manualInstallation.button'),
+				null, null, {});
+			if (result == 1) {
+				Zotero.launchURL("https://www.zotero.org/support/word_processor_plugin_manual_installation");
+			}	
 		}, 0);
 	},
 	
@@ -184,24 +165,25 @@ ZoteroPluginInstaller.prototype = {
 	showPreferences: function(document) {
 		this.prefPaneDoc = document;
 		var isInstalled = this.isInstalled(),
-			groupbox = document.createElement("groupbox");
+			groupbox = document.createXULElement("groupbox");
 		groupbox.id = this._addon.EXTENSION_DIR;
 
-		var caption = document.createElement("caption");
-		caption.setAttribute("label", this._addon.APP);
-		groupbox.appendChild(caption);
+		var label = document.createXULElement("label");
+		var h2 = document.createElement('h2');
+		h2.textContent = this._addon.APP;
+		label.appendChild(h2);
+		groupbox.appendChild(label);
 
-		var description = document.createElement("description");
-		description.style.width = "45em";
+		var description = document.createXULElement("description");
 		description.appendChild(document.createTextNode(
 			isInstalled ?
 				Zotero.getString('zotero.preferences.wordProcessors.installed', this._addon.APP) :
 				Zotero.getString('zotero.preferences.wordProcessors.notInstalled', this._addon.APP)));
 		groupbox.appendChild(description);
 
-		var hbox = document.createElement("hbox");
+		var hbox = document.createXULElement("hbox");
 		hbox.setAttribute("pack", "center");
-		var button = document.createElement("button"),
+		var button = document.createXULElement("button"),
 			addon = this._addon;
 		button.setAttribute("label", 
 			(isInstalled ?
@@ -219,12 +201,12 @@ ZoteroPluginInstaller.prototype = {
 		hbox.appendChild(button);
 		groupbox.appendChild(hbox);
 
-		var tabpanel = document.getElementById("wordProcessors"),
+		var container = document.getElementById("wordProcessorInstallers"),
 			old = document.getElementById(this._addon.EXTENSION_DIR);
 		if(old) {
-			tabpanel.replaceChild(groupbox, old);
+			container.replaceChild(groupbox, old);
 		} else {
-			tabpanel.insertBefore(groupbox, tabpanel.firstChild);
+			container.appendChild(groupbox);
 		}
 	},
 	
@@ -248,13 +230,14 @@ ZoteroPluginInstaller.prototype = {
 	_firstRunListener: function() {
 		this._progressWindowLabel = this._progressWindow.document.getElementById("progress-label");
 		this._progressWindowLabel.value = Zotero.getString('zotero.preferences.wordProcessors.installing', this._addon.EXTENSION_STRING);
+		this._progressWindow.sizeToContent();
 		var me = this;
 		setTimeout(function() {
 			me._progressWindow.focus();
-			setTimeout(function() {
+			setTimeout(async function() {
 				me._progressWindow.focus();
 				try {
-					me._addon.install(me);
+					await me._addon.install(me);
 				} catch(e) {
 					me.error();
 					throw e;

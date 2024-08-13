@@ -6,7 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Anul·la la selecció">
 <!ENTITY zotero.general.edit "Edita">
 <!ENTITY zotero.general.delete "Suprimeix">
-<!ENTITY zotero.general.moveToTrash "Move to Trash">
+<!ENTITY zotero.general.moveToTrash "Mou a la paperera">
 <!ENTITY zotero.general.ok "D'acord">
 <!ENTITY zotero.general.cancel "Cancel·la">
 <!ENTITY zotero.general.refresh "Refresca">
@@ -15,6 +15,7 @@
 <!ENTITY zotero.general.advancedOptions.label "Opcions avançades">
 <!ENTITY zotero.general.tools "Eines">
 <!ENTITY zotero.general.more "Més">
+<!ENTITY zotero.general.moreInformation "Més informació">
 <!ENTITY zotero.general.loading "S'està carregant…">
 <!ENTITY zotero.general.close "Tanca">
 <!ENTITY zotero.general.minimize "Minimitza">
@@ -45,53 +46,22 @@
 <!ENTITY zotero.upgrade.changeLogLink "la llista de canvis">
 <!ENTITY zotero.upgrade.changeLogAfterLink "per esbrinar si hi ha novetats">
 
-<!ENTITY zotero.tabs.info.label "Informació">
 <!ENTITY zotero.tabs.notes.label "Notes">
 <!ENTITY zotero.tabs.attachments.label "Adjunts">
-<!ENTITY zotero.tabs.tags.label "Etiquetes">
-<!ENTITY zotero.tabs.related.label "Relacionats">
-<!ENTITY zotero.notes.separate "Edita en una finestra separada">
 
 <!ENTITY zotero.toolbar.duplicate.label "Mostra els duplicats">
 <!ENTITY zotero.collections.showUnfiledItems "Mostra els elements no arxivats">
 <!ENTITY zotero.collections.showRetractedItems "Mostra els elements retractats">
 
 <!ENTITY zotero.items.itemType "Tipus d'element">
-<!ENTITY zotero.items.type_column "Tipus d'element">
-<!ENTITY zotero.items.title_column "Títol">
 <!ENTITY zotero.items.creator_column "Creador">
-<!ENTITY zotero.items.date_column "Data">
 <!ENTITY zotero.items.year_column "Any">
-<!ENTITY zotero.items.publisher_column "Editorial">
-<!ENTITY zotero.items.publication_column "Publicació">
-<!ENTITY zotero.items.journalAbbr_column "Abreviatura de la revista">
-<!ENTITY zotero.items.language_column "Llengua">
-<!ENTITY zotero.items.accessDate_column "Data d'accés">
-<!ENTITY zotero.items.libraryCatalog_column "Catàleg de la biblioteca">
-<!ENTITY zotero.items.callNumber_column "Codi del catàleg">
-<!ENTITY zotero.items.rights_column "Drets">
-<!ENTITY zotero.items.dateAdded_column "Data d&apos;incorporació">
 <!ENTITY zotero.items.dateModified_column "Data de modificació">
-<!ENTITY zotero.items.extra_column "Extra">
-<!ENTITY zotero.items.archive_column "Arxiu">
-<!ENTITY zotero.items.archiveLocation_column "Ubicació a l'arxiu">
-<!ENTITY zotero.items.place_column "Lloc">
-<!ENTITY zotero.items.volume_column "Volum">
-<!ENTITY zotero.items.edition_column "Edició">
-<!ENTITY zotero.items.pages_column "Nre. de pàgines">
-<!ENTITY zotero.items.issue_column "Número">
-<!ENTITY zotero.items.series_column "Sèrie">
-<!ENTITY zotero.items.seriesTitle_column "Títol de la sèrie">
-<!ENTITY zotero.items.court_column "Tribunal">
-<!ENTITY zotero.items.medium_column "Medi/format">
-<!ENTITY zotero.items.genre_column "Gènere">
-<!ENTITY zotero.items.system_column "Sistema">
 <!ENTITY zotero.items.moreColumns.label "Més columnes">
 <!ENTITY zotero.items.restoreColumnOrder.label "Restableix l'ordre de les columnes">
 
 <!ENTITY zotero.items.menu.showInLibrary "Mostra a la biblioteca">
 <!ENTITY zotero.items.menu.attach.note "Afegeix una nota">
-<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Afegeix un adjunt">
 <!ENTITY zotero.items.menu.attach.link.uri "Adjunta un enllaç a l'URI...">
 <!ENTITY zotero.items.menu.attach.file "Adjunta la còpia emmagatzemada del fitxer...">
@@ -101,7 +71,6 @@
 <!ENTITY zotero.items.menu.duplicateItem "Duplica l&apos;element seleccionat">
 <!ENTITY zotero.items.menu.mergeItems "Combina els elements...">
 <!ENTITY zotero.items.menu.unrecognize "Desfés les metadades recuperades">
-<!ENTITY zotero.items.menu.reportMetadata "Informa de metadades incorrectes">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Triaeu la versió de l'element com a element prinicpal:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Seleccioneu els camps que voleu mantenir de les altres versions de l'element:">
@@ -112,7 +81,6 @@
 <!ENTITY zotero.toolbar.removeItem.label "Esborra l'element...">
 <!ENTITY zotero.toolbar.newLibrary.label "Biblioteca nova">
 <!ENTITY zotero.toolbar.newCollection.label "Col·lecció nova...">
-<!ENTITY zotero.toolbar.markFeedRead.label "Marca el canal com a llegit">
 <!ENTITY zotero.toolbar.newGroup "Grup nou...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Subcol·lecció nova...">
 <!ENTITY zotero.toolbar.newSavedSearch.label "Nova cerca desada...">
@@ -134,7 +102,6 @@
 <!ENTITY zotero.toolbar.feeds.new "Canal nou">
 <!ENTITY zotero.toolbar.feeds.new.fromURL "De l'URL…">
 <!ENTITY zotero.toolbar.feeds.new.fromOPML "De l'OPML…">
-<!ENTITY zotero.toolbar.feeds.refresh "Refresca el canal">
 <!ENTITY zotero.toolbar.feeds.edit "Edita el canal…">
 
 <!ENTITY zotero.item.add "Afegeix">
@@ -142,8 +109,8 @@
 <!ENTITY zotero.item.textTransform "Transforma el text">
 <!ENTITY zotero.item.textTransform.titlecase "Majúscules o minúscules del títol">
 <!ENTITY zotero.item.textTransform.sentencecase "Majúscules o minúscules de la frase">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Intercanvia nom i cognoms">
-<!ENTITY zotero.item.viewOnline "Mira en línia">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Intercanvia primer/últim">
+<!ENTITY zotero.item.creatorTransform.fixCase "Arregla majúscules/minúscules">
 <!ENTITY zotero.item.copyAsURL "Copia com a URL">
 <!ENTITY zotero.item.deletePermanently "Elimina permanentment…">
 
@@ -157,7 +124,7 @@
 <!ENTITY zotero.toolbar.attachment.add "Emmagatzema una còpia del fitxer...">
 <!ENTITY zotero.toolbar.attachment.weblink "Desa l'enllaç a la pàgina actual">
 <!ENTITY zotero.toolbar.attachment.snapshot "Captura la pàgina actual">
-<!ENTITY zotero.toolbar.context.item "Item">
+<!ENTITY zotero.toolbar.context.item "Element">
 <!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "No hi ha etiquetes per mostrar">
@@ -169,6 +136,7 @@
 <!ENTITY zotero.tagSelector.assignColor "Assigna color...">
 <!ENTITY zotero.tagSelector.renameTag "Reanomena l'etiqueta...">
 <!ENTITY zotero.tagSelector.deleteTag "Esborra l'etiqueta...">
+<!ENTITY zotero.tagSelector.splitTag "Divideix…">
 
 <!ENTITY zotero.tagColorChooser.title "Tria un color i una posició per a l'etiqueta">
 <!ENTITY zotero.tagColorChooser.color "Color:">
@@ -176,7 +144,7 @@
 <!ENTITY zotero.tagColorChooser.setColor "Estableix el color">
 <!ENTITY zotero.tagColorChooser.removeColor "Elimina el color">
 
-<!ENTITY zotero.lookup.description "Introduïu un ISBN, DOI, PMID o ID d'arXiv per afegir a la vostra biblioteca:">
+<!ENTITY zotero.lookup.description "Introduïu codis ISBN, DOI, PMID, arXiv ID o ADS Bibcodes per afegir a la vostra biblioteca:">
 <!ENTITY zotero.lookup.button.search "Cerca">
 
 <!ENTITY zotero.createParent.title "Crea un element pare">
@@ -209,12 +177,15 @@
 <!ENTITY zotero.import "Importa">
 <!ENTITY zotero.import.whereToImportFrom "D'on voldríeu importar?">
 <!ENTITY zotero.import.source.file "Un fitxer (BibTex, RIS, Zotero RDF, etc.)">
+<!ENTITY zotero.import.source.folder "Una carpeta amb fitxers PDF o d'altre tipus">
+<!ENTITY zotero.import.onlineImport "importació en línia">
 <!ENTITY zotero.import.importing "S'està important…">
 <!ENTITY zotero.import.database "Base de dades">
 <!ENTITY zotero.import.lastModified "Darrera modificació">
 <!ENTITY zotero.import.size "Mida">
 <!ENTITY zotero.import.createCollection "Col·loca les col·leccions importades i elements en una col·lecció nova">
 <!ENTITY zotero.import.fileHandling "Gestió de fitxers">
+<!ENTITY zotero.import.online.newItemsOnly "Baixa només els elements nous; no actualitzis els elements importats anteriorment">
 
 <!ENTITY zotero.exportOptions.title "Exporta...">
 <!ENTITY zotero.exportOptions.format.label "Format:">
@@ -225,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Mantingues les fonts ordenades">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Suprimeix l'autor">
+<!ENTITY zotero.citation.suppressAuthor.label "Omet l'autor">
 <!ENTITY zotero.citation.prefix.label "Prefix:">
 <!ENTITY zotero.citation.suffix.label "Sufix:">
 <!ENTITY zotero.citation.editorWarning.label "Avís: Si editeu la cita a l'editor de cites no s'actualitzarà més i no reflectirà els canvis en la base de dades o de l'estil de cita.">
@@ -330,8 +301,33 @@
 <!ENTITY zotero.attachLink.label.link "Enllaç:">
 <!ENTITY zotero.attachLink.label.title "Títol:">
 
-<!ENTITY zotero.context.addChildNote "Add Item Note">
-<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
-<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
-<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
-<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+<!ENTITY zotero.context.addChildNote "Afegeix nota de l'element">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Afegeix nota de l'element de les anotacions">
+<!ENTITY zotero.context.addStandaloneNote "Afegeix nota sola">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Afegeix nota sola de les anotacions">
+<!ENTITY zotero.context.editInWindow "Edita en una finestra separada">
+
+<!ENTITY zotero.pdfReader.firstPage "Primera pàgina">
+<!ENTITY zotero.pdfReader.lastPage "Darrera pàgina">
+<!ENTITY zotero.pdfReader.back "Enrere">
+<!ENTITY zotero.pdfReader.forward "Endavant">
+<!ENTITY zotero.pdfReader.handTool "Eina de mà">
+<!ENTITY zotero.pdfReader.verticalScrolling "Desplaçament vertical">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Desplaçament horitzontal">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Desplaçament ajustat">
+<!ENTITY zotero.pdfReader.noSpreads "Cap disposició">
+<!ENTITY zotero.pdfReader.oddSpreads "Disposició en senars">
+<!ENTITY zotero.pdfReader.evenSpreads "Disposició en parells">
+<!ENTITY zotero.pdfReader.scrolled "Desplaçat">
+<!ENTITY zotero.pdfReader.paginated "Paginat">
+<!ENTITY zotero.pdfReader.zoomIn "Amplia">
+<!ENTITY zotero.pdfReader.zoomOut "Redueix">
+<!ENTITY zotero.pdfReader.zoomReset "Restableix el zoom">
+<!ENTITY zotero.pdfReader.zoomAuto "Redimensiona automàticament">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Ajusta a l'amplada de la pàgina">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Ajusta a l'alçada de la pàgina">
+<!ENTITY zotero.pdfReader.splitVertically "Divideix verticalment">
+<!ENTITY zotero.pdfReader.splitHorizontally "Divideix horitzontalment">
+<!ENTITY zotero.pdfReader.transferFromPDF "Importa anotacions…">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Gira la pàgina a l'esquerra">
+<!ENTITY zotero.pdfReader.rotatePageRight "Gira la pàgina a la dreta">

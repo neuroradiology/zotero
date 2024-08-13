@@ -27,14 +27,14 @@
 Zotero.Report = {};
 
 Zotero.Report.HTML = new function () {
-	let domParser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-		.createInstance(Components.interfaces.nsIDOMParser);
+	let domParser = new DOMParser();
 	
-	this.listGenerator = function* (items, combineChildItems) {
+	this.listGenerator = function* (items, combineChildItems, libraryID) {
 		yield '<!DOCTYPE html>\n'
 			+ '<html>\n'
 			+ '	<head>\n'
 			+ '		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
+			+ '		<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\' data:" />\n'
 			+ '		<title>' + Zotero.getString('report.title.default') + '</title>\n'
 			+ '		<link rel="stylesheet" type="text/css" href="' + _getCSSDataURI('detail') + '"/>\n'
 			+ '		<link rel="stylesheet" type="text/css" media="screen,projection" href="' + _getCSSDataURI('detail_screen') + '"/>\n'
@@ -69,7 +69,7 @@ Zotero.Report.HTML = new function () {
 				// Independent note
 				if (obj['note']) {
 					content += '\n\t\t\t';
-					content += getNoteHTML(obj.note);
+					content += yield getNoteHTML(libraryID, obj);
 				}
 			}
 			
@@ -85,7 +85,7 @@ Zotero.Report.HTML = new function () {
 					for (let note of obj.reportChildren.notes) {
 						content += '\t\t\t\t\t<li id="item_' + note.key + '">\n';
 						
-						content += getNoteHTML(note.note);
+						content += yield getNoteHTML(libraryID, note);
 						
 						// Child note tags
 						content += _generateTagsList(note);
@@ -95,8 +95,8 @@ Zotero.Report.HTML = new function () {
 					content += '\t\t\t\t</ul>\n';
 				}
 			
-				// Chid attachments
-				content += _generateAttachmentsList(obj.reportChildren);
+				// Child attachments
+				content += yield _generateAttachmentsList(libraryID, obj.reportChildren);
 			}
 			
 			// Related items
@@ -199,6 +199,7 @@ Zotero.Report.HTML = new function () {
 				case 'tags':
 				case 'deleted':
 				case 'parentItem':
+				case 'inPublications':
 				
 				case 'charset':
 				case 'contentType':
@@ -273,7 +274,7 @@ Zotero.Report.HTML = new function () {
 	}
 	
 	
-	function _generateAttachmentsList(obj) {
+	async function _generateAttachmentsList(libraryID, obj) {
 		var content = '';
 		if (obj.attachments && obj.attachments.length) {
 			content += '\t\t\t\t<h3 class="attachments">' + escapeXML(Zotero.getString('itemFields.attachments')) + '</h3>\n';
@@ -292,7 +293,7 @@ Zotero.Report.HTML = new function () {
 				// Attachment note
 				if (attachment.note) {
 					content += '\t\t\t\t\t\t<div class="note">';
-					content += getNoteHTML(attachment.note);
+					content += await getNoteHTML(libraryID, attachment);
 					content += '\t\t\t\t\t</div>';
 				}
 				
@@ -304,7 +305,14 @@ Zotero.Report.HTML = new function () {
 	}
 	
 	
-	function getNoteHTML(note) {
+	async function getNoteHTML(libraryID, jsonItem) {
+		var note = jsonItem.note;
+		if (libraryID) {
+			var item = Zotero.Items.getByLibraryAndKey(libraryID, jsonItem.key);
+			if (item.isNote()) {
+				note = await Zotero.Notes.getExportableNote(item);
+			}
+		}
 		// If HTML tag or entity, parse as HTML
 		if (note.match(/(<(p|ul|ol|div|a|br|b|i|u|strong|em( >))|&[a-z]+;|&#[0-9]+;)/)) {
 			let doc = domParser.parseFromString('<div>'
@@ -321,7 +329,7 @@ Zotero.Report.HTML = new function () {
 	
 	
 	var escapeXML = function (str) {
-		str = str.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ud800-\udfff\ufffe\uffff]/g, '\u2B1A');
+		str = str.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ud800-\udfff\ufffe\uffff]/gu, '\u2B1A');
 		return Zotero.Utilities.htmlSpecialChars(str);
 	}
 }

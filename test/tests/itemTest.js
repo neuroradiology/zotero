@@ -35,6 +35,56 @@ describe("Zotero.Item", function () {
 			]);
 			assert.equal(item.getField('firstCreator'), "B");
 		});
+
+		it("should return a multi-author firstCreator for an unsaved item", async function () {
+			var item = createUnsavedDataObject('item');
+			item.setCreators([
+				{
+					firstName: "A",
+					lastName: "B",
+					creatorType: "author"
+				},
+				{
+					firstName: "C",
+					lastName: "D",
+					creatorType: "author"
+				}
+			]);
+			assert.equal(
+				item.getField('firstCreator'),
+				Zotero.getString('general.andJoiner', ['\u2068B\u2069', '\u2068D\u2069'])
+			);
+		});
+
+		it("should strip bidi isolates from firstCreator when unformatted = true", async function () {
+			var item = createUnsavedDataObject('item');
+			item.setCreators([
+				{
+					firstName: "A",
+					lastName: "B",
+					creatorType: "author"
+				},
+				{
+					firstName: "C",
+					lastName: "D",
+					creatorType: "author"
+				}
+			]);
+			
+			// Test unsaved - uses getFirstCreatorFromData()'s omitBidiIsolates option
+			assert.equal(
+				item.getField('firstCreator', /* unformatted */ true),
+				Zotero.getString('general.andJoiner', ['B', 'D'])
+			);
+			
+			await item.saveTx();
+
+			// Test saved - implemented in getField()
+			assert.equal(
+				item.getField('firstCreator', /* unformatted */ true),
+				Zotero.getString('general.andJoiner', ['B', 'D'])
+			);
+		});
 	});
 	
 	describe("#setField", function () {
@@ -483,6 +533,26 @@ describe("Zotero.Item", function () {
 		});
 	});
 	
+	describe("#topLevelItem", function () {
+		it("should return self for top-level item", async function () {
+			var item = await createDataObject('item');
+			assert.equal(item, item.topLevelItem);
+		});
+		
+		it("should return parent item for note", async function () {
+			var item = await createDataObject('item');
+			var note = await createDataObject('item', { itemType: 'note', parentItemID: item.id });
+			assert.equal(item, note.topLevelItem);
+		});
+		
+		it("should return top-level item for annotation", async function () {
+			var item = await createDataObject('item');
+			var attachment = await importPDFAttachment(item);
+			var annotation = await createAnnotation('highlight', attachment);
+			assert.equal(item, annotation.topLevelItem);
+		});
+	});
+	
 	describe("#getCreators()", function () {
 		it("should update after creators are removed", function* () {
 			var item = createUnsavedDataObject('item');
@@ -626,6 +696,46 @@ describe("Zotero.Item", function () {
 	})
 	
 	
+	describe("#getCollections()", function () {
+		it("shouldn't include collections in the trash", async function () {
+			var collection1 = await createDataObject('collection');
+			var collection2 = await createDataObject('collection');
+			var item = await createDataObject('item', { collections: [collection1.id, collection2.id] });
+			
+			assert.sameMembers(item.getCollections(), [collection1.id, collection2.id]);
+			
+			collection1.deleted = true;
+			await collection1.saveTx();
+			
+			assert.sameMembers(item.getCollections(), [collection2.id]);
+			
+			// Simulate a restart
+			await Zotero.Items.get(item.id).reload(null, true);
+			
+			// Make sure the deleted collection is not back in item's cache
+			assert.sameMembers(item.getCollections(), [collection2.id]);
+		});
+		
+		it("should include collections in the trash if includeTrashed=true", async function () {
+			var collection1 = await createDataObject('collection');
+			var collection2 = await createDataObject('collection');
+			var item = await createDataObject('item', { collections: [collection1.id, collection2.id] });
+			
+			assert.sameMembers(item.getCollections(true), [collection1.id, collection2.id]);
+			
+			collection1.deleted = true;
+			await collection1.saveTx();
+			
+			assert.sameMembers(item.getCollections(true), [collection1.id, collection2.id]);
+			
+			// Simulate a restart
+			await Zotero.Items.get(item.id).reload(null, true);
+			
+			assert.sameMembers(item.getCollections(true), [collection1.id, collection2.id]);
+		});
+	});
+	
+	
 	describe("#setCollections()", function () {
 		it("should add a collection with an all-numeric key", async function () {
 			var col = new Zotero.Collection();
@@ -683,6 +793,49 @@ describe("Zotero.Item", function () {
 			assert.lengthOf(attachments, 1);
 			assert.equal(attachments[0], attachment.id);
 		})
+		
+		it("should return child attachments sorted alphabetically", async function () {
+			var item = await createDataObject('item');
+			
+			var titles = ['B', 'C', 'A'];
+			var attachments = [];
+			for (let title of titles) {
+				let attachment = new Zotero.Item("attachment");
+				attachment.attachmentLinkMode = 'linked_url';
+				attachment.parentID = item.id;
+				attachment.setField('title', title);
+				await attachment.saveTx();
+				attachments.push(attachment);
+			}
+			
+			attachments = item.getAttachments().map(id => Zotero.Items.get(id));
+			assert.equal(attachments[0].getField('title'), 'A');
+			assert.equal(attachments[1].getField('title'), 'B');
+			assert.equal(attachments[2].getField('title'), 'C');
+		});
+		
+		it("should return re-sorted child attachments after one is modified", async function () {
+			var item = await createDataObject('item');
+			
+			var titles = ['B', 'C', 'A'];
+			var attachments = [];
+			for (let title of titles) {
+				let attachment = new Zotero.Item("attachment");
+				attachment.attachmentLinkMode = 'linked_url';
+				attachment.parentID = item.id;
+				attachment.setField('title', title);
+				await attachment.saveTx();
+				attachments.push(attachment);
+			}
+			
+			attachments[0].setField('title', 'D');
+			await attachments[0].saveTx();
+			
+			attachments = item.getAttachments().map(id => Zotero.Items.get(id));
+			assert.equal(attachments[0].getField('title'), 'A');
+			assert.equal(attachments[1].getField('title'), 'C');
+			assert.equal(attachments[2].getField('title'), 'D');
+		});
 		
 		it("#should ignore trashed child attachments by default", function* () {
 			var item = yield createDataObject('item');
@@ -956,6 +1109,20 @@ describe("Zotero.Item", function () {
 			assert.equal(item.getFilePath(), file.path);
 		});
 		
+		it("should handle line and paragraph separators in filenames", async function () {
+			var filename = "Line 1\u2028Line 2\u2029Line 3.txt";
+			
+			var item = await createDataObject('item');
+			
+			var attachment = new Zotero.Item("attachment");
+			attachment.attachmentLinkMode = Zotero.Attachments.LINK_MODE_IMPORTED_FILE;
+			attachment.parentID = item.id;
+			attachment.attachmentFilename = filename;
+			await attachment.saveTx();
+			
+			assert.equal(attachment.attachmentFilename, filename);
+		});
+		
 		it("should get a filename for a base-dir-relative file", function () {
 			var dir = getTestDataDirectory().path;
 			Zotero.Prefs.set('saveRelativeAttachmentPath', true)
@@ -1104,8 +1271,11 @@ describe("Zotero.Item", function () {
 				parentItemID: parentItem.id
 			});
 			yield parentItem.getBestAttachmentState();
-			assert.equal(parentItem.getBestAttachmentStateCached(), 1);
-		})
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ type: 'image', exists: true, key: childItem.key }
+			);
+		});
 		
 		it("should cache state for a missing file", function* () {
 			var parentItem = yield createDataObject('item');
@@ -1118,9 +1288,74 @@ describe("Zotero.Item", function () {
 			let path = yield childItem.getFilePathAsync();
 			yield OS.File.remove(path);
 			yield parentItem.getBestAttachmentState();
-			assert.equal(parentItem.getBestAttachmentStateCached(), -1);
-		})
-	})
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ type: 'image', exists: false, key: childItem.key }
+			);
+		});
+
+		it("should cache state for a standalone attachment", async function () {
+			var standaloneAttachment = await importPDFAttachment();
+			await standaloneAttachment.getBestAttachmentState();
+			assert.deepEqual(
+				standaloneAttachment.getBestAttachmentStateCached(),
+				{ type: 'pdf', exists: true, key: standaloneAttachment.key }
+			);
+		});
+
+		it("should update best attachment state without clearing it for as long as item key matches", async function () {
+			var parentItem = await createDataObject('item');
+			var file = getTestDataDirectory();
+			file.append('test.png');
+			var childItem = await Zotero.Attachments.importFromFile({
+				file,
+				parentItemID: parentItem.id
+			});
+			let path = await childItem.getFilePathAsync();
+			await OS.File.remove(path);
+			await parentItem.getBestAttachment();
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ key: childItem.key }
+			);
+			await childItem._updateAttachmentStates(false);
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ exists: false, key: childItem.key }
+			);
+			await parentItem.getBestAttachmentState();
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ type: 'image', exists: false, key: childItem.key }
+			);
+			await childItem._updateAttachmentStates(true);
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ type: 'image', exists: true, key: childItem.key }
+			);
+		});
+
+		it("should update best attachment state when attachment is trashed", async function () {
+			var parentItem = await createDataObject('item');
+			var file = getTestDataDirectory();
+			file.append('test.png');
+			var childItem = await Zotero.Attachments.importFromFile({
+				file,
+				parentItemID: parentItem.id
+			});
+
+			await parentItem.getBestAttachmentState();
+			childItem._updateAttachmentStates(true);
+			assert.deepEqual(
+				parentItem.getBestAttachmentStateCached(),
+				{ type: 'image', exists: true, key: childItem.key }
+			);
+
+			await Zotero.Items.trashTx([childItem.id]);
+			childItem._updateAttachmentStates(true);
+			assert.deepEqual(parentItem.getBestAttachmentStateCached(), { type: null });
+		});
+	});
 	
 	
 	describe("#fileExists()", function () {
@@ -1250,11 +1485,27 @@ describe("Zotero.Item", function () {
 			attachment = await importFileAttachment('test.pdf', { parentID: item.id });
 		});
 		
+		describe("#annotationType", function () {
+			it("should throw an invalid-data error if unknown type", function () {
+				var a = new Zotero.Item('annotation');
+				try {
+					a.annotationType = 'foo';
+				}
+				catch (e) {
+					assert.equal(e.name, 'ZoteroInvalidDataError');
+					assert.equal(e.message, "Unknown annotation type 'foo'");
+					return;
+				}
+				assert.fail("Invalid annotationType should throw");
+			});
+		});
+		
 		describe("#annotationText", function () {
 			it("should not be changeable", async function () {
 				var a = new Zotero.Item('annotation');
 				a.annotationType = 'highlight';
 				assert.doesNotThrow(() => a.annotationType = 'highlight');
+				assert.doesNotThrow(() => a.annotationType = 'underline');
 				assert.throws(() => a.annotationType = 'note');
 			});
 		});
@@ -1275,8 +1526,39 @@ describe("Zotero.Item", function () {
 			});
 		});
 		
+		describe("#annotationComment", function () {
+			it("should not mark object without comment as changed if empty string", async function () {
+				var annotation = await createAnnotation('highlight', attachment, { comment: "" });
+				annotation.annotationComment = "";
+				assert.isFalse(annotation.hasChanged());
+			});
+			
+			it("should clear existing value when empty string is passed", async function () {
+				var annotation = await createAnnotation('highlight', attachment);
+				annotation.annotationComment = "";
+				assert.isTrue(annotation.hasChanged());
+			});
+		});
+		
 		describe("#saveTx()", function () {
 			it("should save a highlight annotation", async function () {
+				var annotation = new Zotero.Item('annotation');
+				annotation.parentID = attachment.id;
+				annotation.annotationType = 'highlight';
+				annotation.annotationText = "This is highlighted text.";
+				annotation.annotationColor = "#ffff66";
+				annotation.annotationSortIndex = '00015|002431|00000';
+				annotation.annotationPosition = JSON.stringify({
+					pageIndex: 123,
+					rects: [
+						[314.4, 412.8, 556.2, 609.6]
+					]
+				});
+				await annotation.saveTx();
+				assert.isFalse(annotation.hasChanged());
+			});
+			
+			it("should assign a default color", async function () {
 				var annotation = new Zotero.Item('annotation');
 				annotation.parentID = attachment.id;
 				annotation.annotationType = 'highlight';
@@ -1289,7 +1571,7 @@ describe("Zotero.Item", function () {
 					]
 				});
 				await annotation.saveTx();
-				assert.isFalse(annotation.hasChanged());
+				assert.equal(annotation.annotationColor, '#ffd400');
 			});
 			
 			it("should save a note annotation", async function () {
@@ -1349,13 +1631,7 @@ describe("Zotero.Item", function () {
 				var annotation = await createAnnotation('image', attachment);
 				
 				// Get Blob from file and attach it
-				var path = OS.Path.join(getTestDataDirectory().path, 'test.png');
-				var imageData = await Zotero.File.getBinaryContentsAsync(path);
-				var array = new Uint8Array(imageData.length);
-				for (let i = 0; i < imageData.length; i++) {
-					array[i] = imageData.charCodeAt(i);
-				}
-				var blob = new Blob([array], { type: 'image/png' });
+				var blob = await getImageBlob();
 				var file = await Zotero.Annotations.saveCacheImage(annotation, blob);
 				
 				assert.isTrue(await OS.File.exists(file));
@@ -1383,6 +1659,10 @@ describe("Zotero.Item", function () {
 				await annotation2.saveTx();
 			});
 			
+			after(async function () {
+				await annotation2.eraseTx();
+			});
+			
 			it("should return annotations not in trash", async function () {
 				var items = attachment.getAnnotations();
 				assert.sameMembers(items, [annotation1]);
@@ -1391,6 +1671,83 @@ describe("Zotero.Item", function () {
 			it("should return annotations in trash if includeTrashed=true", async function () {
 				var items = attachment.getAnnotations(true);
 				assert.sameMembers(items, [annotation1, annotation2]);
+			});
+		});
+
+		describe("#hasEmbeddedAnnotations()", function () {
+			it("should recognize a highlight annotation", async function () {
+				let attachment = await importFileAttachment('duplicatesMerge_annotated_1.pdf');
+				assert.isTrue(await attachment.hasEmbeddedAnnotations());
+			});
+
+			it("should recognize a strikeout annotation", async function () {
+				let attachment = await importFileAttachment('duplicatesMerge_annotated_3.pdf');
+				assert.isTrue(await attachment.hasEmbeddedAnnotations());
+			});
+
+			it("should not recognize a link annotation", async function () {
+				let attachment = await importFileAttachment('duplicatesMerge_notAnnotated.pdf');
+				assert.isFalse(await attachment.hasEmbeddedAnnotations());
+			});
+		});
+		
+		describe("#isEditable()", function () {
+			var group;
+			var groupAttachment;
+			var groupAnnotation1;
+			var groupAnnotation2;
+			var groupAnnotation3;
+			
+			before(async function () {
+				await Zotero.Users.setCurrentUserID(1);
+				await Zotero.Users.setName(1, 'Abc');
+				await Zotero.Users.setName(12345, 'Def');
+				group = await createGroup();
+				groupAttachment = await importFileAttachment('test.pdf', { libraryID: group.libraryID });
+				groupAnnotation1 = await createAnnotation('highlight', groupAttachment);
+				groupAnnotation2 = await createAnnotation('highlight', groupAttachment, { createdByUserID: Zotero.Users.getCurrentUserID() });
+				groupAnnotation3 = await createAnnotation('highlight', groupAttachment, { createdByUserID: 12345 });
+			});
+			
+			describe("'edit'", function () {
+				it("should return true for personal library annotation", async function () {
+					var item = await createDataObject('item');
+					var attachment = await importFileAttachment('test.pdf', { parentID: item.id });
+					var annotation = await createAnnotation('highlight', attachment);
+					assert.isTrue(annotation.isEditable());
+				});
+				
+				it("should return true for group annotation created locally", async function () {
+					assert.isTrue(groupAnnotation1.isEditable());
+				});
+				
+				it("should return true for group annotation created by current user elsewhere", async function () {
+					assert.isTrue(groupAnnotation2.isEditable());
+				});
+				
+				it("should return false for annotations created by another user", async function () {
+					assert.isFalse(groupAnnotation3.isEditable());
+				});
+				
+				it("shouldn't allow editing of group annotation owned by another user", async function () {
+					var annotation = await createAnnotation('image', groupAttachment, { createdByUserID: 12345 });
+					
+					annotation.annotationComment = 'foobar';
+					var e = await getPromiseError(annotation.saveTx());
+					assert.ok(e);
+					assert.include(e.message, "Cannot edit item");
+				});
+			});
+			
+			describe("'erase'", function () {
+				it("should return true for annotations created by another user", async function () {
+					assert.isTrue(groupAnnotation3.isEditable('erase'));
+				});
+				
+				it("should allow deletion of group annotation owned by another user", async function () {
+					var annotation = await createAnnotation('image', groupAttachment, { createdByUserID: 12345 });
+					await annotation.eraseTx();
+				});
 			});
 		});
 	});
@@ -1493,6 +1850,49 @@ describe("Zotero.Item", function () {
 			assert.sameDeepMembers(tags, [{ tag: 'a' }, { tag: 'b' }]);
 		})
 	})
+
+	describe("#getItemsListTags", function() {
+		it("should return tags with emojis after colored tags", async function () {
+			var tags = [
+				{
+					tag: "BBB ⭐️⭐️"
+				},
+				{
+					tag: "ZZZ 👲"
+				},
+				{
+					tag: "colored tag two"
+				},
+				{
+					tag: "AAA 😀"
+				},
+				{
+					tag: "colored tag one"
+				},
+				{
+					tag: "not included"
+				}
+			];
+			await Zotero.Tags.setColor(Zotero.Libraries.userLibraryID, "colored tag one", "#990000");
+			await Zotero.Tags.setColor(Zotero.Libraries.userLibraryID, "colored tag two", "#FF6666");
+
+			var item = new Zotero.Item('journalArticle');
+			item.setTags(tags);
+			await item.saveTx();
+
+			var itemListTags = item.getItemsListTags();
+			var expected = [
+				{ tag: "colored tag one", color: "#990000" },
+				{ tag: "colored tag two", color: "#FF6666" },
+				{ tag: "AAA 😀", color: null },
+				{ tag: "BBB ⭐️⭐️", color: null },
+				{ tag: "ZZZ 👲", color: null },
+			];
+			for (let i = 0; i < 5; i++) {
+				assert.deepEqual(itemListTags[i], expected[i]);
+			}
+		});
+	});
 	
 	//
 	// Relations and related items
@@ -1617,6 +2017,19 @@ describe("Zotero.Item", function () {
 			);
 			assert.lengthOf(annotationIDs, 1);
 		});
+		
+		it("should set username as name if not set for library item", async function () {
+			await Zotero.Users.setCurrentUserID(1);
+			var username = Zotero.Utilities.randomString();
+			await Zotero.Users.setCurrentUsername(username);
+			await Zotero.DB.queryAsync("DELETE FROM users");
+			
+			var group = await createGroup();
+			var libraryID = group.libraryID;
+			var item = await createDataObject('item', { libraryID });
+			
+			assert.equal(Zotero.Users.getCurrentName(), username);
+		});
 	})
 	
 	
@@ -1638,7 +2051,7 @@ describe("Zotero.Item", function () {
 			);
 		});
 		
-		it("should remove an item in a collection in a read-only library", async function () {
+		it("should remove an item in a collection in a read-only library with 'skipEditCheck'", async function () {
 			var group = await createGroup();
 			var libraryID = group.libraryID;
 			var collection = await createDataObject('collection', { libraryID });
@@ -1728,6 +2141,19 @@ describe("Zotero.Item", function () {
 			assert.equal(await item.getLinkedItem(group.libraryID), groupItem);
 			var newItem = item.clone();
 			assert.isEmpty(Object.keys(newItem.toJSON().relations));
+		});
+		
+		it("should clone an annotation item", async function () {
+			var attachment = await importFileAttachment('test.pdf');
+			var annotation = await createAnnotation('highlight', attachment);
+			var newAnnotation = annotation.clone();
+			
+			var fields = Object.keys(annotation.toJSON())
+				.filter(field => field.startsWith('annotation'));
+			assert.isAbove(fields.length, 0);
+			for (let field of fields) {
+				assert.equal(annotation[field], newAnnotation[field], field);
+			}
 		});
 	})
 	
@@ -1938,9 +2364,35 @@ describe("Zotero.Item", function () {
 						assert.propertyVal(json, name, item[name]);
 					}
 					assert.deepEqual(json.annotationPosition, item.annotationPosition);
+					assert.doesNotHaveAnyKeys(json.relations);
 					assert.notProperty(json, 'collections');
-					assert.notProperty(json, 'relations');
 					assert.notProperty(json, 'annotationIsExternal');
+				});
+				
+				it("should include Mendeley annotation relation", async function () {
+					var item = createUnsavedDataObject(
+						'item', { itemType: 'annotation', parentKey: attachment.key }
+					);
+					item.annotationType = 'highlight';
+					item.annotationText = "Foo";
+					item.annotationComment = "";
+					item.annotationColor = "#ffec00";
+					item.annotationPageLabel = "15";
+					item.annotationSortIndex = "00015|002431|00000";
+					item.annotationPosition = JSON.stringify({
+						"pageIndex": 1,
+						"rects": [
+							[231.284, 402.126, 293.107, 410.142]
+						]
+					});
+					item.setRelations({
+						'mendeleyDB:annotationUUID': '13e4ec18-f49a-47fb-93f6-fda915d3a1c2'
+					});
+					var json = item.toJSON();
+					assert.sameMembers(
+						json.relations['mendeleyDB:annotationUUID'],
+						item.getRelations()['mendeleyDB:annotationUUID']
+					);
 				});
 				
 				describe("#annotationIsExternal", function () {
@@ -2052,13 +2504,13 @@ describe("Zotero.Item", function () {
 				var item4 = yield createDataObject('item');
 				
 				var relateItems = Zotero.Promise.coroutine(function* (i1, i2) {
-					yield Zotero.DB.executeTransaction(function* () {
+					yield Zotero.DB.executeTransaction(async function () {
 						i1.addRelatedItem(i2);
-						yield i1.save({
+						await i1.save({
 							skipDateModifiedUpdate: true
 						});
 						i2.addRelatedItem(i1);
-						yield i2.save({
+						await i2.save({
 							skipDateModifiedUpdate: true
 						});
 					});
@@ -2119,6 +2571,38 @@ describe("Zotero.Item", function () {
 			assert.strictEqual(item.getField('title'), 'Test');
 			assert.strictEqual(item.getField('date'), '');
 			assert.strictEqual(item.getField('accessDate'), '');
+		});
+		
+		it("should remove missing creators and change existing", function () {
+			var item = new Zotero.Item('book');
+			item.setCreators(
+				[
+					{
+						name: "A",
+						creatorType: "author"
+					},
+					{
+						name: "B",
+						creatorType: "author"
+					},
+					{
+						name: "C",
+						creatorType: "author"
+					}
+				]
+			);
+			var json = item.toJSON();
+			// Remove creators, which should cause them to be cleared in fromJSON()
+			var newCreators = [
+				{
+					name: "D",
+					creatorType: "author"
+				}
+			];
+			json.creators = newCreators;
+			
+			item.fromJSON(json);
+			assert.sameDeepMembers(item.getCreatorsJSON(), newCreators);
 		});
 		
 		it("should remove item from collection if 'collections' property not provided", function* () {

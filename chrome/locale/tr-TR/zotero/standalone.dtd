@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Zotero'dan Ayrıl">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Dosya">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Kaydet...">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Ayrıl">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Alıntı Kopyala">
 <!ENTITY copyBibliographyCmd.label "Kaynakça Kopyala">
+<!ENTITY copyNoteCmd.label "Notu Kopyala">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Sayfa Yönünü Değiştir">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Git">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Görünüm">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Yerleşim">
 <!ENTITY standardView.label "Normal Görünüm">
 <!ENTITY stackedView.label "Yığılmış Görünüm">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "Alt Dermelerdeki Eserleri Göster">
 <!ENTITY fontSize.label "Yazı Tipi Boyutu">
 <!ENTITY noteFontSize.label "Not Yazı Tipi Boyutu">
-
+<!ENTITY columns.label "Sütunlar">
+<!ENTITY sortBy.label "Bunlara Göre Sırala">
 
 <!ENTITY toolsMenu.label "Araçlar">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,25 +66,17 @@
 <!ENTITY addons.label "Eklentiler">
 <!ENTITY developer.label "Geliştirici">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Küçült">
 <!ENTITY bringAllToFront.label "Hepsini En Öne Getir">
-<!ENTITY zoomWindow.label "Yakınlaştır">
-<!ENTITY windowMenu.label "Pencere">
-
 
 <!ENTITY helpMenu.label "Yardım">
-<!ENTITY helpMenu.accesskey "?">
-
-
+<!ENTITY helpMenu.accesskey "H">
 <!ENTITY helpMenuWin.label "Yardım">
-<!ENTITY helpMenuWin.accesskey "?">
+<!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">
 <!ENTITY aboutProduct.label "&brandShortName; Hakkında">
 <!ENTITY aboutProduct.accesskey "A">
 <!ENTITY productHelp.label "Destek ve Belgeleme">
-<!ENTITY productHelp.accesskey "?">
+<!ENTITY productHelp.accesskey "D">
 <!ENTITY helpTroubleshootingInfo.label "Sorun Giderme Bilgisi">
 <!ENTITY helpTroubleshootingInfo.accesskey "T">
 <!ENTITY helpFeedbackPage.label "Tartışma Forumları">

@@ -23,89 +23,144 @@
     ***** END LICENSE BLOCK *****
 */
 
+import CollectionTree from 'zotero/collectionTree';
+import ItemTree from 'zotero/itemTree';
+
 var itemsView;
 var collectionsView;
+var loaded;
 var io;
-var connectionSelectedDeferred;
+const isSelectItemsDialog = !!document.querySelector('#zotero-select-items-dialog');
+const isEditBibliographyDialog = !!document.querySelector('#zotero-edit-bibliography-dialog');
+const isAddEditItemsDialog = !!document.querySelector('#zotero-add-citation-dialog');
 
 /*
  * window takes two arguments:
  * io - used for input/output (dataOut is list of item IDs)
- * sourcesOnly - whether only sources should be shown in the window
  */
-var doLoad = Zotero.Promise.coroutine(function* () {
+var doLoad = async function () {
+	// Move the dialog button box into the items pane
+	let itemsContainer = document.getElementById('zotero-items-tree-container');
+	// TEMP: Only if we're in the redesigned Select Items dialog, not the
+	// classic Add Citation dialog, or the Edit Bibliography dialog
+	// (until we redesign that too)
+	if (isSelectItemsDialog) {
+		let buttonBox = document.querySelector('dialog')
+			.shadowRoot
+			.querySelector('.dialog-button-box');
+		itemsContainer.append(buttonBox);
+	}
+	
+	let searchBar = document.getElementById('zotero-tb-search');
+	searchBar.searchTextbox.select();
+
 	// Set font size from pref
 	var sbc = document.getElementById('zotero-select-items-container');
-	Zotero.setFontSize(sbc);
+	Zotero.UIProperties.registerRoot(sbc);
 	
 	io = window.arguments[0];
 	if(io.wrappedJSObject) io = io.wrappedJSObject;
 	if(io.addBorder) document.getElementsByTagName("dialog")[0].style.border = "1px solid black";
 	if(io.singleSelection) document.getElementById("zotero-items-tree").setAttribute("seltype", "single");
 	
-	setItemsPaneMessage(Zotero.getString('pane.items.loading'));
-	
-	collectionsView = new Zotero.CollectionTreeView();
-	collectionsView.hideSources = ['duplicates', 'trash', 'feeds'];
-	document.getElementById('zotero-collections-tree').view = collectionsView;
-	
-	yield collectionsView.waitForLoad();
-	
-	connectionSelectedDeferred = Zotero.Promise.defer();
-	yield connectionSelectedDeferred.promise;
-	
+	itemsView = await ItemTree.init(document.getElementById('zotero-items-tree'), {
+		onSelectionChange: () => {
+			if (isEditBibliographyDialog) {
+				Zotero_Bibliography_Dialog.treeItemSelected();
+			}
+			else if (isAddEditItemsDialog) {
+				onItemSelected();
+				Zotero_Citation_Dialog.treeItemSelected();
+			}
+			else {
+				onItemSelected();
+			}
+		},
+		onActivate: () => {
+			document.querySelector('dialog').acceptDialog();
+		},
+		id: io.itemTreeID || "select-items-dialog",
+		dragAndDrop: false,
+		persistColumns: true,
+		columnPicker: true,
+		emptyMessage: Zotero.getString('pane.items.loading')
+	});
+	itemsView.setItemsPaneMessage(Zotero.getString('pane.items.loading'));
+
+	const filterLibraryIDs = false || io.filterLibraryIDs;
+	collectionsView = await CollectionTree.init(document.getElementById('zotero-collections-tree'), {
+		onSelectionChange: Zotero.Utilities.debounce(() => onCollectionSelected(), 100),
+		filterLibraryIDs,
+		hideSources: ['duplicates', 'trash', 'feeds']
+	});
+
+	await collectionsView.makeVisible();
+
 	if (io.select) {
-		yield collectionsView.selectItem(io.select);
+		await collectionsView.selectItem(io.select);
 	}
 	
 	Zotero.updateQuickSearchBox(document);
-});
+
+	document.addEventListener('dialogaccept', doAccept);
+	
+	if (isSelectItemsDialog) {
+		// Set proper tab order. It is only needed in selectItemsDialog -- other dialogs' focus order is correct
+		document.querySelector("#zotero-tb-search").searchModePopup.parentNode.setAttribute("tabindex", 1);
+		document.querySelector("#zotero-tb-search").searchTextbox.inputField.setAttribute("tabindex", 2);
+		document.querySelector("#collection-tree").setAttribute("tabindex", 3);
+		document.querySelector("#zotero-items-tree .virtualized-table").setAttribute("tabindex", 4);
+		// On Windows, buttons are in a different order than on macOS, so set tabindex accordingly
+		let nextButtonTabindex = 5;
+		for (let button of [...document.querySelectorAll("button[dlgtype]:not([hidden])")]) {
+			button.setAttribute("tabindex", nextButtonTabindex++);
+		}
+	}
+	
+	// Used in tests
+	loaded = true;
+};
 
 function doUnload()
 {
 	collectionsView.unregister();
 	if(itemsView)
 		itemsView.unregister();
+	
+	io.deferred && io.deferred.resolve();
 }
 
-var onCollectionSelected = Zotero.Promise.coroutine(function* ()
-{
-	if(itemsView)
-		itemsView.unregister();
-
-	if(collectionsView.selection.count == 1 && collectionsView.selection.currentIndex != -1)
-	{
-		var collectionTreeRow = collectionsView.getRow(collectionsView.selection.currentIndex);
-		collectionTreeRow.setSearch('');
-		Zotero.Prefs.set('lastViewedFolder', collectionTreeRow.id);
-		
-		setItemsPaneMessage(Zotero.getString('pane.items.loading'));
-		
-		// Load library data if necessary
-		var library = Zotero.Libraries.get(collectionTreeRow.ref.libraryID);
-		if (!library.getDataLoaded('item')) {
-			Zotero.debug("Waiting for items to load for library " + library.libraryID);
-			yield library.waitForDataLoad('item');
-		}
-		
-		// Create items list and wait for it to load
-		itemsView = new Zotero.ItemTreeView(collectionTreeRow);
-		itemsView.sourcesOnly = !!window.arguments[1];
-		document.getElementById('zotero-items-tree').view = itemsView;
-		yield itemsView.waitForLoad();
-		
-		clearItemsPaneMessage();
-		
-		connectionSelectedDeferred.resolve();
-		collectionsView.runListeners('select');
+var onCollectionSelected = async function () {
+	var collectionTreeRow = collectionsView.getRow(collectionsView.selection.focused);
+	if (!collectionsView.selection.count) return;
+	// Collection not changed
+	if (itemsView && itemsView.collectionTreeRow && itemsView.collectionTreeRow.id == collectionTreeRow.id) {
+		return;
 	}
-});
+	collectionTreeRow.setSearch('');
+	Zotero.Prefs.set('lastViewedFolder', collectionTreeRow.id);
+	
+	itemsView.setItemsPaneMessage(Zotero.getString('pane.items.loading'));
+	
+	// Load library data if necessary
+	var library = Zotero.Libraries.get(collectionTreeRow.ref.libraryID);
+	if (!library.getDataLoaded('item')) {
+		Zotero.debug("Waiting for items to load for library " + library.libraryID);
+		await library.waitForDataLoad('item');
+	}
+	
+	await itemsView.changeCollectionTreeRow(collectionTreeRow);
+	
+	itemsView.clearItemsPaneMessage();
+	
+	collectionsView.runListeners('select');
+};
 
 function onSearch()
 {
-	if(itemsView)
+	if (itemsView)
 	{
-		var searchVal = document.getElementById('zotero-tb-search').value;
+		var searchVal = document.getElementById('zotero-tb-search-textbox').value;
 		itemsView.setFilter('search', searchVal);
 	}
 }
@@ -115,30 +170,6 @@ function onItemSelected()
 	itemsView.runListeners('select');
 }
 
-function setItemsPaneMessage(content) {
-	var elem = document.getElementById('zotero-items-pane-message-box');
-	elem.textContent = '';
-	if (typeof content == 'string') {
-		let contentParts = content.split("\n\n");
-		for (let part of contentParts) {
-			var desc = document.createElement('description');
-			desc.appendChild(document.createTextNode(part));
-			elem.appendChild(desc);
-		}
-	}
-	else {
-		elem.appendChild(content);
-	}
-	document.getElementById('zotero-items-pane-content').selectedIndex = 1;
-}
-
-
-function clearItemsPaneMessage() {
-	var box = document.getElementById('zotero-items-pane-message-box');
-	document.getElementById('zotero-items-pane-content').selectedIndex = 0;
-}
-
-function doAccept()
-{
+function doAccept() {
 	io.dataOut = itemsView.getSelectedItems(true);
 }

@@ -37,9 +37,8 @@ Zotero.File = new function(){
 	this.putContents = putContents;
 	this.getValidFileName = getValidFileName;
 	this.truncateFileName = truncateFileName;
-	this.getCharsetFromFile = getCharsetFromFile;
-	this.addCharsetListener = addCharsetListener;
 	
+	this.REPLACEMENT_CHARACTER = "\uFFFD";
 	
 	this.pathToFile = function (pathOrFile) {
 		try {
@@ -53,12 +52,12 @@ Zotero.File = new function(){
 		catch (e) {
 			Zotero.logError(e);
 		}
-		throw new Error("Unexpected value '" + pathOrFile + "'");
+		throw new Error("Unexpected path value '" + pathOrFile + "'");
 	}
 	
 	
-	this.pathToFileURI = function (path) {
-		var file = new FileUtils.File(path);
+	this.pathToFileURI = function (pathOrFile) {
+		var file = this.pathToFile(pathOrFile);
 		return Services.io.newFileURI(file).spec;
 	}
 	
@@ -105,9 +104,9 @@ Zotero.File = new function(){
 			}
 		}
 		
-		var dir = OS.Path.dirname(file);
+		var dir = PathUtils.parent(file);
 		while (dir && dir != '/' && !await OS.File.exists(dir)) {
-			dir = OS.Path.dirname(dir);
+			dir = PathUtils.parent(dir);
 		}
 		
 		return (dir && dir != '/') ? dir : false;
@@ -117,12 +116,12 @@ Zotero.File = new function(){
 	/**
 	 * Get the first 200 bytes of a source as a string (multibyte-safe)
 	 *
-	 * @param {nsIURI|nsIFile|string spec|nsIChannel|nsIInputStream} source - The source to read
+	 * @param {string path|nsIFile|file URI} source - The source to read
 	 * @return {Promise}
 	 */
-	this.getSample = function (file) {
+	this.getSample = async function (file) {
 		var bytes = 200;
-		return this.getContentsAsync(file, null, bytes);
+		return this.getBinaryContentsAsync(file, bytes);
 	}
 	
 	
@@ -212,7 +211,7 @@ Zotero.File = new function(){
 	 * @param {Integer} [maxLength] Maximum length to fetch, in bytes
 	 * @return {Promise} A promise that is resolved with the contents of the file
 	 */
-	this.getContentsAsync = Zotero.Promise.coroutine(function* (source, charset, maxLength) {
+	this.getContentsAsync = async function (source, charset, maxLength) {
 		Zotero.debug("Getting contents of "
 			+ (source instanceof Components.interfaces.nsIFile
 				? source.path
@@ -245,7 +244,6 @@ Zotero.File = new function(){
 							// The stream is closed automatically when end-of-file is reached,
 							// so this throws for empty files
 							if (e.name == "NS_BASE_STREAM_CLOSED") {
-								Zotero.debug("RESOLVING2");
 								deferred.resolve("");
 							}
 							deferred.reject(e);
@@ -263,7 +261,10 @@ Zotero.File = new function(){
 						deferred.resolve(NetUtil.readInputStreamToString(
 							inputStream,
 							bytesToFetch,
-							options
+							{
+								charset,
+								replacement: this.REPLACEMENT_CHARACTER
+							}
 						));
 					}
 					catch (e) {
@@ -291,14 +292,9 @@ Zotero.File = new function(){
 		else {
 			throw new Error(`Unsupported type '${typeof source}' for source`);
 		}
-		var options = {
-			encoding: charset ? charset : "utf-8"
-		};
-		if (maxLength) {
-			options.bytes = maxLength;
-		}
-		return OS.File.read(source, options);
-	});
+		var arr = await IOUtils.read(source, { maxBytes: maxLength || undefined });
+		return new TextDecoder(charset || 'utf-8').decode(arr)
+	};
 	
 	
 	/**
@@ -315,7 +311,7 @@ Zotero.File = new function(){
 		if (source instanceof Components.interfaces.nsIFile) {
 			source = source.path;
 		}
-		else if (source.startsWith('^file:')) {
+		else if (source.startsWith('file:')) {
 			source = OS.Path.fromFileURI(source);
 		}
 		var options = {};
@@ -445,25 +441,71 @@ Zotero.File = new function(){
 			});
 		});
 	};
-	
-	
-	this.download = Zotero.Promise.coroutine(function* (uri, path) {
-		Zotero.debug("Saving " + (uri.spec ? uri.spec : uri)
-			+ " to " + (path.pathQueryRef ? path.pathQueryRef : path));
+
+	this.download = async function (uri, path) {
+		var uriStr = uri.spec || uri;
+		const isHTTP = uriStr.startsWith('http');
+		
+		Zotero.debug(`Saving ${uriStr} to ${path.pathQueryRef || path}`);
+		
+		if (isHTTP && Zotero.HTTP.browserIsOffline()) {
+			let msg = `Download failed: ${Zotero.appName} is currently offline`;
+			Zotero.debug(msg, 2);
+			throw new Error(msg);
+		}
 		
 		var deferred = Zotero.Promise.defer();
-		NetUtil.asyncFetch(uri, function (is, status, request) {
-			if (!Components.isSuccessCode(status)) {
-				Zotero.logError(status);
-				deferred.reject(new Error("Download failed with status " + status));
-				return;
-			}
-			deferred.resolve(is);
+		const inputChannel = NetUtil.newChannel({
+			uri,
+			loadUsingSystemPrincipal: true
 		});
-		var is = yield deferred.promise;
-		yield Zotero.File.putContentsAsync(path, is);
-	});
-	
+		const outputChannel = FileUtils.openSafeFileOutputStream(new FileUtils.File(path));
+		const pipe = Cc["@mozilla.org/pipe;1"].createInstance(Ci.nsIPipe);
+		pipe.init(true, true, 0, 0xffffffff, null);
+
+		let listener = Cc[
+			"@mozilla.org/network/simple-stream-listener;1"
+		].createInstance(Ci.nsISimpleStreamListener);
+		
+		listener.init(pipe.outputStream, {
+			onStartRequest(request) {
+				// NOTE: This noop callback is required, do not remove.
+			},
+			onStopRequest(request, status) {
+				pipe.outputStream.close();
+
+				if (!Components.isSuccessCode(status)) {
+					Zotero.logError(status);
+					let msg = Zotero.getString('sync.error.checkConnection');
+					switch (status) {
+						case 2152398878:
+							// TODO: Localize
+							msg = "Server not found. Check your internet connection."
+							break;
+					}
+					deferred.reject(new Error(msg));
+					return;
+				}
+
+				if (isHTTP) {
+					let statusCode = request.QueryInterface(Ci.nsIHttpChannel).responseStatus;
+					if (statusCode != 200) {
+						let msg = `Download failed with response code ${responseStatus}`;
+						Zotero.logError(msg);
+						deferred.reject(new Error(msg));
+						return;
+					}
+				}
+			}
+		});
+
+		NetUtil.asyncCopy(pipe.inputStream, outputChannel, function(aResult) {
+			deferred.resolve();
+		});
+		inputChannel.asyncOpen(listener, null);
+
+		return deferred.promise;
+	};
 	
 	/**
 	 * Rename file within its parent directory
@@ -481,7 +523,7 @@ Zotero.File = new function(){
 		var unique = options.unique || false;
 		
 		var origPath = file;
-		var origName = OS.Path.basename(origPath);
+		var origName = PathUtils.filename(origPath);
 		newName = Zotero.File.getValidFileName(newName);
 		
 		// Ignore if no change
@@ -496,9 +538,9 @@ Zotero.File = new function(){
 			overwrite = true;
 		}
 		
-		var parentDir = OS.Path.dirname(origPath);
+		var parentDir = PathUtils.parent(origPath);
 		var destPath = OS.Path.join(parentDir, newName);
-		var destName = OS.Path.basename(destPath);
+		var destName = PathUtils.filename(destPath);
 		// Get root + extension, if there is one
 		var pos = destName.lastIndexOf('.');
 		if (pos > 0) {
@@ -524,7 +566,7 @@ Zotero.File = new function(){
 			}
 			
 			try {
-				Zotero.debug(`Renaming ${origPath} to ${OS.Path.basename(destPath)}`);
+				Zotero.debug(`Renaming ${origPath} to ${PathUtils.filename(destPath)}`);
 				Zotero.debug(destPath);
 				await OS.File.move(origPath, destPath, { noOverwrite: !overwrite })
 			}
@@ -644,14 +686,11 @@ Zotero.File = new function(){
 		
 		// Throw certain known errors (no more disk space) to interrupt the operation
 		function checkError(e) {
-			if (!(e instanceof OS.File.Error)) {
+			if (!(DOMException.isInstance(e))) {
 				return;
 			}
-			Components.classes["@mozilla.org/net/osfileconstantsservice;1"]
-				.getService(Components.interfaces.nsIOSFileConstantsService)
-				.init();
-			if ((e.unixErrno !== undefined && e.unixErrno == OS.Constants.libc.ENOSPC)
-					|| (e.winLastError !== undefined && e.winLastError == OS.Constants.libc.ENOSPC)) {
+			// DEBUG: Test this
+			if (e.name == 'NotReadableError' && e.message.includes('Target device is full')) {
 				throw e;
 			}
 		}
@@ -723,24 +762,18 @@ Zotero.File = new function(){
 					}
 					
 					
-					// If can't use command, try moving with OS.File.move(). Technically this is
-					// unsupported for directories, but it works on all platforms as long as noCopy
-					// is set (and on some platforms regardless)
+					// If can't use command, try moving with IOUtils.move()
 					if (!moved && useFunction) {
-						Zotero.debug(`Moving ${entry.path} with OS.File`);
-						try {
-							await OS.File.move(
-								entry.path,
-								dest,
-								{
-									noCopy: true
-								}
-							);
-							moved = true;
-						}
-						catch (e) {
-							checkError(e);
-							Zotero.debug(e, 1);
+						Zotero.debug(`Moving ${entry.path} with IOUtils`);
+						if (!await IOUtils.exists(dest)) {
+							try {
+								await IOUtils.move(entry.path, dest);
+								moved = true;
+							}
+							catch (e) {
+								checkError(e);
+								Zotero.debug(e, 1);
+							}
 						}
 					}
 					
@@ -788,30 +821,35 @@ Zotero.File = new function(){
 			throw new Error("contentType not provided");
 		}
 		
-		var buf = await OS.File.read(file, {});
-		var bytes = new Uint8Array(buf);
-		var binary = '';
-		var len = bytes.byteLength;
-		for (let i = 0; i < len; i++) {
-			binary += String.fromCharCode(bytes[i]);
-		}
-		return 'data:' + contentType + ';base64,' + btoa(binary);
+		var buf = await IOUtils.read(file);
+		buf = new Uint8Array(buf).buffer;
+		return new Promise((resolve, reject) => {
+			let blob = new Blob([buf], { type: contentType });
+			let reader = new FileReader();
+			reader.onloadend = function () {
+				resolve(reader.result);
+			}
+			reader.onerror = function (e) {
+				reject("FileReader error: " + e);
+			};
+			reader.readAsDataURL(blob);
+		});
 	};
 	
 	
-	this.setNormalFilePermissions = function (file) {
-		return OS.File.setPermissions(
-			file,
-			{
-				unixMode: 0o644,
-				winAttributes: {
+	this.setNormalFilePermissions = async function (path) {
+		await IOUtils.setPermissions(path, 0o644);
+		if (Zotero.isWin) {
+			await IOUtils.setWindowsAttributes(
+				path,
+				{
 					readOnly: false,
 					hidden: false,
 					system: false
 				}
-			}
-		);
-	}
+			);
+		};
+	};
 	
 	
 	this.createShortened = function (file, type, mode, maxBytes) {
@@ -935,7 +973,7 @@ Zotero.File = new function(){
 	 * @return {String} - Path of new file
 	 */
 	this.moveToUnique = async function (file, newFile) {
-		var targetDir = OS.Path.dirname(newFile);
+		var targetDir = PathUtils.parent(newFile);
 		
 		var newNSIFile = this.pathToFile(newFile);
 		newNSIFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o644);
@@ -951,6 +989,10 @@ Zotero.File = new function(){
 	this.copyToUnique = function (file, newFile) {
 		file = this.pathToFile(file);
 		newFile = this.pathToFile(newFile);
+		
+		if (file.contains(newFile)) {
+			throw new Error("Can't copy file into itself");
+		}
 		
 		newFile.createUnique(Components.interfaces.nsIFile.NORMAL_FILE_TYPE, 0o644);
 		var newName = newFile.leafName;
@@ -1044,7 +1086,66 @@ Zotero.File = new function(){
 			}
 			throw e;
 		}
+	};
+
+	// From public-domain Mozilla code
+	// https://searchfox.org/mozilla-central/rev/78a2c17cc80680a5a82446e4ce7c45a73b935383/security/sandbox/test/browser_content_sandbox_utils.js#85-115
+	//
+	// @param {String} sourcePath - The file to create a symlink to
+	// @param {String} targetPath - The location of the symlink to create
+	// @return {Promise<Boolean>} - True if successfully created, false otherwise
+	this.createSymlink = function (sourcePath, targetPath) {
+		const { ctypes } = ChromeUtils.importESModule(
+			"resource://gre/modules/ctypes.sys.mjs"
+		);
+		
+		try {
+			const libc = ctypes.open(
+				Services.appinfo.OS === "Darwin" ? "libSystem.B.dylib" : "libc.so"
+			);
+			
+			const symlink = libc.declare(
+				"symlink",
+				ctypes.default_abi,
+				ctypes.int, // return value
+				ctypes.char.ptr, // target
+				ctypes.char.ptr //linkpath
+			);
+			
+			if (symlink(sourcePath, targetPath)) {
+				return false;
+			}
+		}
+		catch (e) {
+			Zotero.logError(e);
+			return false;
+		}
+		
+		return true;
 	}
+	
+	/**
+	 * Normalize to a Unix-style path, replacing backslashes (interpreted as
+	 * separators only on Windows) with forward slashes (interpreted as
+	 * separators everywhere)
+	 *
+	 * @param {String} path
+	 * @return {String}
+	 */
+	this.normalizeToUnix = function (path) {
+		// If we're on Windows, we need to normalize first and then replace
+		// the slashes, because OS.Path.normalize won't handle forward slashes
+		// correctly. Otherwise, we replace slashes first and *then* normalize.
+		// This should ensure consistent behavior across platforms.
+		if (Zotero.isWin) {
+			let normalized = OS.Path.normalize(path);
+			return normalized.replace(/\\/g, '/');
+		}
+		else {
+			let replaced = path.replace(/\\/g, '/');
+			return OS.Path.normalize(replaced);
+		}
+	};
 	
 	
 	/**
@@ -1054,8 +1155,12 @@ Zotero.File = new function(){
 		if (typeof dir != 'string') throw new Error("dir must be a string");
 		if (typeof file != 'string') throw new Error("file must be a string");
 		
-		dir = OS.Path.normalize(dir);
-		file = OS.Path.normalize(file);
+		dir = this.normalizeToUnix(dir);
+		file = this.normalizeToUnix(file);
+		// Normalize D:\ vs. D:\foo
+		if (dir != file && !dir.endsWith('/')) {
+			dir += '/';
+		}
 		
 		return file.startsWith(dir);
 	};
@@ -1079,7 +1184,7 @@ Zotero.File = new function(){
 			return false;
 		}
 		
-		Zotero.debug(`Creating ${OS.Path.basename(zipPath)} with ${entries.length} file(s)`);
+		Zotero.debug(`Creating ${PathUtils.filename(zipPath)} with ${entries.length} file(s)`);
 		
 		var context = {
 			zipWriter: zw,
@@ -1185,6 +1290,8 @@ Zotero.File = new function(){
 		fileName = fileName.replace(/[\u2000-\u200A]/g, ' ');
 		// Replace zero-width spaces
 		fileName = fileName.replace(/[\u200B-\u200E]/g, '');
+		// Replace line and paragraph separators
+		fileName = fileName.replace(/[\u2028-\u2029]/g, ' ');
 		if (!skipXML) {
 			// Strip characters not valid in XML, since they won't sync and they're probably unwanted
 			fileName = fileName.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ud800-\udfff\ufffe\uffff]/g, '');
@@ -1192,6 +1299,8 @@ Zotero.File = new function(){
 			// Normalize to NFC
 			fileName = fileName.normalize();
 		}
+		// Replace bidi isolation control characters
+		fileName = fileName.replace(/[\u2068\u2069]/g, '');
 		// Don't allow hidden files
 		fileName = fileName.replace(/^\./, '');
 		// Don't allow blank or illegal filenames
@@ -1202,120 +1311,60 @@ Zotero.File = new function(){
 	}
 	
 	/**
-	 * Truncate a filename (excluding the extension) to the given total length
-	 * If the "extension" is longer than 20 characters,
-	 * it is treated as part of the file name
+	 * Truncate a filename (excluding the extension) to the given byte length
+	 *
+	 * If the extension is longer than 20 characters, it's treated as part of the file name.
+	 *
+	 * @param {String} fileName
+	 * @param {Number} maxLength - Maximum length in bytes
 	 */
 	function truncateFileName(fileName, maxLength) {
-		if(!fileName || (fileName + '').length <= maxLength) return fileName;
+		if (!fileName || Zotero.Utilities.Internal.byteLength((fileName + '')).length <= maxLength) {
+			return fileName;
+		}
 
-		var parts = (fileName + '').split(/\.(?=[^\.]+$)/);
-		var fn = parts[0];
+		var parts = (fileName + '').split(/\.(?=[^.]+$)/);
+		var name = parts[0];
 		var ext = parts[1];
 		//if the file starts with a period , use the whole file
 		//the whole file name might also just be a period
-		if(!fn) {
-			fn = '.' + (ext || '');
+		if (!name) {
+			name = '.' + (ext || '');
 		}
 
 		//treat long extensions as part of the file name
-		if(ext && ext.length > 20) {
-			fn += '.' + ext;
+		if (ext && ext.length > 20) {
+			name += '.' + ext;
 			ext = undefined;
 		}
-
-		if(ext === undefined) {	//there was no period in the whole file name
+		
+		// No period in the whole filename
+		if (ext === undefined) {
 			ext = '';
-		} else {
+		}
+		else {
 			ext = '.' + ext;
 		}
 
-		return fn.substr(0,maxLength-ext.length) + ext;
-	}
-	
-	/*
-	 * Not implemented, but it'd sure be great if it were
-	 */
-	function getCharsetFromByteArray(arr) {
-		
-	}
-	
-	
-	/*
-	 * An extraordinarily inelegant way of getting the character set of a
-	 * text file using a hidden browser
-	 *
-	 * I'm quite sure there's a better way
-	 *
-	 * Note: This is for text files -- don't run on other files
-	 *
-	 * 'callback' is the function to pass the charset (and, if provided, 'args')
-	 * to after detection is complete
-	 */
-	function getCharsetFromFile(file, mimeType, callback, args){
-		if (!file || !file.exists()){
-			callback(false, args);
-			return;
+		// Drop extension if it wouldn't fit within the limit
+		// E.g., for (lorem.json, 5), return "lorem" instead of ".json"
+		if (Zotero.Utilities.Internal.byteLength(ext) >= maxLength) {
+			ext = '';
 		}
 		
-		if (mimeType.substr(0, 5) != 'text/' ||
-				!Zotero.MIME.hasInternalHandler(mimeType, this.getExtension(file))) {
-			callback(false, args);
-			return;
+		while (Zotero.Utilities.Internal.byteLength(name + ext) > maxLength) {
+			// Split into characters, so we don't corrupt emoji characters (though we might
+			// change multi-part emoji in unfortunate ways by removing some of the characters)
+			let parts = [...name];
+			name = name.substring(0, name.length - parts[parts.length - 1].length);
 		}
 		
-		var browser = Zotero.Browser.createHiddenBrowser();
-		
-		var url = Components.classes["@mozilla.org/network/protocol;1?name=file"]
-				.getService(Components.interfaces.nsIFileProtocolHandler)
-				.getURLSpecFromFile(file);
-		
-		this.addCharsetListener(browser, function (charset, args) {
-			callback(charset, args);
-			Zotero.Browser.deleteHiddenBrowser(browser);
-		}, args);
-		
-		browser.loadURI(url);
-	}
-	
-	
-	/*
-	 * Attach a load listener to a browser object to perform charset detection
-	 *
-	 * We make sure the universal character set detector is set to the
-	 * universal_charset_detector (temporarily changing it if not--shhhh)
-	 *
-	 * 'callback' is the function to pass the charset (and, if provided, 'args')
-	 * to after detection is complete
-	 */
-	function addCharsetListener(browser, callback, args){
-		var prefService = Components.classes["@mozilla.org/preferences-service;1"]
-							.getService(Components.interfaces.nsIPrefBranch);
-		var oldPref = prefService.getCharPref('intl.charset.detector');
-		var newPref = 'universal_charset_detector';
-		//Zotero.debug("Default character detector is " + (oldPref ? oldPref : '(none)'));
-		
-		if (oldPref != newPref){
-			//Zotero.debug('Setting character detector to universal_charset_detector');
-			prefService.setCharPref('intl.charset.detector', 'universal_charset_detector');
+		// If removed completely, use underscore
+		if (name == '') {
+			name = '_';
 		}
 		
-		var onpageshow = function(){
-			// ignore spurious about:blank loads
-			if(browser.contentDocument.location.href == "about:blank") return;
-
-			browser.removeEventListener("pageshow", onpageshow, false);
-			
-			var charset = browser.contentDocument.characterSet;
-			Zotero.debug("Detected character set '" + charset + "'");
-			
-			//Zotero.debug('Resetting character detector to ' + (oldPref ? oldPref : '(none)'));
-			prefService.setCharPref('intl.charset.detector', oldPref);
-			
-			callback(charset, args);
-		};
-		
-		browser.addEventListener("pageshow", onpageshow, false);
+		return name + ext;
 	}
 	
 	
@@ -1353,7 +1402,11 @@ Zotero.File = new function(){
 				// These show up on some Windows systems
 				|| e.name == 'NS_ERROR_FAILURE' || e.name == 'NS_ERROR_FILE_NOT_FOUND'
 				// OS.File.Error
-				|| e.becauseAccessDenied || e.becauseNoSuchFile) {
+				|| e.becauseAccessDenied || e.becauseNoSuchFile
+				// IOUtils
+				|| e.name == 'NotAllowedError'
+				|| e.name == 'ReadOnlyError'
+				|| e.name == 'NotFoundError') {
 			let checkFileWindows = Zotero.getString('file.accessError.message.windows');
 			let checkFileOther = Zotero.getString('file.accessError.message.other');
 			let msg = str + "\n\n"
@@ -1384,7 +1437,7 @@ Zotero.File = new function(){
 	
 	
 	this.getEvictedICloudPath = function (path) {
-		return OS.Path.join(OS.Path.dirname(path), '.' + OS.Path.basename(path) + '.icloud');
+		return OS.Path.join(PathUtils.parent(path), '.' + PathUtils.filename(path) + '.icloud');
 	};
 	
 	
@@ -1393,8 +1446,14 @@ Zotero.File = new function(){
 		return path.toLowerCase().includes('dropbox')
 			// Google Drive
 			|| path.includes('Google Drive')
+			|| path.includes('GoogleDrive') // https://forums.zotero.org/discussion/109502/
 			// OneDrive
 			|| path.toLowerCase().includes('onedrive')
+			// Baidu
+			|| path.toLowerCase().includes('baidunetdisk')
+			|| path.toLowerCase().includes('baidusyncdisk')
+			// MEGA
+			|| path.includes('MEGA')
 			// pCloud
 			|| path.toLowerCase().includes('pcloud')
 			// iCloud Drive (~/Library/Mobile Documents/com~apple~CloudDocs)
@@ -1425,7 +1484,7 @@ Zotero.File = new function(){
 					let info = yield OS.File.stat(file);
 					// Launch parent directory for files
 					if (!info.isDir) {
-						file = OS.Path.dirname(file);
+						file = PathUtils.parent(file);
 					}
 					Zotero.launchFile(file);
 				}

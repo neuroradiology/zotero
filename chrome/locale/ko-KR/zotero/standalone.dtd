@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Zotero 종료">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "파일">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "저장…">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "종료">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "인용 복사">
 <!ENTITY copyBibliographyCmd.label "서지 복사">
+<!ENTITY copyNoteCmd.label "노트 복사">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "페이지 방향 바꾸기">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "이동">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "보기">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "레이아웃">
 <!ENTITY standardView.label "표준 보기">
 <!ENTITY stackedView.label "포개어 보기">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "하위 컬렉션 항목 표시">
 <!ENTITY fontSize.label "글꼴 크기">
 <!ENTITY noteFontSize.label "노트 글꼴 크기">
-
+<!ENTITY columns.label "열">
+<!ENTITY sortBy.label "정렬 기준">
 
 <!ENTITY toolsMenu.label "도구">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "확장 기능">
 <!ENTITY developer.label "개발자">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "최소화">
 <!ENTITY bringAllToFront.label "모두 앞으로 가져오기">
-<!ENTITY zoomWindow.label "크기 조정">
-<!ENTITY windowMenu.label "창">
-
 
 <!ENTITY helpMenu.label "도움말">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "도움말">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

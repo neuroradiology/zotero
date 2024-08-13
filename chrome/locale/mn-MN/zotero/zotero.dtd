@@ -1,7 +1,7 @@
 <!ENTITY zotero.general.yes "Yes">
 <!ENTITY zotero.general.no "No">
 <!ENTITY zotero.general.optional "(Optional)">
-<!ENTITY zotero.general.note "Тэмдэглэл:">
+<!ENTITY zotero.general.note "Note:">
 <!ENTITY zotero.general.selectAll "Select All">
 <!ENTITY zotero.general.deselectAll "Deselect All">
 <!ENTITY zotero.general.edit "Edit">
@@ -15,6 +15,7 @@
 <!ENTITY zotero.general.advancedOptions.label "Advanced Options">
 <!ENTITY zotero.general.tools "Tools">
 <!ENTITY zotero.general.more "More">
+<!ENTITY zotero.general.moreInformation "More Information">
 <!ENTITY zotero.general.loading "Loading…">
 <!ENTITY zotero.general.close "Close">
 <!ENTITY zotero.general.minimize "Minimize">
@@ -29,7 +30,7 @@
 <!ENTITY zotero.errorReport.submitted "Your error report has been submitted.">
 <!ENTITY zotero.errorReport.reportID "Report ID:">
 <!ENTITY zotero.errorReport.postToForums "Please post a message to the Zotero forums (forums.zotero.org) with this Report ID, a description of the problem, and any steps necessary to reproduce it.">
-<!ENTITY zotero.errorReport.notReviewed "Error reports are generally not reviewed unless referred to in the forums.">
+<!ENTITY zotero.errorReport.notReviewed "Error reports are not reviewed unless referred to in the forums.">
 
 <!ENTITY zotero.upgrade.title "Zotero Upgrade Wizard">
 <!ENTITY zotero.upgrade.newVersionInstalled "You have installed a new version of Zotero.">
@@ -45,88 +46,55 @@
 <!ENTITY zotero.upgrade.changeLogLink "the changelog">
 <!ENTITY zotero.upgrade.changeLogAfterLink "to find out what's new.">
 
-<!ENTITY zotero.tabs.info.label "Мэдээлэл">
-<!ENTITY zotero.tabs.notes.label "Тэмдэглэлүүд">
+<!ENTITY zotero.tabs.notes.label "Notes">
 <!ENTITY zotero.tabs.attachments.label "Attachments">
-<!ENTITY zotero.tabs.tags.label "Tags">
-<!ENTITY zotero.tabs.related.label "Related">
-<!ENTITY zotero.notes.separate "Edit in a separate window">
 
 <!ENTITY zotero.toolbar.duplicate.label "Show Duplicates">
 <!ENTITY zotero.collections.showUnfiledItems "Show Unfiled Items">
 <!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "Item Type">
-<!ENTITY zotero.items.type_column "Item Type">
-<!ENTITY zotero.items.title_column "Гарчиг">
 <!ENTITY zotero.items.creator_column "Creator">
-<!ENTITY zotero.items.date_column "Хугацаа">
-<!ENTITY zotero.items.year_column "Жил">
-<!ENTITY zotero.items.publisher_column "Хэвлэлийн газар">
-<!ENTITY zotero.items.publication_column "Publication">
-<!ENTITY zotero.items.journalAbbr_column "Journal Abbr">
-<!ENTITY zotero.items.language_column "Хэл">
-<!ENTITY zotero.items.accessDate_column "Accessed">
-<!ENTITY zotero.items.libraryCatalog_column "Library Catalog">
-<!ENTITY zotero.items.callNumber_column "Call Number">
-<!ENTITY zotero.items.rights_column "Rights">
-<!ENTITY zotero.items.dateAdded_column "Date Added">
+<!ENTITY zotero.items.year_column "Year">
 <!ENTITY zotero.items.dateModified_column "Date Modified">
-<!ENTITY zotero.items.extra_column "Extra">
-<!ENTITY zotero.items.archive_column "Archive">
-<!ENTITY zotero.items.archiveLocation_column "Loc. in Archive">
-<!ENTITY zotero.items.place_column "Place">
-<!ENTITY zotero.items.volume_column "Volume">
-<!ENTITY zotero.items.edition_column "Edition">
-<!ENTITY zotero.items.pages_column "Pages">
-<!ENTITY zotero.items.issue_column "Issue">
-<!ENTITY zotero.items.series_column "Series">
-<!ENTITY zotero.items.seriesTitle_column "Series Title">
-<!ENTITY zotero.items.court_column "Court">
-<!ENTITY zotero.items.medium_column "Medium/Format">
-<!ENTITY zotero.items.genre_column "Genre">
-<!ENTITY zotero.items.system_column "System">
 <!ENTITY zotero.items.moreColumns.label "More Columns">
 <!ENTITY zotero.items.restoreColumnOrder.label "Restore Column Order">
 
 <!ENTITY zotero.items.menu.showInLibrary "Show in Library">
-<!ENTITY zotero.items.menu.attach.note "Тэмдэглэл нэмэх">
-<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
+<!ENTITY zotero.items.menu.attach.note "Add Note">
 <!ENTITY zotero.items.menu.attach "Add Attachment">
 <!ENTITY zotero.items.menu.attach.link.uri "Attach Link to URI…">
-<!ENTITY zotero.items.menu.attach.file "Attach Stored Copy of File...">
-<!ENTITY zotero.items.menu.attach.fileLink "Attach Link to File...">
+<!ENTITY zotero.items.menu.attach.file "Attach Stored Copy of File…">
+<!ENTITY zotero.items.menu.attach.fileLink "Attach Link to File…">
 
 <!ENTITY zotero.items.menu.restoreToLibrary "Restore to Library">
 <!ENTITY zotero.items.menu.duplicateItem "Duplicate Item">
 <!ENTITY zotero.items.menu.mergeItems "Merge Items…">
 <!ENTITY zotero.items.menu.unrecognize "Undo Retrieve Metadata">
-<!ENTITY zotero.items.menu.reportMetadata "Report Incorrect Metadata">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Choose the version of the item to use as the master item:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Select fields to keep from other versions of the item:">
 
-<!ENTITY zotero.toolbar.newItem.label "Шинэ бүтээл">
-<!ENTITY zotero.toolbar.moreItemTypes.label "Бусад">
+<!ENTITY zotero.toolbar.newItem.label "New Item">
+<!ENTITY zotero.toolbar.moreItemTypes.label "More">
 <!ENTITY zotero.toolbar.lookup.label "Add Item(s) by Identifier">
-<!ENTITY zotero.toolbar.removeItem.label "Remove Item...">
+<!ENTITY zotero.toolbar.removeItem.label "Remove Item…">
 <!ENTITY zotero.toolbar.newLibrary.label "New Library">
-<!ENTITY zotero.toolbar.newCollection.label "New Collection...">
-<!ENTITY zotero.toolbar.markFeedRead.label "Mark Feed as Read">
-<!ENTITY zotero.toolbar.newGroup "New Group...">
-<!ENTITY zotero.toolbar.newSubcollection.label "New Subcollection...">
-<!ENTITY zotero.toolbar.newSavedSearch.label "New Saved Search...">
+<!ENTITY zotero.toolbar.newCollection.label "New Collection…">
+<!ENTITY zotero.toolbar.newGroup "New Group…">
+<!ENTITY zotero.toolbar.newSubcollection.label "New Subcollection…">
+<!ENTITY zotero.toolbar.newSavedSearch.label "New Saved Search…">
 <!ENTITY zotero.toolbar.emptyTrash.label "Empty Trash">
 <!ENTITY zotero.toolbar.tagSelector.label "Show/Hide Tag Selector">
 <!ENTITY zotero.toolbar.actions.label "Actions">
-<!ENTITY zotero.toolbar.import.label "Import...">
+<!ENTITY zotero.toolbar.import.label "Import…">
 <!ENTITY zotero.toolbar.importFromClipboard "Import from Clipboard">
-<!ENTITY zotero.toolbar.export.label "Export Library...">
+<!ENTITY zotero.toolbar.export.label "Export Library…">
 <!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
 <!ENTITY zotero.toolbar.timeline.label "Create Timeline">
-<!ENTITY zotero.toolbar.preferences.label "Preferences...">
+<!ENTITY zotero.toolbar.preferences.label "Preferences…">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Support and Documentation">
-<!ENTITY zotero.toolbar.about.label "Зотерогийн тухай">
+<!ENTITY zotero.toolbar.about.label "About Zotero">
 <!ENTITY zotero.toolbar.advancedSearch "Advanced Search">
 <!ENTITY zotero.toolbar.openURL.label "Locate">
 <!ENTITY zotero.toolbar.openURL.tooltip "Find through your local library">
@@ -134,16 +102,15 @@
 <!ENTITY zotero.toolbar.feeds.new "New Feed">
 <!ENTITY zotero.toolbar.feeds.new.fromURL "From URL…">
 <!ENTITY zotero.toolbar.feeds.new.fromOPML "From OPML…">
-<!ENTITY zotero.toolbar.feeds.refresh "Refresh Feed">
 <!ENTITY zotero.toolbar.feeds.edit "Edit Feed…">
 
-<!ENTITY zotero.item.add "Нэм">
-<!ENTITY zotero.item.attachment.file.show "Файлыг харуулах">
+<!ENTITY zotero.item.add "Add">
+<!ENTITY zotero.item.attachment.file.show "Show File">
 <!ENTITY zotero.item.textTransform "Transform Text">
 <!ENTITY zotero.item.textTransform.titlecase "Title Case">
 <!ENTITY zotero.item.textTransform.sentencecase "Sentence case">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Swap First/Last Names">
-<!ENTITY zotero.item.viewOnline "View Online">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Swap First/Last">
+<!ENTITY zotero.item.creatorTransform.fixCase "Fix Case">
 <!ENTITY zotero.item.copyAsURL "Copy as URL">
 <!ENTITY zotero.item.deletePermanently "Delete Permanently…">
 
@@ -152,9 +119,9 @@
 <!ENTITY zotero.toolbar.newNote "New Note">
 <!ENTITY zotero.toolbar.note.standalone "New Standalone Note">
 <!ENTITY zotero.toolbar.note.child "Add Child Note">
-<!ENTITY zotero.toolbar.lookup "Lookup by Identifier...">
-<!ENTITY zotero.toolbar.attachment.linked "Файлыг холбох...">
-<!ENTITY zotero.toolbar.attachment.add "Store Copy of File...">
+<!ENTITY zotero.toolbar.lookup "Lookup by Identifier…">
+<!ENTITY zotero.toolbar.attachment.linked "Link to File…">
+<!ENTITY zotero.toolbar.attachment.add "Store Copy of File…">
 <!ENTITY zotero.toolbar.attachment.weblink "Save Link to Current Page">
 <!ENTITY zotero.toolbar.attachment.snapshot "Take Snapshot of Current Page">
 <!ENTITY zotero.toolbar.context.item "Item">
@@ -162,13 +129,14 @@
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "No tags to display">
 <!ENTITY zotero.tagSelector.loadingTags "Loading tags…">
-<!ENTITY zotero.tagSelector.showAutomatic "Show automatic">
-<!ENTITY zotero.tagSelector.displayAllInLibrary "Display all tags in this library">
+<!ENTITY zotero.tagSelector.showAutomatic "Show Automatic">
+<!ENTITY zotero.tagSelector.displayAllInLibrary "Display All Tags in This Library">
 <!ENTITY zotero.tagSelector.deleteAutomaticInLibrary "Delete Automatic Tags in This Library…">
-<!ENTITY zotero.tagSelector.clearAll "Deselect all">
+<!ENTITY zotero.tagSelector.clearAll "Deselect All">
 <!ENTITY zotero.tagSelector.assignColor "Assign Color…">
-<!ENTITY zotero.tagSelector.renameTag "Rename Tag...">
-<!ENTITY zotero.tagSelector.deleteTag "Delete Tag...">
+<!ENTITY zotero.tagSelector.renameTag "Rename Tag…">
+<!ENTITY zotero.tagSelector.deleteTag "Delete Tag…">
+<!ENTITY zotero.tagSelector.splitTag "Split…">
 
 <!ENTITY zotero.tagColorChooser.title "Choose a Tag Color and Position">
 <!ENTITY zotero.tagColorChooser.color "Color:">
@@ -176,7 +144,7 @@
 <!ENTITY zotero.tagColorChooser.setColor "Set Color">
 <!ENTITY zotero.tagColorChooser.removeColor "Remove Color">
 
-<!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
+<!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, arXiv IDs, or ADS Bibcodes to add to your library:">
 <!ENTITY zotero.lookup.button.search "Search">
 
 <!ENTITY zotero.createParent.title "Create Parent Item">
@@ -184,8 +152,8 @@
 
 <!ENTITY zotero.selectitems.title "Select Items">
 <!ENTITY zotero.selectitems.intro.label "Select which items you'd like to add to your library">
-<!ENTITY zotero.selectitems.cancel.label "Цуцлах">
-<!ENTITY zotero.selectitems.select.label "ОК">
+<!ENTITY zotero.selectitems.cancel.label "Cancel">
+<!ENTITY zotero.selectitems.select.label "OK">
 
 <!ENTITY zotero.bibliography.title "Create Citation/Bibliography">
 <!ENTITY zotero.bibliography.style.label "Citation Style:">
@@ -194,10 +162,10 @@
 <!ENTITY zotero.bibliography.outputMode "Output Mode:">
 <!ENTITY zotero.bibliography.bibliography "Bibliography">
 <!ENTITY zotero.bibliography.outputMethod "Output Method:">
-<!ENTITY zotero.bibliography.saveAsRTF.label "RTF-р хадгалах">
-<!ENTITY zotero.bibliography.saveAsHTML.label "HTML-р хадгалах">
+<!ENTITY zotero.bibliography.saveAsRTF.label "Save as RTF">
+<!ENTITY zotero.bibliography.saveAsHTML.label "Save as HTML">
 <!ENTITY zotero.bibliography.copyToClipboard.label "Copy to Clipboard">
-<!ENTITY zotero.bibliography.print.label "Хэвлэх">
+<!ENTITY zotero.bibliography.print.label "Print">
 
 <!ENTITY zotero.integration.docPrefs.title "Document Preferences">
 <!ENTITY zotero.integration.addEditCitation.title "Add/Edit Citation">
@@ -209,15 +177,18 @@
 <!ENTITY zotero.import "Import">
 <!ENTITY zotero.import.whereToImportFrom "Where do you want to import from?">
 <!ENTITY zotero.import.source.file "A file (BibTeX, RIS, Zotero RDF, etc.)">
+<!ENTITY zotero.import.source.folder "A folder of PDFs or other files">
+<!ENTITY zotero.import.onlineImport "online import">
 <!ENTITY zotero.import.importing "Importing…">
 <!ENTITY zotero.import.database "Database">
 <!ENTITY zotero.import.lastModified "Last Modified">
 <!ENTITY zotero.import.size "Size">
 <!ENTITY zotero.import.createCollection "Place imported collections and items into new collection">
 <!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.online.newItemsOnly "Download new items only; don’t update previously imported items">
 
-<!ENTITY zotero.exportOptions.title "Экспорт...">
-<!ENTITY zotero.exportOptions.format.label "Формат:">
+<!ENTITY zotero.exportOptions.title "Export…">
+<!ENTITY zotero.exportOptions.format.label "Format:">
 <!ENTITY zotero.exportOptions.translatorOptions.label "Translator Options">
 
 <!ENTITY zotero.charset.label "Character Encoding">
@@ -225,14 +196,14 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Keep Sources Sorted">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Suppress Author">
+<!ENTITY zotero.citation.suppressAuthor.label "Omit Author">
 <!ENTITY zotero.citation.prefix.label "Prefix:">
 <!ENTITY zotero.citation.suffix.label "Suffix:">
 <!ENTITY zotero.citation.editorWarning.label "Warning: If you edit a citation in the editor it will no longer update to reflect changes in your database or the citation style.">
 
-<!ENTITY zotero.richText.italic.label "Налуу">
-<!ENTITY zotero.richText.bold.label "Тодруул">
-<!ENTITY zotero.richText.underline.label "Доогуур зураас">
+<!ENTITY zotero.richText.italic.label "Italic">
+<!ENTITY zotero.richText.bold.label "Bold">
+<!ENTITY zotero.richText.underline.label "Underline">
 <!ENTITY zotero.richText.superscript.label "Superscript">
 <!ENTITY zotero.richText.subscript.label "Subscript">
 
@@ -309,7 +280,7 @@
 <!ENTITY zotero.rtfScan.ambiguousCitations.label "Ambiguous Citations">
 <!ENTITY zotero.rtfScan.mappedCitations.label "Mapped Citations">
 <!ENTITY zotero.rtfScan.introPage.label "Introduction">
-<!ENTITY zotero.rtfScan.introPage.description "Zotero can automatically extract and reformat citations and insert a bibliography into RTF files. To get started, choose an RTF file below.">
+<!ENTITY zotero.rtfScan.introPage.description "Zotero can automatically extract and reformat citations and insert a bibliography into RTF files. The RTF Scan feature currently supports citations in variations upon the following formats:">
 <!ENTITY zotero.rtfScan.introPage.description2 "To get started, select an RTF input file and an output file below:">
 <!ENTITY zotero.rtfScan.scanPage.label "Scanning for Citations">
 <!ENTITY zotero.rtfScan.scanPage.description "Zotero is scanning your document for citations. Please be patient.">
@@ -323,7 +294,7 @@
 <!ENTITY zotero.rtfScan.inputFile.label "Input File">
 <!ENTITY zotero.rtfScan.outputFile.label "Output File">
 
-<!ENTITY zotero.file.choose.label "Choose File...">
+<!ENTITY zotero.file.choose.label "Choose File…">
 <!ENTITY zotero.file.noneSelected.label "No file selected">
 
 <!ENTITY zotero.attachLink.title "Attach Link to URI">
@@ -335,3 +306,28 @@
 <!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
 <!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
 <!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+
+<!ENTITY zotero.pdfReader.firstPage "First Page">
+<!ENTITY zotero.pdfReader.lastPage "Last Page">
+<!ENTITY zotero.pdfReader.back "Back">
+<!ENTITY zotero.pdfReader.forward "Forward">
+<!ENTITY zotero.pdfReader.handTool "Hand Tool">
+<!ENTITY zotero.pdfReader.verticalScrolling "Vertical Scrolling">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Horizontal Scrolling">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Wrapped Scrolling">
+<!ENTITY zotero.pdfReader.noSpreads "No Spreads">
+<!ENTITY zotero.pdfReader.oddSpreads "Odd Spreads">
+<!ENTITY zotero.pdfReader.evenSpreads "Even Spreads">
+<!ENTITY zotero.pdfReader.scrolled "Scrolled">
+<!ENTITY zotero.pdfReader.paginated "Paginated">
+<!ENTITY zotero.pdfReader.zoomIn "Zoom In">
+<!ENTITY zotero.pdfReader.zoomOut "Zoom Out">
+<!ENTITY zotero.pdfReader.zoomReset "Reset Zoom">
+<!ENTITY zotero.pdfReader.zoomAuto "Automatically Resize">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Zoom to Page Width">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Zoom to Page Height">
+<!ENTITY zotero.pdfReader.splitVertically "Split Vertically">
+<!ENTITY zotero.pdfReader.splitHorizontally "Split Horizontally">
+<!ENTITY zotero.pdfReader.transferFromPDF "Import Annotations…">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Rotate Page Left">
+<!ENTITY zotero.pdfReader.rotatePageRight "Rotate Page Right">

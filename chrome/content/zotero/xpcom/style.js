@@ -45,6 +45,10 @@ Zotero.Styles = new function() {
 	 * Initializes styles cache, loading metadata for styles into memory
 	 */
 	this.init = Zotero.Promise.coroutine(function* (options = {}) {
+		if (Zotero.Prefs.get('cite.useCiteprocRs')) {
+			yield Zotero.CiteprocRs.init();
+		}
+		
 		// Wait until bundled files have been updated, except when this is called by the schema update
 		// code itself
 		if (!options.fromSchemaUpdate) {
@@ -332,8 +336,7 @@ Zotero.Styles = new function() {
 		var existingFile, destFile, source;
 		
 		// First, parse style and make sure it's valid XML
-		var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-				.createInstance(Components.interfaces.nsIDOMParser),
+		var parser = new DOMParser(),
 			doc = parser.parseFromString(style, "application/xml");
 		
 		var styleID = Zotero.Utilities.xpathText(doc, '/csl:style/csl:info[1]/csl:id[1]',
@@ -440,7 +443,7 @@ Zotero.Styles = new function() {
 			Components.utils.import("resource://gre/modules/Services.jsm");
 			var shouldInstall = Services.prompt.confirmEx(null,
 				Zotero.getString('styles.install.title'),
-				Zotero.getString('styles.validationWarning', origin),
+				Zotero.getString('styles.validationWarning', [origin, Zotero.appName]),
 				(Services.prompt.BUTTON_POS_0) * (Services.prompt.BUTTON_TITLE_OK)
 				+ (Services.prompt.BUTTON_POS_1) * (Services.prompt.BUTTON_TITLE_CANCEL)
 				+ Services.prompt.BUTTON_POS_1_DEFAULT + Services.prompt.BUTTON_DELAY_ENABLE,
@@ -504,7 +507,6 @@ Zotero.Styles = new function() {
 	 * Populate menulist with locales
 	 * 
 	 * @param {xul:menulist} menulist
-	 * @return {Promise}
 	 */
 	this.populateLocaleList = function (menulist) {
 		if (!_initialized) {
@@ -561,7 +563,7 @@ Zotero.Styles = new function() {
 		for (let i=0; i<menulist.itemCount; i++) {
 			let item = menulist.getItemAtIndex(i);
 			if (item.getAttributeNS('zotero:', 'customLocale')) {
-				menulist.removeItemAt(i);
+				item.remove();
 				i--;
 				continue;
 			}
@@ -591,8 +593,11 @@ Zotero.Styles = new function() {
 		
 		// Make sure the locale we want to select is in the menulist
 		if (availableLocales.indexOf(selectLocale) == -1) {
-			let customLocale = menulist.insertItemAt(0, selectLocale, selectLocale);
-			customLocale.setAttributeNS('zotero:', 'customLocale', true);
+			var menuitem = menulist.ownerDocument.createXULElement('menuitem');
+			menuitem.setAttribute('label', selectLocale);
+			menuitem.setAttribute('value', selectLocale);
+			menuitem.setAttributeNS('zotero:', 'customLocale', true);
+			menulist.menupopup.append(menuitem);
 		}
 		
 		return menulist.value = selectLocale;
@@ -622,8 +627,7 @@ Zotero.Style = function (style, path) {
 	
 	this.type = "csl";
 	
-	var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-			.createInstance(Components.interfaces.nsIDOMParser),
+	var parser = new DOMParser(),
 		doc = parser.parseFromString(style, "application/xml");
 	if(doc.documentElement.localName === "parsererror") {
 		throw new Error("File is not valid XML");
@@ -631,7 +635,7 @@ Zotero.Style = function (style, path) {
 	
 	if (path) {
 		this.path = path;
-		this.fileName = OS.Path.basename(path);
+		this.fileName = PathUtils.filename(path);
 	}
 	else {
 		this.string = style;
@@ -682,15 +686,17 @@ Zotero.Style = function (style, path) {
 /**
  * Get a citeproc-js CSL.Engine instance
  * @param {String} locale Locale code
+ * @param {String} format Output format one of [rtf, html, text]
  * @param {Boolean} automaticJournalAbbreviations Whether to automatically abbreviate titles
  */
-Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviations) {
+Zotero.Style.prototype.getCiteProc = function(locale, format, automaticJournalAbbreviations) {
 	if(!locale) {
 		var locale = Zotero.locale;
 		if(!locale) {
 			var locale = 'en-US';
 		}
 	}
+	format = format || 'text';
 	
 	// APA and some similar styles capitalize the first word of subtitles
 	var uppercaseSubtitlesRE = /^apa($|-)|^academy-of-management($|-)|^(freshwater-science)/;
@@ -704,7 +710,7 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 		if(!parentStyle) {
 			throw new Error(
 				'Style references ' + this.source + ', but this style is not installed',
-				Zotero.Utilities.pathToFileURI(this.path)
+				Zotero.File.pathToFileURI(this.path)
 			);
 		}
 		var version = parentStyle._version;
@@ -731,8 +737,7 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 		// get XSLT processor from updateCSL.xsl file
 		if(!Zotero.Styles.xsltProcessor) {
 			let xsl = Zotero.File.getContentsFromURL("chrome://zotero/content/updateCSL.xsl");
-			let updateXSLT = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-				.createInstance(Components.interfaces.nsIDOMParser)
+			let updateXSLT = new DOMParser()
 				.parseFromString(xsl, "application/xml");
 			
 			// XSLTProcessor is no longer available in XPCOM, so get from hidden window
@@ -744,38 +749,87 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 		}
 		
 		// read style file as DOM XML
-		let styleDOMXML = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-			.createInstance(Components.interfaces.nsIDOMParser)
+		let styleDOMXML = new DOMParser()
 			.parseFromString(this.getXML(), "text/xml");
 		
 		// apply XSLT and serialize output
 		let newDOMXML = Zotero.Styles.xsltProcessor.transformToDocument(styleDOMXML);
-		var xml = Components.classes["@mozilla.org/xmlextras/xmlserializer;1"]
-			.createInstance(Components.interfaces.nsIDOMSerializer).serializeToString(newDOMXML);
+		var xml = new XMLSerializer().serializeToString(newDOMXML);
 	} else {
 		var xml = this.getXML();
 	}
 	
+	xml = this._eventToEventTitle(xml);
+	
 	try {
-		var citeproc = new Zotero.CiteProc.CSL.Engine(
-			new Zotero.Cite.System({
-				automaticJournalAbbreviations,
-				uppercaseSubtitles
-			}),
-			xml,
-			locale,
-			overrideLocale
-		);
-		
-		citeproc.opt.development_extensions.wrap_url_and_doi = true;
-		// Don't try to parse author names. We parse them in itemToCSLJSON
-		citeproc.opt.development_extensions.parse_names = false;
+		var citeproc;
+		if (Zotero.Prefs.get('cite.useCiteprocRs')) {
+			citeproc = new Zotero.CiteprocRs.Engine(
+				new Zotero.Cite.System({
+					automaticJournalAbbreviations,
+					uppercaseSubtitles: uppercaseSubtitles
+				}),
+				this,
+				xml,
+				locale,
+				format == 'text' ? 'plain' : format,
+				overrideLocale
+			);
+		}
+		else {
+			citeproc = new Zotero.CiteProc.CSL.Engine(
+				new Zotero.Cite.System({
+					automaticJournalAbbreviations,
+					uppercaseSubtitles
+				}),
+				xml,
+				locale,
+				overrideLocale
+			);
+			citeproc.setOutputFormat(format);
+			citeproc.free = () => 0;
+			citeproc.opt.development_extensions.wrap_url_and_doi = true;
+			// Don't try to parse author names. We parse them in itemToCSLJSON
+			citeproc.opt.development_extensions.parse_names = false;
+		}
 		
 		return citeproc;
 	} catch(e) {
 		Zotero.logError(e);
 		throw e;
 	}
+};
+
+/**
+ * Temporarily substitute `event-title` for `event`
+ *
+ * Until https://github.com/citation-style-language/styles/issues/6151
+ */
+Zotero.Style.prototype._eventToEventTitle = function (xml) {
+	var parser = new DOMParser();
+	var doc = parser.parseFromString(xml, "text/xml");
+	// Ignore styles that already include `event-title`
+	if (doc.querySelector('[variable*="event-title"]')) {
+		return xml;
+	}
+	var elems = doc.querySelectorAll('[variable*="event"]');
+	if (!elems.length) {
+		return xml;
+	}
+	var changed = false;
+	for (let elem of elems) {
+		let variable = elem.getAttribute('variable');
+		// Must be "event" or "event foo", not, say, "event-place"
+		if (!/event( |$)/.test(variable)) {
+			continue;
+		}
+		elem.setAttribute('variable', variable.replace(/event(?= |$)/, 'event-title'));
+		changed = true;
+	}
+	if (changed) {
+		xml = doc.documentElement.outerHTML;
+	}
+	return xml;
 };
 
 Zotero.Style.prototype.__defineGetter__("class",
@@ -879,7 +933,7 @@ Zotero.Style.prototype.remove = Zotero.Promise.coroutine(function* () {
 		// copy dependent styles to hidden directory
 		let hiddenDir = OS.Path.join(Zotero.getStylesDirectory().path, 'hidden');
 		yield Zotero.File.createDirectoryIfMissingAsync(hiddenDir);
-		yield OS.File.move(this.path, OS.Path.join(hiddenDir, OS.Path.basename(this.path)));
+		yield OS.File.move(this.path, OS.Path.join(hiddenDir, PathUtils.filename(this.path)));
 	} else {
 		// remove defunct files
 		yield OS.File.remove(this.path);

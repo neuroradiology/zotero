@@ -1,9 +1,21 @@
 {
   "general_more": {
-    "message": "Еще…"
+    "message": "Ещё…"
+  },
+  "general_moreInfo": {
+    "message": "Дополнительные сведения…"
+  },
+  "general_needHelp": {
+    "message": "Нужна помощь?"
   },
   "general_done": {
     "message": "Завершено"
+  },
+  "general_yes": {
+    "message": "Да"
+  },
+  "general_no": {
+    "message": "Нет"
   },
   "general_tryAgain": {
     "message": "Попытайтесь снова"
@@ -11,11 +23,29 @@
   "general_warning": {
     "message": "Внимание"
   },
+  "general_ok": {
+    "message": "ОК"
+  },
   "general_cancel": {
     "message": "Отменить"
   },
+  "general_selectAll": {
+    "message": "Выбрать все"
+  },
+  "general_deselectAll": {
+    "message": "Отменить выбор всего"
+  },
   "general_pleaseWait": {
     "message": "Пожалуйста, подождите…"
+  },
+  "general_copyToClipboard": {
+    "message": "Скопировать в буфер обмена"
+  },
+  "itemType_note": {
+    "message": "Заметка"
+  },
+  "itemType_attachment": {
+    "message": "Вложение"
   },
   "progressWindow_savingTo": {
     "message": "Сохранение в"
@@ -26,8 +56,14 @@
   "progressWindow_error_translation": {
     "message": "Произошла ошибка при сохранении этой записи. Смотрите $1 для получения дополнительной информации."
   },
+  "progressWindow_error_siteAccessLimitsError": {
+    "message": "При записи этого элемента произошла ошибка. $1 может иметь лимит на количество сохраняемых за один раз элементов. Посмотрите $2 для дополнительной информации."
+  },
   "progressWindow_error_troubleshootingTranslatorIssues": {
-    "message": "Устранение неисправностей преобразователя"
+    "message": "Устранение неисправностей транслятора"
+  },
+  "progressWindow_error_siteAccessLimits": {
+    "message": "Лимит на доступ к сайту"
   },
   "progressWindow_error_fallback": {
     "message": "Произошла ошибка при сохранении с помощью $1. Выполняется попытка сохранения с использованием $2."
@@ -38,23 +74,50 @@
   "progressWindow_error_upgradeClient_latestVersion": {
     "message": "Последняя версия"
   },
+  "extensionIsDisabled": {
+    "message": "$1 отключено"
+  },
+  "extensionIsDisabled_extensionPage": {
+    "message": "$1 отключено на странице расширения"
+  },
   "appConnector": {
-    "message": "Плагин $1"
+    "message": "Коннектор $1"
   },
   "upgradeApp": {
     "message": "Обновить $1"
+  },
+  "firstRun_title": {
+    "message": "Вы установили коннектор $1!"
+  },
+  "firstRun_text1": {
+    "message": "Коннектор $1 одним щелчком сохраняет просматриваемые страницы из браузера <a href=\"$2\"> в $1</a>."
+  },
+  "firstRun_text2": {
+    "message": "Если вы ещё не <a href=\"$2\">загрузили</a> автономное $1 приложение для большего удобства."
+  },
+  "firstRun_acceptButton": {
+    "message": "Понял"
   },
   "error_connection_isAppRunning": {
     "message": "$1 запущено?"
   },
   "error_connection_save": {
-    "message": "$1 не может соединиться с локальным приложением $2. Плагин может сохранять страницы онлайн из под вашей учетной записи $3, но для достижения лучших результатов убедитесь, что $2 открыто, перед попыткой сохранения."
+    "message": "$1 не может соединиться с локальным приложением $2. Коннектор может сохранять страницы онлайн из под вашей учётной записи $3, но для улучшения результатов убедитесь, что $2 открыто, перед попыткой сохранения."
   },
   "error_connection_downloadOrTroubleshoot": {
     "message": "Вы можете <a href=\"$1\">загрузить из сети $2</a> или <a href=\"$3\">исправить проблемы с подключением </a>, если необходимо."
   },
   "error_connection_enableSavingToOnlineLibrary": {
     "message": "Разрешить сохранение в онлайн-библиотеку"
+  },
+  "reports_report_submitted": {
+    "message": "Отчёт об ошибке был отправлен.\n\nID отчёта: $1\n\nПожалуйста, укажите этот идентификатор, описание проблемы и шаги для её воспроизведения в сообщении на форуме Zotero.\n\nОтчёты об ошибках не будут рассматриваться без ссылки на сообщение в форуме."
+  },
+  "reports_debug_output_submitted": {
+    "message": "Отладочный вывод был отправлен.\n\nID сообщения — $1."
+  },
+  "reports_submission_failed": {
+    "message": "Произошла ошибка при отправке отчёта.\n\n$1\n\nПожалуйста проверьте соединение с сетью Internet. Если проблему не удастся исправить, напишите сообщение на форуме Zotero."
   },
   "integration_error_clientUpgrade": {
     "message": "Веб-цитирование требует $1 или более позднюю."
@@ -76,6 +139,39 @@
   },
   "integration_googleDocs_docxAlert": {
     "message": "Интеграция с $1 не доступна при редактировании Microsoft Word .docx-файлов непосредственно в Google Docs. Выберите пункт меню «Файл» → «Сохранить как Google Docs », чтобы воспользоваться данной функциональностью.<br/><br/>Если вы переместили документ Word с  $1-цитированием на Google Docs, смотрите раздел <a href=\"https://www.zotero.org/support/kb/moving_documents_between_word_processors\">Перемещение документов между текстовыми редакторами</a>."
+  },
+  "integration_googleDocs_documentLocked": {
+    "message": "Цитирование документа было изменено другим пользователем $1. Пожалуйста, попробуйте повторить позже."
+  },
+  "integration_googleDocs_documentLocked_moreInfo": {
+    "message": "$1 блокирует ваш документ для предотвращения одновременной правки цитирования несколькими пользователями. Одновременная правка цитирования может испортить цитирование или документ. Непредвиденные обстоятельства, например разрывы соединения, могут привести к постоянной блокировке документа. Если вы убеждены что произошло именно это, то можете снять блокировку принудительно.<br/><br/>Желаете снять блокировку документа принудительно?"
+  },
+  "integration_googleDocs_documentPermissionError": {
+    "message": "Выбранная вами учётная запись Google не имеет разрешения на редактирование этого документа. Пожалуйста, повторите позже, и убедитесь что выбрали учётную запись с разрешением на редактирование."
+  },
+  "integration_googleDocs_orphanedCitations_buttonTooltip": {
+    "message": "Показать отвязанные $1 цитирования"
+  },
+  "integration_googleDocs_orphanedCitations_alert": {
+    "message": "Цитирование, которое вы пытаетесь отредактировать, было отвязано от $1."
+  },
+  "integration_googleDocs_orphanedCitations_alertButton": {
+    "message": "Исправить цитирование"
+  },
+  "integration_googleDocs_orphanedCitations_disclaimer": {
+    "message": "Это цитирование было <a target=\"_blank\" href=\"https://www.zotero.org/support/kb/google_docs_citations_unlinked\">отвязано от $1</a>. Вы должны его исправить чтобы изменения появились в библиографии."
+  },
+  "copyUnproxiedLink": {
+    "message": "Скопировать ссылку без указания прокси-сервера"
+  },
+  "copyUnproxiedPageURL": {
+    "message": "Скопировать URL без указания прокси-сервера"
+  },
+  "reloadViaProxy": {
+    "message": "Перезагрузить через прокси-сервер"
+  },
+  "reloadVia": {
+    "message": "Перезагрузить через $1"
   },
   "general_saveTo": {
     "message": "Сохранить в $1"

@@ -76,6 +76,10 @@ Zotero.Translate.ItemSaver = function(options) {
 Zotero.Translate.ItemSaver.ATTACHMENT_MODE_IGNORE = 0;
 Zotero.Translate.ItemSaver.ATTACHMENT_MODE_DOWNLOAD = 1;
 Zotero.Translate.ItemSaver.ATTACHMENT_MODE_FILE = 2;
+Zotero.Translate.ItemSaver.PRIMARY_ATTACHMENT_TYPES = new Set([
+	'application/pdf',
+	'application/epub+zip',
+]);
 
 Zotero.Translate.ItemSaver.prototype = {
 	/**
@@ -152,18 +156,18 @@ Zotero.Translate.ItemSaver.prototype = {
 					// handle attachments
 					if (jsonItem.attachments) {
 						let attachmentsToSave = [];
-						let foundPrimaryPDF = false;
+						let foundPrimary = false;
 						for (let jsonAttachment of jsonItem.attachments) {
 							if (!this._canSaveAttachment(jsonAttachment)) {
 								continue;
 							}
 							
-							// The first PDF is the primary one. If that one fails to download,
+							// The first PDF/EPUB is the primary one. If that one fails to download,
 							// we might check for an open-access PDF below.
-							let isPrimaryPDF = false;
-							if (jsonAttachment.mimeType == 'application/pdf' && !foundPrimaryPDF) {
-								jsonAttachment.isPrimaryPDF = true;
-								foundPrimaryPDF = true;
+							if (Zotero.Translate.ItemSaver.PRIMARY_ATTACHMENT_TYPES.has(jsonAttachment.mimeType)
+									&& !foundPrimary) {
+								jsonAttachment.isPrimary = true;
+								foundPrimary = true;
 							}
 							attachmentsToSave.push(jsonAttachment);
 							attachmentCallback(jsonAttachment, 0);
@@ -217,7 +221,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				
 				// Skip items with translated PDF attachments
 				if (jsonItem.attachments
-						&& jsonItem.attachments.some(x => x.mimeType == 'application/pdf')) {
+						&& jsonItem.attachments.some(x => Zotero.Translate.ItemSaver.PRIMARY_ATTACHMENT_TYPES.has(x.mimeType))) {
 					continue;
 				}
 				
@@ -245,21 +249,21 @@ Zotero.Translate.ItemSaver.prototype = {
 		}
 		
 		// Save translated child attachments, and keep track of whether the save was successful
-		var itemIDsWithPDFAttachments = new Set();
+		var itemIDsWithPrimaryAttachments = new Set();
 		for (let [jsonAttachment, parentItemID] of childAttachments) {
 			let attachment = await this._saveAttachment(
 				jsonAttachment,
 				parentItemID,
 				function (attachment, progress, error) {
 					// Don't cancel failed primary PDFs until we've tried other methods
-					if (progress === false && attachment.isPrimaryPDF && shouldDownloadOAPDF) {
+					if (progress === false && attachment.isPrimary && shouldDownloadOAPDF) {
 						return;
 					}
 					attachmentCallback(...arguments);
 				}
 			);
-			if (attachment && jsonAttachment.isPrimaryPDF) {
-				itemIDsWithPDFAttachments.add(parentItemID);
+			if (attachment && jsonAttachment.isPrimary) {
+				itemIDsWithPrimaryAttachments.add(parentItemID);
 			}
 		}
 		
@@ -267,16 +271,18 @@ Zotero.Translate.ItemSaver.prototype = {
 		// one or there was but it failed, look for another PDF (if enabled)
 		if (shouldDownloadOAPDF) {
 			for (let item of items) {
-				// Already have a PDF from translation
-				if (itemIDsWithPDFAttachments.has(item.id)) {
+				// Already have a primary attachment from translation
+				if (itemIDsWithPrimaryAttachments.has(item.id)) {
 					continue;
 				}
 				
 				let jsonItem = jsonByItem.get(item);
 				// Reuse the existing status line if there is one. This could be a failed
 				// translator attachment or a possible OA PDF found above.
+				// Explicitly check that the attachment is a PDF, not just any primary type,
+				// since we're reusing it for a PDF attachment.
 				let jsonAttachment = jsonItem.attachments && jsonItem.attachments.find(
-					x => x.mimeType == 'application/pdf' && x.isPrimaryPDF
+					x => x.mimeType == 'application/pdf' && x.isPrimary
 				);
 				
 				// If no translated, no OA, and no custom, don't show a line
@@ -299,7 +305,7 @@ Zotero.Translate.ItemSaver.prototype = {
 					// No translated, no OA, just potential custom, so create a status line
 					if (!jsonAttachment) {
 						jsonAttachment = this._makeJSONAttachment(
-							jsonItem.id, Zotero.getString('findPDF.searchingForAvailablePDFs')
+							jsonItem.id, Zotero.getString('findPDF.searchingForAvailableFiles')
 						);
 					}
 				}
@@ -324,7 +330,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				
 				let attachment;
 				try {
-					attachment = await Zotero.Attachments.addPDFFromURLs(
+					attachment = await Zotero.Attachments.addFileFromURLs(
 						item,
 						resolvers,
 						{
@@ -383,7 +389,7 @@ Zotero.Translate.ItemSaver.prototype = {
 			parent: parentID,
 			title,
 			mimeType: 'application/pdf',
-			isPrimaryPDF: true
+			isPrimary: true
 		};
 	},
 	
@@ -407,7 +413,7 @@ Zotero.Translate.ItemSaver.prototype = {
 		var parentIDs = collections.map(c => null);
 		var topLevelCollections = [];
 
-		yield Zotero.DB.executeTransaction(function* () {
+		yield Zotero.DB.executeTransaction(async function () {
 			while(collectionsToProcess.length) {
 				var collection = collectionsToProcess.shift();
 				var parentID = parentIDs.shift();
@@ -422,7 +428,7 @@ Zotero.Translate.ItemSaver.prototype = {
 					newCollection.parentID = rootCollectionID;
 					topLevelCollections.push(newCollection)
 				}
-				yield newCollection.save(this._saveOptions);
+				await newCollection.save(this._saveOptions);
 
 				var toAdd = [];
 
@@ -444,7 +450,7 @@ Zotero.Translate.ItemSaver.prototype = {
 
 				if(toAdd.length) {
 					Zotero.debug("Translate: Adding " + toAdd, 5);
-					yield newCollection.addItems(toAdd);
+					await newCollection.addItems(toAdd);
 				}
 			}
 		}.bind(this));
@@ -552,8 +558,8 @@ Zotero.Translate.ItemSaver.prototype = {
 			if (attachment.accessDate) newAttachment.setField("accessDate", attachment.accessDate);
 			if (attachment.tags) newAttachment.setTags(this._cleanTags(attachment.tags));
 			if (attachment.note) newAttachment.setNote(attachment.note);
-			this._handleRelated(attachment, newAttachment);
 			yield newAttachment.saveTx(this._saveOptions);
+			this._handleRelated(attachment, newAttachment);
 
 			Zotero.debug("Translate: Created attachment; id is " + newAttachment.id, 4);
 			attachmentCallback(attachment, 100);
@@ -668,6 +674,7 @@ Zotero.Translate.ItemSaver.prototype = {
 					title: attachment.title,
 					contentType: attachment.mimeType,
 					charset: attachment.charset,
+					libraryID: this._libraryID,
 					parentItemID,
 					collections: !parentItemID ? this._collections : undefined,
 					saveOptions: this._saveOptions,
@@ -678,6 +685,7 @@ Zotero.Translate.ItemSaver.prototype = {
 				newItem = yield Zotero.Attachments.importFromFile({
 					file: file,
 					parentItemID,
+					libraryID: this._libraryID,
 					collections: !parentItemID ? this._collections : undefined,
 					saveOptions: this._saveOptions,
 				});
@@ -893,7 +901,7 @@ Zotero.Translate.ItemSaver.prototype = {
 		let fileBaseName;
 		if (parentItemID) {
 			let parentItem = yield Zotero.Items.getAsync(parentItemID);
-			fileBaseName = Zotero.Attachments.getFileBaseNameFromItem(parentItem);
+			fileBaseName = Zotero.Attachments.getFileBaseNameFromItem(parentItem, { attachmentTitle: title });
 		}
 		
 		attachment.linkMode = "imported_url";
@@ -941,7 +949,6 @@ Zotero.Translate.ItemSaver.prototype = {
 		if(typeof note == "object") {
 			myNote.setNote(note.note);
 			if(note.tags) myNote.setTags(this._cleanTags(note.tags));
-			this._handleRelated(note, myNote);
 		} else {
 			myNote.setNote(note);
 		}
@@ -949,6 +956,9 @@ Zotero.Translate.ItemSaver.prototype = {
 			myNote.setCollections(this._collections);
 		}
 		yield myNote.save(this._saveOptions);
+		if (typeof note == "object") {
+			this._handleRelated(note, myNote);
+		}
 		return myNote;
 	}),
 	
@@ -976,6 +986,9 @@ Zotero.Translate.ItemSaver.prototype = {
 			// Convert raw string to object with 'tag' property
 			if (typeof tag == 'string') {
 				tag = { tag };
+			}
+			if (!tag.tag.trim()) {
+				continue;
 			}
 			tag.type = this._forceTagType || tag.type || 0;
 			newTags.push(tag);
@@ -1010,17 +1023,20 @@ Zotero.Translate.ItemGetter = function() {
 };
 
 Zotero.Translate.ItemGetter.prototype = {
-	"setItems":function(items) {
+	setItems: function (items) {
 		this._itemsLeft = items;
-		this._itemsLeft.sort(function(a, b) { return a.id - b.id; });
+		// Don't sort items if doing notes export
+		if (!items.every(item => item.isNote() || item.isAttachment())) {
+			this._itemsLeft.sort((a, b) => a.id - b.id);
+		}
 		this.numItems = this._itemsLeft.length;
 	},
 	
-	"setCollection": function (collection, getChildCollections) {
+	setCollection: function (collection, getChildCollections) {
 		// get items in this collection
 		var items = new Set(collection.getChildItems());
 		
-		if(getChildCollections) {
+		if (getChildCollections) {
 			// Get child collections
 			this._collectionsLeft = Zotero.Collections.getByParent(collection.id);
 			
@@ -1033,12 +1049,16 @@ Zotero.Translate.ItemGetter.prototype = {
 		}
 		
 		this._itemsLeft = Array.from(items.values());
-		this._itemsLeft.sort(function(a, b) { return a.id - b.id; });
+		this._itemsLeft.sort((a, b) => a.id - b.id);
 		this.numItems = this._itemsLeft.length;
 	},
 	
-	"setAll": Zotero.Promise.coroutine(function* (libraryID, getChildCollections) {
-		this._itemsLeft = (yield Zotero.Items.getAll(libraryID, true))
+	/**
+	 * NOTE: This function should use the Zotero.Promise.method wrapper which adds a
+	 * isResolved property to the returned promise for noWait translation.
+	 */
+	setAll: Zotero.Promise.method(async function (libraryID, getChildCollections) {
+		this._itemsLeft = (await Zotero.Items.getAll(libraryID, true))
 			.filter((item) => {
 				// Don't export annotations
 				switch (item.itemType) {
@@ -1048,11 +1068,11 @@ Zotero.Translate.ItemGetter.prototype = {
 				return true;
 			});
 		
-		if(getChildCollections) {
+		if (getChildCollections) {
 			this._collectionsLeft = Zotero.Collections.getByLibrary(libraryID);
 		}
-		
-		this._itemsLeft.sort(function(a, b) { return a.id - b.id; });
+
+		this._itemsLeft.sort((a, b) => a.id - b.id);
 		this.numItems = this._itemsLeft.length;
 	}),
 	

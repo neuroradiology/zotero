@@ -18,8 +18,8 @@ describe("Zotero.File", function () {
 				OS.Path.join(getTestDataDirectory().path, "charsets", "windows1252.txt"),
 				"windows-1252"
 			);
-			assert.lengthOf(contents, 1);
-			assert.equal(contents, "\u00E9");
+			assert.lengthOf(contents, 3);
+			assert.equal(contents, "\u201C\u00E9\u201D");
 		})
 		
 		it("should handle a GBK character", function* () {
@@ -27,8 +27,8 @@ describe("Zotero.File", function () {
 				OS.Path.join(getTestDataDirectory().path, "charsets", "gbk.txt"),
 				"gbk"
 			);
-			assert.lengthOf(contents, 1);
-			assert.equal(contents, "\u4e02");
+			assert.lengthOf(contents, 9);
+			assert.equal(contents, "这是一个测试文件。");
 		})
 		
 		it("should handle an invalid character", function* () {
@@ -36,7 +36,7 @@ describe("Zotero.File", function () {
 				OS.Path.join(getTestDataDirectory().path, "charsets", "invalid.txt")
 			);
 			assert.lengthOf(contents, 3);
-			assert.equal(contents, "A\uFFFDB");
+			assert.equal(contents, "A" + Zotero.File.REPLACEMENT_CHARACTER + "B");
 		})
 		
 		it("should respect maxLength", function* () {
@@ -64,6 +64,17 @@ describe("Zotero.File", function () {
 			var contents = yield Zotero.File.getBinaryContentsAsync(
 				OS.Path.join(getTestDataDirectory().path, "test.png")
 			);
+			assert.isAbove(contents.length, magicPNG.length);
+			for (let i = 0; i < magicPNG.length; i++) {
+				assert.equal(magicPNG[i], contents.charCodeAt(i));
+			}
+		});
+		
+		it("should take a file:// URI", async function () {
+			var file = OS.Path.join(getTestDataDirectory().path, "test.png");
+			var uri = PathUtils.toFileURI(file);
+			
+			var contents = await Zotero.File.getBinaryContentsAsync(uri);
 			assert.isAbove(contents.length, magicPNG.length);
 			for (let i = 0; i < magicPNG.length; i++) {
 				assert.equal(magicPNG[i], contents.charCodeAt(i));
@@ -302,6 +313,28 @@ describe("Zotero.File", function () {
 		});
 	});
 	
+	describe("#directoryContains()", function () {
+		it("should return true for file within folder ending in slash", function () {
+			assert.isTrue(Zotero.File.directoryContains('/foo/', '/foo/bar'));
+		});
+		
+		it("should return true for file within folder not ending in slash", function () {
+				assert.isTrue(Zotero.File.directoryContains('/foo/', '/foo/bar'));
+		});
+		
+		it("should return true for file within subfolder", function () {
+				assert.isTrue(Zotero.File.directoryContains('/foo/', '/foo/bar/qux'));
+		});
+		
+		it("should return false for subfolder with same name within another folder", function () {
+				assert.isFalse(Zotero.File.directoryContains('/foo', '/bar/foo'));
+		});
+		
+		it("should return false for sibling folder that starts with the same string", function () {
+			assert.isFalse(Zotero.File.directoryContains('/foo', '/foobar'));
+		});
+	});
+	
 	describe("#zipDirectory()", function () {
 		it("should compress a directory recursively", function* () {
 			var tmpPath = Zotero.getTempDirectory().path;
@@ -340,6 +373,74 @@ describe("Zotero.File", function () {
 	});
 	
 	
+	describe("#truncateFileName()", function () {
+		it("should drop extension if longer than limit", function () {
+			var filename = "lorem.json";
+			var shortened = Zotero.File.truncateFileName(filename, 5);
+			assert.equal(shortened, "lorem");
+		});
+		
+		it("should use byte length rather than character length", function () {
+			var filename = "\uD83E\uDD92abcdefgh.pdf";
+			var shortened = Zotero.File.truncateFileName(filename, 10);
+			assert.equal(shortened, "\uD83E\uDD92ab.pdf");
+		});
+		
+		it("should remove characters, not bytes", function () {
+			// Emoji would put length over limit, so it should be removed completely
+			var filename = "abcé\uD83E\uDD92.pdf";
+			var shortened = Zotero.File.truncateFileName(filename, 10);
+			assert.equal(shortened, "abcé.pdf");
+		});
+		
+		it("should replace single multi-byte character with underscore if longer than maxLength", function () {
+			// Emoji would put length over limit, so it should be replaced with _
+			var filename = "\uD83E\uDD92.pdf";
+			var shortened = Zotero.File.truncateFileName(filename, 5);
+			assert.equal(shortened, "_.pdf");
+		});
+		
+		// The optimal behavior would probably be to remove the entire character sequence, but I'm
+		// not sure we can do that without an emoji library, so just make sure we're removing whole
+		// characters without corrupting anything.
+		it("should cruelly break apart families", function () {
+			var family = [
+				"\uD83D\uDC69", // woman (4)
+				"\uD83C\uDFFE", // skin tone (4)
+				"\u200D", // zero-width joiner (3)
+				"\uD83D\uDC68", // man (4)
+				"\uD83C\uDFFE", // skin tone (4)
+				"\u200D", // zero-width joiner (3)
+				"\uD83D\uDC67", // girl (4)
+				"\uD83C\uDFFE", // skin tone (4)
+				"\u200D", // zero-width joiner (3)
+				"\uD83D\uDC66", // boy (4)
+				"\uD83C\uDFFE" // skin tone (4)
+			].join("");
+			
+			var filename = "abc" + family + ".pdf";
+			var limit = 3 // 'abc'
+				+ 4 + 4 + 3
+				+ 4 + 4 + 3
+				+ 4; // ext
+			// Add some extra bytes to make sure we don't corrupt an emoji character
+			limit += 2;
+			var shortened = Zotero.File.truncateFileName(filename, limit);
+			assert.equal(
+				shortened,
+				"abc"
+					+ "\uD83D\uDC69"
+					+ "\uD83C\uDFFE"
+					+ "\u200D"
+					+ "\uD83D\uDC68"
+					+ "\uD83C\uDFFE"
+					+ "\u200D"
+					+ ".pdf"
+			);
+		});
+	});
+	
+	
 	describe("#checkFileAccessError()", function () {
 		it("should catch OS.File access-denied errors", function* () {
 			// We can't modify a real OS.File.Error, but we also don't do an instanceof check in
@@ -359,6 +460,104 @@ describe("Zotero.File", function () {
 				throw e;
 			}
 			throw new Error("Error not thrown");
+		});
+	});
+
+	describe('#download()', function () {
+		const sizeInMB = 16; // size of the generated text file
+		let port, httpd, baseURL;
+
+		before(async function () {
+			// Real HTTP server
+			Components.utils.import("resource://zotero-unit/httpd.js");
+			port = 16213;
+			httpd = new HttpServer();
+			baseURL = `http://127.0.0.1:${port}`;
+			httpd.start(port);
+			httpd.registerPathHandler(
+				'/file1.txt',
+				{
+					handle: function (request, response) {
+						const text1KB = Array.from({ length: 64 }, _ => "lorem ipsum foo\n").join('');
+						const text16MB = Array.from({ length: 1024 * sizeInMB }, _ => text1KB).join('');
+						response.setStatusLine(null, 200, "OK");
+						response.setHeader('Content-Type', 'text/plain', false);
+						response.write(text16MB);
+					}
+				}
+			);
+		});
+
+		after(function* () {
+			var defer = new Zotero.Promise.defer();
+			httpd.stop(() => defer.resolve());
+			yield defer.promise;
+		});
+
+		it("should download a file", async function () {
+			const url = `${baseURL}/file1.txt`;
+			const path = OS.Path.join(Zotero.getTempDirectory().path, 'zotero.txt');
+			await Zotero.File.download(url, path);
+			const fileSize = (await OS.File.stat(path)).size;
+			assert.equal(fileSize, 1024 * 1024 * sizeInMB);
+		});
+
+		it("should concurrently download three large files", async function () {
+			const url = `${baseURL}/file1.txt`;
+			
+			var { ConcurrentCaller } = ChromeUtils.import("resource://zotero/concurrentCaller.js");
+			var caller = new ConcurrentCaller({
+				numConcurrent: 3,
+				Promise: Zotero.Promise,
+			});
+
+			let failed = false;
+
+			const fetchFile = async (srcUrl, targetPath) => {
+				try {
+					await Zotero.File.download(srcUrl, targetPath);
+				}
+				catch (e) {
+					failed = true;
+					throw e;
+				}
+			};
+
+			
+			caller.add(() => fetchFile(url, OS.Path.join(Zotero.getTempDirectory().path, 'zotero-1.txt')));
+			caller.add(() => fetchFile(url, OS.Path.join(Zotero.getTempDirectory().path, 'zotero-2.txt')));
+			caller.add(() => fetchFile(url, OS.Path.join(Zotero.getTempDirectory().path, 'zotero-3.txt')));
+
+			await caller.runAll();
+
+			assert.isFalse(failed);
+			for (let i = 1; i < 4; i++) {
+				const path = OS.Path.join(Zotero.getTempDirectory().path, `zotero-${i}.txt`);
+				const fileSize = (await OS.File.stat(path)).size;
+				assert.equal(fileSize, 1024 * 1024 * sizeInMB);
+			}
+		});
+
+		it("should extract a file from xpi", async function () {
+			const url = `jar:file://${getTestDataDirectory().path}/fake.xpi!/test.txt`;
+			const path = OS.Path.join(Zotero.getTempDirectory().path, 'xpi-extracted.txt');
+			await Zotero.File.download(url, path);
+			const contents = await Zotero.File.getContentsAsync(path);
+			assert.equal(contents, 'Hello Zotero\n');
+		});
+	});
+
+	describe("#normalizeToUnix()", function () {
+		it("should normalize a Unix-style path", async function () {
+			assert.equal(Zotero.File.normalizeToUnix('/path/to/directory/'), '/path/to/directory');
+		});
+
+		it("should normalize '.' and '..'", async function () {
+			assert.equal(Zotero.File.normalizeToUnix('/path/./to/some/../file'), '/path/to/file');
+		});
+
+		it("should replace backslashes with forward slashes and trim trailing", async function () {
+			assert.equal(Zotero.File.normalizeToUnix('C:\\Zotero\\Some\\Directory\\'), 'C:/Zotero/Some/Directory');
 		});
 	});
 })

@@ -27,8 +27,7 @@
 
 const React = require('react')
 const { PureComponent, createElement: create } = React
-const { injectIntl } = require('react-intl')
-const { IconDownChevron } = require('./icons')
+const { CSSIcon } = require('./icons')
 const cx = require('classnames')
 const {
 	bool, element, func, node, number, oneOf, string
@@ -59,26 +58,23 @@ class Button extends PureComponent {
 	}
 
 	get text() {
-		const { intl, text } = this.props
+		const { text } = this.props;
 
 		return text ?
-			intl.formatMessage({ id: text }) :
-			null
+			Zotero.getString(text) :
+			null;
 	}
 
 	get title() {
-		const { intl, title } = this.props
+		const { title } = this.props;
 
 		return title ?
-			intl.formatMessage({ id: title }) :
-			null
+			Zotero.getString(title) :
+			null;
 	}
 	
 	get menuMarker() {
-		if (!Zotero.isNode && Zotero.isLinux) {
-			return this.props.isMenu && <span className="menu-marker"/>
-		}
-		return this.props.isMenu && <IconDownChevron className="menu-marker"/>
+		return this.props.isMenu && <CSSIcon name="chevron-6" className="menu-marker icon-8"/>
 	}
 
 	get attributes() {
@@ -93,22 +89,9 @@ class Button extends PureComponent {
 
 		if (!this.props.isDisabled) {
 			attr.onMouseDown = (event) => {
-				// Hide tooltip on mousedown
-				if (this.title) {
-					window.Zotero_Tooltip.stop();
-				}
 				return this.handleMouseDown(event);
 			};
 			attr.onClick = this.handleClick
-			// Fake tooltip behavior as long as 'title' doesn't work for HTML-in-XUL elements
-			if (this.title) {
-				attr.onMouseOver = () => {
-					window.Zotero_Tooltip.start(this.title);
-				};
-				attr.onMouseOut = () => {
-					window.Zotero_Tooltip.stop();
-				};
-			}
 		}
 
 		return attr
@@ -159,5 +142,5 @@ class Button extends PureComponent {
 
 module.exports = {
 	ButtonGroup,
-	Button: injectIntl(Button)
+	Button
 }

@@ -1,18 +1,18 @@
 <!ENTITY zotero.preferences.title "Предпочитания на Зотеро">
 
+<!ENTITY zotero.preferences.helpButton.label "Помощ">
+
 <!ENTITY zotero.preferences.default "По подразбиране:">
 <!ENTITY zotero.preferences.items "записи">
 <!ENTITY zotero.preferences.period ".">
-<!ENTITY zotero.preferences.settings "Настройки">
 <!ENTITY zotero.preferences.custom "Персонализирани...">
 
 <!ENTITY zotero.preferences.prefpane.general "Общи">
 
+<!ENTITY zotero.preferences.interface "Interface">
 <!ENTITY zotero.preferences.fileHandling "Обработка на файловете">
 <!ENTITY zotero.preferences.automaticSnapshots "Автоматична &quot;моментна снимка&quot; при направата записи от интернет страници">
 <!ENTITY zotero.preferences.downloadAssociatedFiles "Автоматично прикачване на свързаните PDF и други файлове при съхранението на записите">
-<!ENTITY zotero.preferences.autoRecognizeFiles "Автоматично извличане на данни от интернет за PDF">
-<!ENTITY zotero.preferences.autoRenameFiles "Автоматично преименуване на прикачените файлове използвайки метаданните на записа">
 <!ENTITY zotero.preferences.autoRenameFiles.renameLinked "Rename linked files">
 <!ENTITY zotero.preferences.fileHandler.openPDFsUsing "Отворяне на  PDF документи с">
 <!ENTITY zotero.preferences.fileHandler.systemDefault "Програмата по подразбиране на операционната система">
@@ -26,10 +26,16 @@
 <!ENTITY zotero.preferences.trashAutoEmptyDaysPre "Автоматично изтривай записите в кошчето, изтрити преди повече от">
 <!ENTITY zotero.preferences.trashAutoEmptyDaysPost "дни">
 
+<!ENTITY zotero.preferences.reader.tabsTitle.label "Show tabs as">
+<!ENTITY zotero.preferences.reader.tabsTitle.creatorYearTitle "Creator - Year - Title">
+<!ENTITY zotero.preferences.reader.tabsTitle.titleCreatorYear "Title - Creator - Year">
+<!ENTITY zotero.preferences.reader.tabsTitle.filename "Filename">
+
 <!ENTITY zotero.preferences.groups "Групи">
 <!ENTITY zotero.preferences.groups.whenCopyingInclude "При копиране на записи между библиотеките, включвай:">
 <!ENTITY zotero.preferences.groups.childNotes "Дъщерни бележки">
 <!ENTITY zotero.preferences.groups.childFiles "Дъщерни &quot;моментни снимки&quot; и внесени файлове">
+<!ENTITY zotero.preferences.groups.annotations "annotations">
 <!ENTITY zotero.preferences.groups.childLinks "Дъщерни връзки">
 <!ENTITY zotero.preferences.groups.tags "маркери">
 
@@ -38,11 +44,6 @@
 <!ENTITY zotero.preferences.feeds.sorting.newest "Първо най-новите записи">
 <!ENTITY zotero.preferences.feeds.sorting.oldest "Първо най-старите записи">
 <!ENTITY zotero.preferences.feeds.feedDefaults "Настройки по подразбиране на емисиите">
-
-<!ENTITY zotero.preferences.openurl.search "Търсене на разрешаващи сървъри - &quot;резолвъри&quot;">
-<!ENTITY zotero.preferences.openurl.custom "Персонализирани...">
-<!ENTITY zotero.preferences.openurl.server "Разрешаващ сървър - &quot;резолвър&quot; :">
-<!ENTITY zotero.preferences.openurl.version "Версия:">
 
 <!ENTITY zotero.preferences.prefpane.sync "Синхронизиране">
 <!ENTITY zotero.preferences.sync.username "Потребителско име:">
@@ -75,13 +76,14 @@
 <!ENTITY zotero.preferences.sync.reset.warning3 "за повече информация.">
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory "Нулиране на историята за синхронизиране на данни">
 <!ENTITY zotero.preferences.sync.reset.resetDataSyncHistory.desc "Сливане на записите на твърдия диск с тези в сървъра на Зотеро, игнорирайки историята на синхронизирането">
-<!ENTITY zotero.preferences.sync.reset.restoreFromServer "Възстановяване от Онлайн Библиотеката">
-<!ENTITY zotero.preferences.sync.reset.restoreFromServer.desc "Презаписване на информаията на Зотеро с данни от онлайн библиотеката.">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer "Replace Online Library">
-<!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Презаписване на онлайн библиотеката с данните на Зотеро на твърдия диск">
+<!ENTITY zotero.preferences.sync.reset.restoreFromOnlineLibrary "Възстановяване от Онлайн Библиотеката">
+<!ENTITY zotero.preferences.sync.reset.restoreFromOnlineLibrary.desc "Презаписване на информаията на Зотеро с данни от онлайн библиотеката.">
+<!ENTITY zotero.preferences.sync.reset.restoreToOnlineLibrary "Replace Online Library">
+<!ENTITY zotero.preferences.sync.reset.restoreToOnlineLibrary.desc "Презаписване на онлайн библиотеката с данните на Зотеро на твърдия диск">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "Изтриване на историята на предходните файлови синхронизации">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Сравняване на всички прикачени файлове с тези в сървъра">
 <!ENTITY zotero.preferences.sync.reset "Нулиране">
+<!ENTITY zotero.preferences.sync.reset.showResetOptions "Show Reset Options…">
 <!ENTITY zotero.preferences.sync.reset.button "Нулиране...">
 
 
@@ -104,7 +106,8 @@
 <!ENTITY zotero.preferences.export.citePaperJournalArticleURL.description "Когато тази опция е изключена, Зотеро включва интернет адреса на цитираната статия от списание или вестник, само ако номерата на страниците не са указани.">
 
 <!ENTITY zotero.preferences.quickCopy.caption "Бързо копиране">
-<!ENTITY zotero.preferences.quickCopy.defaultFormat "Формат по подразбиране:">
+<!ENTITY zotero.preferences.quickCopy.itemFormat "Item Format:">
+<!ENTITY zotero.preferences.quickCopy.noteFormat "Note Format:">
 <!ENTITY zotero.preferences.quickCopy.copyAsHTML "Копиране в HTML формат">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.setings "Настройки, специфични за страницата:">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Домейн/Пътека">
@@ -114,7 +117,6 @@
 <!ENTITY zotero.preferences.quickCopy.dragLimit "Изключване на бързото копиране при влачене на повече от">
 
 <!ENTITY zotero.preferences.prefpane.cite "Цитиране">
-<!ENTITY zotero.preferences.cite.styles "Стилове">
 <!ENTITY zotero.preferences.cite.wordProcessors "Текстови процесори / редактори">
 <!ENTITY zotero.preferences.cite.wordProcessors.useClassicAddCitationDialog "Използване на класически &quot;Добавяне на бележка&quot; диалогов прозорец">
 <!ENTITY zotero.preferences.styleEditor "Редактор на стилове">
@@ -127,13 +129,11 @@
 <!ENTITY zotero.preferences.export.getAdditionalStyles "Изтегляне на допълнителни стилове">
 
 <!ENTITY zotero.preferences.keys.saveToZotero "Запазване в Зотеро (икона в адресната лента)">
-<!ENTITY zotero.preferences.keys.toggleFullscreen "Превключване в режим на цял екран">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Фокусиране на панел Библиотеки">
 <!ENTITY zotero.preferences.keys.quicksearch "Бързо Търсене">
 <!ENTITY zotero.preferences.keys.newItem "Създаване на нов запис">
 <!ENTITY zotero.preferences.keys.newNote "Създаване на нова бележка">
 <!ENTITY zotero.preferences.keys.toggleAllRead "Отбелязване на всички емисии като прочетени/непрочетени">
-<!ENTITY zotero.preferences.keys.toggleTagSelector "Избиране на маркери">
 <!ENTITY zotero.preferences.keys.copySelectedItemCitationsToClipboard "Копиране на избраните цитирания в клипборда">
 <!ENTITY zotero.preferences.keys.copySelectedItemsToClipboard "Копиране на избраните записи в клипборда">
 <!ENTITY zotero.preferences.keys.importFromClipboard "Внасяне от клипборда">
@@ -172,7 +172,6 @@
 <!ENTITY zotero.preferences.locate.locateEngineManager "Мениджър на услугата за откриване на статии">
 <!ENTITY zotero.preferences.locate.description "Описание">
 <!ENTITY zotero.preferences.locate.name "Име">
-<!ENTITY zotero.preferences.locate.locateEnginedescription "Услугата за откриване увеличава възможностите на падащото меню Откриване в панел Информация. При включване на различни услуги за откриване те ще бъдат добавени в падащото меню и могат да бъдат използвани за откриване на ресурси от Вашата Библиотека онлайн.">
 <!ENTITY zotero.preferences.locate.addDescription "За да добавите услуга за откриване, която не е налична в списъка, посетете желаната от Вас търсеща машина във Вашия браузър и изберете &quot;Добавяне&quot; от менюто на Зотеро &quot;Локализиране&quot;.">
 <!ENTITY zotero.preferences.locate.restoreDefaults "Възстановяване на настройките по подразбиране">
 

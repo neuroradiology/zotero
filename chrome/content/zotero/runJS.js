@@ -1,8 +1,8 @@
 function update() {
 	var isAsync = document.getElementById('run-as-async').checked;
 	var resultLabel = document.getElementById('result-label');
-	var val = isAsync ? 'Return value' : 'Result';
-	resultLabel.textContent = val + ':';
+	var type = isAsync ? 'async' : 'none';
+	resultLabel.setAttribute('data-l10n-args', `{"type":"${type}"}`);
 }
 
 async function run() {
@@ -45,7 +45,7 @@ function handleInput() { // eslint-disable-line no-unused-vars
 	}
 	var code = codeEditor.getSession().getValue();
 	// If `await` is used, switch to async mode
-	if (/(^|[^=([]\s*)await\s/m.test(code)) {
+	if (/(^|\W)await\s/m.test(code)) {
 		checkbox.checked = true;
 		update();
 	}
@@ -85,6 +85,7 @@ window.addEventListener("load", function (e) {
 		return;
 	}
 
+	MozXULElement.insertFTLIfNeeded("zotero.ftl");
 	var codeWin = document.getElementById("editor-code").contentWindow;
 	codeEditor = codeWin.editor;
 	var session = codeEditor.getSession();
@@ -93,9 +94,15 @@ window.addEventListener("load", function (e) {
 		// TODO: Enable if we modify to autocomplete from the Zotero API
 		//enableLiveAutocompletion: true,
 		highlightActiveLine: false,
-		showGutter: false,
-		theme: "ace/theme/chrome",
+		showGutter: false
 	});
 	codeEditor.on('input', handleInput);
 	codeEditor.focus();
+	
+	const isDarkMQL = window.matchMedia('(prefers-color-scheme: dark)');
+	isDarkMQL.addEventListener("change", (ev) => {
+		codeEditor.setOptions({
+			theme: ev.matches ? 'ace/theme/monokai' : 'ace/theme/chrome'
+		});
+	});
 }, false);

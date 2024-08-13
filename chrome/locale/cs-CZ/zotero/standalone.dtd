@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Vypnout Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Soubor">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Uložit...">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Zavřít">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Kopírovat citaci">
 <!ENTITY copyBibliographyCmd.label "Kopírovat bibliografii">
+<!ENTITY copyNoteCmd.label "Kopírovat poznámku">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Přepnout směr stránky">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Provést">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Zobrazení">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Rozvržení">
 <!ENTITY standardView.label "Standardní zobrazení">
 <!ENTITY stackedView.label "Horizontální uspořádání">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "Zobrazit položky z podkolekcí">
 <!ENTITY fontSize.label "Velikost písma">
 <!ENTITY noteFontSize.label "Velikost písma poznámek">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Nástroje">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "Doplňky">
 <!ENTITY developer.label "Vývojář">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "minimalizovat">
 <!ENTITY bringAllToFront.label "Přesunout vše do popředí">
-<!ENTITY zoomWindow.label "Přiblížit">
-<!ENTITY windowMenu.label "Okno">
-
 
 <!ENTITY helpMenu.label "Pomoc">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Pomoc">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

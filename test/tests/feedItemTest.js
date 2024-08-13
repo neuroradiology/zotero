@@ -93,6 +93,7 @@ describe("Zotero.FeedItem", function () {
 	describe("#fromJSON()", function() {
 		it("should attempt to parse non ISO-8601 dates", function* () {
 			Zotero.locale = 'en-US';
+			Zotero.Date.init();
 			var data = [
 				{
 					itemType: "journalArticle",
@@ -233,8 +234,8 @@ describe("Zotero.FeedItem", function () {
 			this.timeout(20000);
 			yield Zotero.Translators.init();
 			
-			// Needs an open window to be able to create a hidden window for translation
-			win = yield loadBrowserWindow();
+			// Needs an open window to be able to create a progress window
+			win = yield loadZoteroWindow();
 		});
 		
 		after(function () {

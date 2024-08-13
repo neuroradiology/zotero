@@ -43,21 +43,23 @@ describe("Zotero.Sync.Data.Local", function() {
 			yield Zotero.Users.setCurrentUsername("A");
 			
 			var handled = false;
-			waitForDialog(function (dialog) {
-				var text = dialog.document.documentElement.textContent;
+			waitForDialog(function (window) {
+				var text = window.document.documentElement.textContent;
 				var matches = text.match(/“[^”]*”/g);
-				assert.equal(matches.length, 4);
+				assert.equal(matches.length, 5);
 				assert.equal(matches[0], "“A”");
 				assert.equal(matches[1], "“B”");
 				assert.equal(matches[2], "“A”");
 				assert.equal(matches[3], "“A”");
+				// Checkbox
+				assert.equal(matches[4], "“A”");
 				
-				dialog.document.getElementById('zotero-hardConfirmationDialog-checkbox').checked = true;
-				dialog.document.getElementById('zotero-hardConfirmationDialog-checkbox')
+				window.document.getElementById('zotero-hardConfirmationDialog-checkbox').checked = true;
+				window.document.getElementById('zotero-hardConfirmationDialog-checkbox')
 					.dispatchEvent(new Event('command'));
 				
 				handled = true;
-			}, 'accept', 'chrome://zotero/content/hardConfirmationDialog.xul');
+			}, 'accept', 'chrome://zotero/content/hardConfirmationDialog.xhtml');
 			var cont = yield Zotero.Sync.Data.Local.checkUser(window, 2, "B");
 			var resetDataDirFileExists = yield OS.File.exists(resetDataDirFile);
 			assert.isTrue(handled);
@@ -69,7 +71,7 @@ describe("Zotero.Sync.Data.Local", function() {
 			yield Zotero.Users.setCurrentUserID(1);
 			yield Zotero.Users.setCurrentUsername("A");
 			
-			waitForDialog(false, 'cancel', 'chrome://zotero/content/hardConfirmationDialog.xul');
+			waitForDialog(false, 'cancel', 'chrome://zotero/content/hardConfirmationDialog.xhtml');
 			var cont = yield Zotero.Sync.Data.Local.checkUser(window, 2, "B");
 			var resetDataDirFileExists = yield OS.File.exists(resetDataDirFile);
 			assert.isFalse(cont);
@@ -85,7 +87,7 @@ describe("Zotero.Sync.Data.Local", function() {
 			yield Zotero.Users.setCurrentUserID(1);
 			yield Zotero.Users.setCurrentUsername("A");
 			
-			waitForDialog(null, 'extra1', 'chrome://zotero/content/hardConfirmationDialog.xul');
+			waitForDialog(null, 'extra1', 'chrome://zotero/content/hardConfirmationDialog.xhtml');
 			waitForDialog();
 			var cont = yield Zotero.Sync.Data.Local.checkUser(window, 2, "B");
 			var resetDataDirFileExists = yield OS.File.exists(resetDataDirFile);
@@ -110,7 +112,7 @@ describe("Zotero.Sync.Data.Local", function() {
 				item2.toJSON().relations[pred][0].startsWith('http://zotero.org/users/local/')
 			);
 			
-			waitForDialog(false, 'accept', 'chrome://zotero/content/hardConfirmationDialog.xul');
+			waitForDialog(false, 'accept', 'chrome://zotero/content/hardConfirmationDialog.xhtml');
 			yield Zotero.Sync.Data.Local.checkUser(window, 1, "A");
 			
 			assert.isTrue(
@@ -306,52 +308,6 @@ describe("Zotero.Sync.Data.Local", function() {
 		});
 		
 		
-		describe("#resetUnsyncedLibraryFiles", function () {
-			it("should delete unsynced files", function* () {
-				var group = yield createGroup({
-					version: 1,
-					libraryVersion: 2
-				});
-				var libraryID = group.libraryID;
-				
-				// File attachment that's totally in sync -- leave alone
-				var attachment1 = yield importFileAttachment('test.png', { libraryID });
-				attachment1.attachmentSyncState = "in_sync";
-				attachment1.attachmentSyncedModificationTime = yield attachment1.attachmentModificationTime;
-				attachment1.attachmentSyncedHash = yield attachment1.attachmentHash;
-				attachment1.synced = true;
-				yield attachment1.saveTx({
-					skipSyncedUpdate: true
-				});
-				
-				// File attachment that's in sync with changed file -- delete file and mark for download
-				var attachment2 = yield importFileAttachment('test.png', { libraryID });
-				attachment2.synced = true;
-				yield attachment2.saveTx({
-					skipSyncedUpdate: true
-				});
-				
-				// File attachment that's unsynced -- delete item and file
-				var attachment3 = yield importFileAttachment('test.pdf', { libraryID });
-				
-				// Has to be called before resetUnsyncedLibraryFiles()
-				assert.isTrue(yield Zotero.Sync.Data.Local._libraryHasUnsyncedFiles(libraryID));
-				
-				yield Zotero.Sync.Data.Local.resetUnsyncedLibraryFiles(libraryID);
-				
-				assert.isTrue(yield attachment1.fileExists());
-				assert.isFalse(yield attachment2.fileExists());
-				assert.isFalse(yield attachment3.fileExists());
-				assert.equal(
-					attachment1.attachmentSyncState, Zotero.Sync.Storage.Local.SYNC_STATE_IN_SYNC
-				);
-				assert.equal(
-					attachment2.attachmentSyncState, Zotero.Sync.Storage.Local.SYNC_STATE_TO_DOWNLOAD
-				);
-				assert.isFalse(Zotero.Items.get(attachment3.id));
-			});
-		});
-		
 		it("should revert modified file attachment item", async function () {
 			var group = await createGroup({
 				version: 1,
@@ -395,6 +351,53 @@ describe("Zotero.Sync.Data.Local", function() {
 			assert.equal(
 				attachment.attachmentSyncState, Zotero.Sync.Storage.Local.SYNC_STATE_IN_SYNC
 			);
+		});
+	});
+	
+	
+	describe("#resetUnsyncedLibraryFiles()", function () {
+		it("should delete unsynced files", function* () {
+			var group = yield createGroup({
+				version: 1,
+				libraryVersion: 2
+			});
+			var libraryID = group.libraryID;
+			
+			// File attachment that's totally in sync -- leave alone
+			var attachment1 = yield importFileAttachment('test.png', { libraryID });
+			attachment1.attachmentSyncState = "in_sync";
+			attachment1.attachmentSyncedModificationTime = yield attachment1.attachmentModificationTime;
+			attachment1.attachmentSyncedHash = yield attachment1.attachmentHash;
+			attachment1.synced = true;
+			yield attachment1.saveTx({
+				skipSyncedUpdate: true
+			});
+			
+			// File attachment that's in sync with changed file -- delete file and mark for download
+			var attachment2 = yield importFileAttachment('test.png', { libraryID });
+			attachment2.synced = true;
+			yield attachment2.saveTx({
+				skipSyncedUpdate: true
+			});
+			
+			// File attachment that's unsynced -- delete item and file
+			var attachment3 = yield importFileAttachment('test.pdf', { libraryID });
+			
+			// Has to be called before resetUnsyncedLibraryFiles()
+			assert.isTrue(yield Zotero.Sync.Data.Local._libraryHasUnsyncedFiles(libraryID));
+			
+			yield Zotero.Sync.Data.Local.resetUnsyncedLibraryFiles(libraryID);
+			
+			assert.isTrue(yield attachment1.fileExists());
+			assert.isFalse(yield attachment2.fileExists());
+			assert.isFalse(yield attachment3.fileExists());
+			assert.equal(
+				attachment1.attachmentSyncState, Zotero.Sync.Storage.Local.SYNC_STATE_IN_SYNC
+			);
+			assert.equal(
+				attachment2.attachmentSyncState, Zotero.Sync.Storage.Local.SYNC_STATE_TO_DOWNLOAD
+			);
+			assert.isFalse(Zotero.Items.get(attachment3.id));
 		});
 	});
 	
@@ -514,6 +517,35 @@ describe("Zotero.Sync.Data.Local", function() {
 				skipBundledFiles: true
 			});
 		})
+		
+		it("shouldn't trigger an auto-sync", async function () {
+			var libraryID = Zotero.Libraries.userLibraryID;
+			
+			var item = createUnsavedDataObject('item');
+			let data = item.toJSON();
+			data.key = Zotero.DataObjectUtilities.generateKey();
+			data.version = 10;
+			let json = {
+				key: data.key,
+				version: 10,
+				data
+			};
+			
+			// Make sure the pref in question is still disabled by default during tests
+			assert.isFalse(Zotero.Prefs.get('sync.autoSync'));
+			Zotero.Prefs.set('sync.autoSync', true);
+			var stub = sinon.stub(Zotero.Sync.Runner, 'setSyncTimeout');
+			
+			await Zotero.Sync.Data.Local.processObjectsFromJSON(
+				'item', libraryID, [json], { stopOnError: true }
+			);
+			
+			// setSyncTimeout() shouldn't have been called at all
+			assert.isFalse(stub.called);
+			
+			stub.restore();
+			Zotero.Prefs.set('sync.autoSync', false);
+		});
 		
 		it("should update local version number and mark as synced if remote version is identical", function* () {
 			var libraryID = Zotero.Libraries.userLibraryID;
@@ -715,6 +747,58 @@ describe("Zotero.Sync.Data.Local", function() {
 			// Sync cache should match remote
 			var cacheJSON = await Zotero.Sync.Data.Local.getCacheObject(type, libraryID, data.key, data.version);
 			assert.propertyVal(cacheJSON.data, "name", changedName);
+		});
+		
+		it("should remove creators that were removed remotely and change existing", async function () {
+			var libraryID = Zotero.Libraries.userLibraryID;
+			
+			let item = await createDataObject(
+				'item',
+				{
+					version: 5,
+					creators: [
+						{
+							name: "A",
+							creatorType: "author"
+						},
+						{
+							name: "B",
+							creatorType: "author"
+						},
+						{
+							name: "C",
+							creatorType: "author"
+						}
+					]
+				}
+			);
+			let data = item.toJSON();
+			await Zotero.Sync.Data.Local.saveCacheObjects('item', libraryID, [data]);
+			
+			var newCreators = [
+				{
+					name: "D",
+					creatorType: "author"
+				}
+			];
+			
+			// Create remote version with removed creators
+			data.version = 10;
+			data.creators = newCreators;
+			let json = {
+				key: item.key,
+				version: 10,
+				data
+			};
+			await Zotero.Sync.Data.Local.processObjectsFromJSON(
+				'item', libraryID, [json], { stopOnError: true }
+			);
+			assert.equal(item.version, 10);
+			var creatorJSON = item.getCreatorsJSON();
+			assert.sameDeepMembers(creatorJSON, newCreators);
+			// Sync cache should match remote
+			var cacheJSON = await Zotero.Sync.Data.Local.getCacheObject('item', libraryID, data.key, data.version);
+			assert.sameDeepMembers(cacheJSON.data.creators, newCreators);
 		});
 		
 		it("should delete older versions in sync cache after processing", function* () {
@@ -1149,16 +1233,16 @@ describe("Zotero.Sync.Data.Local", function() {
 			note.setNote("Test");
 			yield note.saveTx();
 			
-			var promise = waitForWindow('chrome://zotero/content/merge.xul', function (dialog) {
+			var promise = waitForWindow('chrome://zotero/content/merge.xhtml', function (dialog) {
 				var doc = dialog.document;
-				var wizard = doc.documentElement;
-				var mergeGroup = wizard.getElementsByTagName('zoteromergegroup')[0];
+				var wizard = doc.querySelector('wizard');
+				var mergeGroup = wizard.getElementsByTagName('merge-group')[0];
 				
 				// Show title for middle and right panes
 				var parentText = Zotero.getString('pane.item.parentItem') + " Parent";
-				assert.equal(mergeGroup.leftpane._id('parent-row').textContent, "");
-				assert.equal(mergeGroup.rightpane._id('parent-row').textContent, parentText);
-				assert.equal(mergeGroup.mergepane._id('parent-row').textContent, parentText);
+				assert.equal(mergeGroup.leftPane.parentRow.textContent, "");
+				assert.equal(mergeGroup.rightPane.parentRow.textContent, parentText);
+				assert.equal(mergeGroup.mergePane.parentRow.textContent, parentText);
 				
 				wizard.getButton('finish').click();
 			});
@@ -1184,18 +1268,18 @@ describe("Zotero.Sync.Data.Local", function() {
 			var note = await createDataObject('item', { itemType: 'note' });
 			var item = await createDataObject('item');
 			
-			var promise = waitForWindow('chrome://zotero/content/merge.xul', function (dialog) {
+			var promise = waitForWindow('chrome://zotero/content/merge.xhtml', function (dialog) {
 				var doc = dialog.document;
-				var wizard = doc.documentElement;
-				var mergeGroup = wizard.getElementsByTagName('zoteromergegroup')[0];
+				var wizard = doc.querySelector('wizard');
+				var mergeGroup = wizard.getElementsByTagName('merge-group')[0];
 				
 				// 1 (accept remote deletion)
-				assert.equal(mergeGroup.leftpane.getAttribute('selected'), 'true');
-				mergeGroup.rightpane.click();
+				assert.equal(mergeGroup.leftPane.getAttribute('selected'), 'true');
+				mergeGroup.rightPane.click();
 				wizard.getButton('next').click();
 				
 				// 2 (accept remote deletion)
-				mergeGroup.rightpane.click();
+				mergeGroup.rightPane.click();
 				if (Zotero.isMac) {
 					assert.isTrue(wizard.getButton('next').hidden);
 					assert.isFalse(wizard.getButton('finish').hidden);

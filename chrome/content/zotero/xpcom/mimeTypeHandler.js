@@ -23,18 +23,35 @@
     ***** END LICENSE BLOCK *****
 */
 
+const ArrayBufferInputStream = Components.Constructor(
+	"@mozilla.org/io/arraybuffer-input-stream;1",
+	"nsIArrayBufferInputStream"
+);
+const BinaryInputStream = Components.Constructor(
+	"@mozilla.org/binaryinputstream;1",
+	"nsIBinaryInputStream",
+	"setInputStream"
+);
+const StorageStream = Components.Constructor(
+	"@mozilla.org/storagestream;1",
+	"nsIStorageStream",
+	"init"
+);
+const BufferedOutputStream = Components.Constructor(
+	"@mozilla.org/network/buffered-output-stream;1",
+	"nsIBufferedOutputStream",
+	"init"
+);
+
 Zotero.MIMETypeHandler = new function () {
 	var _typeHandlers, _ignoreContentDispositionTypes, _observers;
-	
+
 	/**
-	 * Registers URIContentListener to handle MIME types
+	 * Registers nsIObserver to handle MIME types
 	 */
 	this.init = function() {
-		Zotero.debug("Registering URIContentListener");
-		// register our nsIURIContentListener and nsIObserver
-		Components.classes["@mozilla.org/uriloader;1"].
-			getService(Components.interfaces.nsIURILoader).
-			registerContentListener(_URIContentListener);
+		Zotero.debug("Registering nsIObserver");
+		// register our nsIObserver
 		Components.classes["@mozilla.org/observer-service;1"].
 			getService(Components.interfaces.nsIObserverService).
 			addObserver(_Observer, "http-on-examine-response", false);
@@ -49,53 +66,79 @@ Zotero.MIMETypeHandler = new function () {
 	/**
 	 * Initializes handlers for MIME types
 	 */
-	this.initializeHandlers = function() {
+	this.initializeHandlers = function () {
 		_typeHandlers = {};
-		_ignoreContentDispositionTypes = [];
+		_ignoreContentDispositionTypes = new Set();
 		_observers = [];
 		
 		// Install styles from the Cite preferences
-		this.addHandler("application/vnd.citationstyles.style+xml", Zotero.Promise.coroutine(function* (a1, a2) {
-			let win = Services.wm.getMostRecentWindow("zotero:basicViewer");
-			try {
-				yield Zotero.Styles.install(a1, a2, true);
+		this.addHandlers("application/vnd.citationstyles.style+xml", {
+			onContent: async function (blob, origin) {
+				let win = Services.wm.getMostRecentWindow("zotero:basicViewer");
+				var data = await Zotero.Utilities.Internal.blobToText(blob);
+				try {
+					await Zotero.Styles.install(data, origin, true);
+					// Close styles page in basic viewer after installing a style
+					win?.close();
+					return true;
+				}
+				catch (e) {
+					Zotero.logError(e);
+					(new Zotero.Exception.Alert("styles.install.unexpectedError",
+						origin, "styles.install.title", e)).present();
+				}
+				return false;
 			}
-			catch (e) {
-				Zotero.logError(e);
-				(new Zotero.Exception.Alert("styles.install.unexpectedError",
-					a2, "styles.install.title", e)).present();
-			}
-			// Close styles page in basic viewer after installing a style
-			if (win) {
-				win.close();
-			}
-		}));
-	}
+		}, true);
+	};
 	
 	/**
 	 * Adds a handler to handle a specific MIME type
 	 * @param {String} type MIME type to handle
-	 * @param {Function} fn Function to call to handle type - fn(string, uri)
+	 * @param {Object} handlers
+	 * 	- handlers.onContent - function to call when content is received
+	 * 	- handlers.onStartRequest - function to call when response for content type is first received
 	 * @param {Boolean} ignoreContentDisposition If true, ignores the Content-Disposition header,
 	 *	which is often used to force a file to download rather than let it be handled by the web
 	 *	browser
 	 */
-	this.addHandler = function(type, fn, ignoreContentDisposition) {
-		_typeHandlers[type] = fn;
-		_ignoreContentDispositionTypes.push(type);
-	}
+	this.addHandlers = function (type, handlers, ignoreContentDisposition) {
+		if (typeof handlers == 'function') {
+			handlers = {
+				onContent: handlers
+			};
+			Zotero.debug('MIMETypeHandler.addHandler: second parameter function is deprecated. Pass an object', 1)
+		}
+		if (_typeHandlers[type]) {
+			_typeHandlers[type].push(handlers);
+		}
+		else {
+			_typeHandlers[type] = [handlers];
+		}
+		if (ignoreContentDisposition) {
+			_ignoreContentDispositionTypes.add(type);
+		}
+	};
 	
 	/**
 	 * Removes a handler for a specific MIME type
 	 * @param {String} type MIME type to handle
+	 * @param {Object} handlers Function handlers to remove
 	 */
-	this.removeHandler = function(type) {
-		delete _typeHandlers[type];
-		var i = _ignoreContentDispositionTypes.indexOf(type);
-		if (i != -1) {
-			_ignoreContentDispositionTypes.splice(i, 1);
+	this.removeHandlers = function (type, handlers) {
+		// If no handler specified or this is the last handler for the type
+		// stop monitoring the content type completely.
+		if (!handlers || _typeHandlers[type] && _typeHandlers[type].length <= 1) {
+			delete _typeHandlers[type];
+			_ignoreContentDispositionTypes.delete(type);
 		}
-	}
+		else if (_typeHandlers[type]) {
+			var i = _typeHandlers[type].indexOf(handlers);
+			if (i != -1) {
+				_typeHandlers[type].splice(i, 1);
+			}
+		}
+	};
 	
 	/**
 	 * Adds an observer to inspect and possibly modify page headers
@@ -108,85 +151,66 @@ Zotero.MIMETypeHandler = new function () {
 	/**
 	 * Called to observe a page load
 	 */
-	var _Observer = new function() {
-		this.observe = function(channel) {
-			if(Zotero.isConnector) return;
-			
+	var _Observer = {
+		observe(channel) {
 			channel.QueryInterface(Components.interfaces.nsIRequest);
-			if(channel.loadFlags & Components.interfaces.nsIHttpChannel.LOAD_DOCUMENT_URI) {
-				channel.QueryInterface(Components.interfaces.nsIHttpChannel);
-				try {
-					// remove content-disposition headers for EndNote, etc.
-					var contentType = channel.getResponseHeader("Content-Type").toLowerCase();
-					for (let handledType of _ignoreContentDispositionTypes) {
-						if(contentType.length < handledType.length) {
-							break;
-						} else {
-							if(contentType.substr(0, handledType.length) == handledType) {
-								channel.setResponseHeader("Content-Disposition", "", false);
-								break;
-							}
-						}
+			// https://searchfox.org/mozilla-esr102/rev/f78d456e055a41106be086c501b271385a973961/netwerk/base/nsIChannel.idl#209-211
+			if (!channel.isDocument) {
+				return;
+			}
+			channel.QueryInterface(Components.interfaces.nsIHttpChannel);
+			channel.QueryInterface(Components.interfaces.nsITraceableChannel);
+
+			try {
+				// Get the main directive of the Content-Type header
+				// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type#syntax
+				var contentType = channel.getResponseHeader("Content-Type").split(';')[0].toLowerCase();
+				// remove content-disposition headers for EndNote, etc.
+				for (let handledType of _ignoreContentDispositionTypes) {
+					if (contentType.startsWith(handledType)) {
+						channel.setResponseHeader("Content-Disposition", "inline", false);
+						break;
 					}
-				} catch(e) {}
-				
-				for (let observer of _observers) {
+				}
+			}
+			catch (e) {
+				// getResponseHeader() throws if header is not set; ignore
+			}
+			
+			try {
+				if (contentType && _typeHandlers[contentType]) {
+					// Replace listener entirely
+					// #setNewListener() contract wants us to pass through events to the original (eventually),
+					// but we will not
+					let originalListener = channel.setNewListener(new _StreamListener(channel, contentType));
+					// Make it look like the connection ended, so the original listener can clean up
+					originalListener.onStopRequest(channel, Cr.NS_BINDING_ABORTED);
+				}
+			}
+			catch (e) {
+				Zotero.logError(e);
+			}
+			
+			for (let observer of _observers) {
+				try {
 					observer(channel);
+				}
+				catch (e) {
+					Zotero.logError(e);
 				}
 			}
 		}
-	}
-	
-	var _URIContentListener = new function() {
-		/**
-		 * Standard QI definition
-		 */
-		this.QueryInterface = function(iid) {
-			if  (iid.equals(Components.interfaces.nsISupports)
-			   || iid.equals(Components.interfaces.nsISupportsWeakReference)
-			   || iid.equals(Components.interfaces.nsIURIContentListener)) {
-				return this;
-			}
-			throw Components.results.NS_ERROR_NO_INTERFACE;
-		}
-		
-		/**
-		 * Called to see if we can handle a content type
-		 */
-		this.canHandleContent = this.isPreferred = function(contentType, isContentPreferred, desiredContentType) {
-			if(Zotero.isConnector) return false;
-			return !!_typeHandlers[contentType.toLowerCase()];
-		}
-		
-		/**
-		 * Called to begin handling a content type
-		 */
-		this.doContent = function(contentType, isContentPreferred, request, contentHandler) {
-			Zotero.debug("MIMETypeHandler: handling "+contentType+" from " + request.name);
-			contentHandler.value = new _StreamListener(request, contentType.toLowerCase());
-			return false;
-		}
-		
-		/**
-		 * Called so that we could stop a load before it happened if we wanted to
-		 */
-		this.onStartURIOpen = function(URI) {
-			return true;
-		}
-	}
+	};
 		
 	/**
-	 * @class Implements nsIStreamListener and nsIRequestObserver interfaces to download MIME types
+	 * @class _StreamListener Implements nsIStreamListener and nsIRequestObserver interfaces to download MIME types
 	 * 	we've registered ourself as the handler for
 	 * @param {nsIRequest} request The request to handle
 	 * @param {String} contenType The content type being handled
 	 */
-	var _StreamListener = function(request, contentType) {
+	var _StreamListener = function (request, contentType) {
 		this._request = request;
-		this._contentType = contentType
-		this._storageStream = null;
-		this._outputStream = null;
-		this._binaryInputStream = null;
+		this._contentType = contentType;
 	}
 	
 	/**
@@ -201,87 +225,101 @@ Zotero.MIMETypeHandler = new function () {
 		throw Components.results.NS_ERROR_NO_INTERFACE;
 	}
 	
-	/**
-	 * Called when the request is started; we ignore this
-	 */
-	_StreamListener.prototype.onStartRequest = function(channel, context) {}
-	
-
-	/**
-	 * Called when there's data available; we collect this data and keep it until the request is
-	 * done
-	 */
-	_StreamListener.prototype.onDataAvailable = function(request, context, inputStream, offset, count) {
-		Zotero.debug(count + " bytes available");
+	_StreamListener.prototype.onStartRequest = async function(channel) {
+		this._onStartRequestCalled = true;
+		this._dataBuffer = new StorageStream(4096, 0xffffffff);
+		this._stream = new BufferedOutputStream(this._dataBuffer.getOutputStream(0), 8192);
 		
-		if (!this._storageStream) {
-			this._storageStream = Components.classes["@mozilla.org/storagestream;1"].
-					createInstance(Components.interfaces.nsIStorageStream);
-			this._storageStream.init(16384, 4294967295, null); // PR_UINT32_MAX
-			this._outputStream = this._storageStream.getOutputStream(0);
-			
-			this._binaryInputStream = Components.classes["@mozilla.org/binaryinputstream;1"].
-					createInstance(Components.interfaces.nsIBinaryInputStream);
-			this._binaryInputStream.setInputStream(inputStream);
+		try {
+			if (!_typeHandlers[this._contentType]) return;
+			for (let handlers of _typeHandlers[this._contentType]) {
+				if (!handlers.onStartRequest) continue;
+				let maybePromise = handlers.onStartRequest(
+					this._request.name ? this._request.name : null,
+					this._contentType,
+					channel
+				);
+				if (maybePromise && maybePromise.then) {
+					maybePromise = await maybePromise;
+				}
+			}
+		}
+		catch (e) {
+			Zotero.logError(e);
+		}
+	}
+	
+	_StreamListener.prototype.onDataAvailable = async function (channel, inputStream, offset, count) {
+		if (!this._onStartRequestCalled) {
+			await this.onStartRequest(channel);
 		}
 		
-		var bytes = this._binaryInputStream.readBytes(count);
-		this._outputStream.write(bytes, count);
-	}
+		this._stream.writeFrom(inputStream, count);
+	};
 	
 	/**
 	 * Called when the request is done
 	 */
-	_StreamListener.prototype.onStopRequest = Zotero.Promise.coroutine(function* (channel, context, status) {
+	_StreamListener.prototype.onStopRequest = async function (channel, statusCode) {
+		if (!this._onStartRequestCalled) {
+			await this.onStartRequest(channel);
+		}
+
 		Zotero.debug("charset is " + channel.contentCharset);
 		
-		var inputStream = this._storageStream.newInputStream(0);
-		var charset = channel.contentCharset ? channel.contentCharset : "UTF-8";
-		const replacementChar = Components.interfaces.nsIConverterInputStream.DEFAULT_REPLACEMENT_CHARACTER;
-		var convStream = Components.classes["@mozilla.org/intl/converter-input-stream;1"]
-					.createInstance(Components.interfaces.nsIConverterInputStream);
-		convStream.init(inputStream, charset, 16384, replacementChar);
-		var readString = "";
-		var str = {};
-		while (convStream.readString(16384, str) != 0) {
-			readString += str.value;
+		this._stream.close();
+		this._stream = null;
+
+		if (!Components.isSuccessCode(statusCode)) {
+			throw Components.Exception('Failed to load', statusCode);
 		}
-		convStream.close();
-		inputStream.close();
+
+		let stream = new BinaryInputStream(this._dataBuffer.newInputStream(0));
+		let buffer = new ArrayBuffer(this._dataBuffer.length);
+		stream.readArrayBuffer(buffer.byteLength, buffer);
+		let blob = new Blob([buffer], { type: this._contentType });
 		
 		var handled = false;
 		try {
-			handled = _typeHandlers[this._contentType](
-				readString,
-				this._request.name ? this._request.name : null,
-				this._contentType,
-				channel
-			);
+			if (!_typeHandlers[this._contentType]) return;
+			for (let handlers of _typeHandlers[this._contentType]) {
+				if (!handlers.onContent) continue;
+				let maybePromise = handlers.onContent(
+					blob,
+					this._request.name ? this._request.name : null,
+					this._contentType,
+					channel
+				);
+				if (maybePromise && maybePromise.then) {
+					maybePromise = await maybePromise;
+				}
+				handled = handled || maybePromise;
+				if (handled) break;
+			}
 		}
 		catch (e) {
 			Zotero.logError(e);
 		}
 		
-		if (handled === false) {
+		if (!handled) {
 			// Handle using nsIExternalHelperAppService
 			let externalHelperAppService = Components.classes["@mozilla.org/uriloader/external-helper-app-service;1"]
 				.getService(Components.interfaces.nsIExternalHelperAppService);
 			let frontWindow = Components.classes["@mozilla.org/embedcomp/window-watcher;1"]
 				.getService(Components.interfaces.nsIWindowWatcher).activeWindow;
 			
-			let inputStream = this._storageStream.newInputStream(0);
+			let inputStream = new ArrayBufferInputStream();
+			inputStream.setData(buffer, 0, buffer.byteLength);
 			let streamListener = externalHelperAppService.doContent(
 				this._contentType, this._request, frontWindow, null
 			);
 			if (streamListener) {
-				streamListener.onStartRequest(channel, context);
+				streamListener.onStartRequest(channel);
 				streamListener.onDataAvailable(
-					this._request, context, inputStream, 0, this._storageStream.length
+					this._request, inputStream, 0, buffer.byteLength
 				);
-				streamListener.onStopRequest(channel, context, status);
+				streamListener.onStopRequest(channel, statusCode);
 			}
 		}
-		
-		this._storageStream.close();
-	});
+	};
 }

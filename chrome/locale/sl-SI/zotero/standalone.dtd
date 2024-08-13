@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Izhod iz Zotera">
 <!ENTITY quitApplicationCmdMac.key "z">
 
-
 <!ENTITY fileMenu.label "Datoteka">
 <!ENTITY fileMenu.accesskey "D">
 <!ENTITY saveCmd.label "Shrani ...">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Izhod">
 <!ENTITY quitApplicationCmd.accesskey "z">
 
-
 <!ENTITY copyCitationCmd.label "Kopiraj citat">
 <!ENTITY copyBibliographyCmd.label "Kopiraj bibliografijo">
+<!ENTITY copyNoteCmd.label "Kopiraj opombo">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Preklopi smer strani">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "t">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "b">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "b">
 
+<!ENTITY goMenu.label "Pojdi">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Pogled">
+<!ENTITY viewMenu.accesskey "g">
 <!ENTITY layout.label "Postavitev">
 <!ENTITY standardView.label "Navadni pogled">
 <!ENTITY stackedView.label "Naloženi pogled">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "Pokaži vnose v podzbirkah">
 <!ENTITY fontSize.label "Velikost pisave">
 <!ENTITY noteFontSize.label "Velikost pisave opomb">
-
+<!ENTITY columns.label "Stolpci">
+<!ENTITY sortBy.label "Razvrsti po">
 
 <!ENTITY toolsMenu.label "Orodja">
 <!ENTITY toolsMenu.accesskey "d">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "Dodatki">
 <!ENTITY developer.label "Razvijalec">
 
-
-<!ENTITY minimizeWindow.key "k">
-<!ENTITY minimizeWindow.label "Skrči">
 <!ENTITY bringAllToFront.label "Postavi vse v ospredje">
-<!ENTITY zoomWindow.label "Povečava">
-<!ENTITY windowMenu.label "Okno">
-
 
 <!ENTITY helpMenu.label "Pomoč">
 <!ENTITY helpMenu.accesskey "m">
-
-
 <!ENTITY helpMenuWin.label "Pomoč">
 <!ENTITY helpMenuWin.accesskey "m">
 <!ENTITY helpMac.commandkey "?">

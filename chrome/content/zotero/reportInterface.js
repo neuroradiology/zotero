@@ -30,9 +30,8 @@ var Zotero_Report_Interface = new function() {
 	 */
 	this.loadCollectionReport = function () {
 		var sortColumn = ZoteroPane_Local.getSortField();
-		var sortDirection = ZoteroPane_Local.getSortDirection();
 		var queryString = '?sort=' + sortColumn
-			+ '&direction=' + (sortDirection == 'ascending' ? 'asc' : 'desc');
+			+ '&direction=' + (ZoteroPane.getSortDirection() == 1 ? 'asc' : 'desc');
 		
 		var url = 'zotero://report/';
 		
@@ -55,7 +54,7 @@ var Zotero_Report_Interface = new function() {
 		
 		url += '/items' + queryString;
 		
-		Zotero.openInViewer(url);
+		Zotero.openInViewer(url, { allowJavaScript: false });
 	}
 	
 	
@@ -72,6 +71,6 @@ var Zotero_Report_Interface = new function() {
 		
 		var url = 'zotero://report/' + Zotero.API.getLibraryPrefix(libraryID) + '/items'
 			+ '?itemKey=' + items.map(item => item.key).join(',');
-		Zotero.openInViewer(url);
+		Zotero.openInViewer(url, { allowJavaScript: false });
 	}
 }

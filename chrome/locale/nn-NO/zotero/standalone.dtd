@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Avslutt Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Fil">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Lagra …">
@@ -25,17 +24,17 @@
 <!ENTITY closeCmd.accesskey "L">
 <!ENTITY manageAttachments.label "Manage Attachments">
 <!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
-<!ENTITY importCmd.label "Import…">
+<!ENTITY importCmd.label "Importer …">
 <!ENTITY importCmd.key "I">
-<!ENTITY importFromClipboardCmd.label "Import from Clipboard">
+<!ENTITY importFromClipboardCmd.label "Importer frå utklippstavla">
 <!ENTITY quitApplicationCmdWin.label "Avslutt">
 <!ENTITY quitApplicationCmdWin.accesskey "A">
 <!ENTITY quitApplicationCmd.label "Avslutt">
 <!ENTITY quitApplicationCmd.accesskey "A">
 
-
 <!ENTITY copyCitationCmd.label "Kopier sitering">
 <!ENTITY copyBibliographyCmd.label "Kopier bibliografi">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Byt sideretning">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Go">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "View">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Layout">
 <!ENTITY standardView.label "Standard View">
 <!ENTITY stackedView.label "Stacked View">
@@ -54,27 +56,20 @@
 <!ENTITY recursiveCollections.label "Show Items from Subcollections">
 <!ENTITY fontSize.label "Font Size">
 <!ENTITY noteFontSize.label "Note Font Size">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Verktøy">
 <!ENTITY toolsMenu.accesskey "V">
 <!ENTITY installConnector.label "Install Browser Connector">
-<!ENTITY installConnector.accesskey "C">
+<!ENTITY installConnector.accesskey "K">
 <!ENTITY addons.label "Tillegg">
 <!ENTITY developer.label "Developer">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Minimer">
 <!ENTITY bringAllToFront.label "Løft opp alle">
-<!ENTITY zoomWindow.label "Zoom">
-<!ENTITY windowMenu.label "Vindauge">
-
 
 <!ENTITY helpMenu.label "Hjelp">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Hjelp">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">
@@ -87,7 +82,7 @@
 <!ENTITY helpFeedbackPage.label "Discussion Forums">
 <!ENTITY helpFeedbackPage.accesskey "F">
 
-<!ENTITY helpReportErrors.label "Report Errors…">
+<!ENTITY helpReportErrors.label "Meld frå om feil …">
 <!ENTITY helpReportErrors.accesskey "M">
 
 <!ENTITY debugOutputLogging.label "Debug Output Logging">

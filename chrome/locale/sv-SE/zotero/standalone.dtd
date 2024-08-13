@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Avsluta Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Arkiv">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Spara…">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Avsluta">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Kopiera referens">
 <!ENTITY copyBibliographyCmd.label "Kopiera källförteckning">
+<!ENTITY copyNoteCmd.label "Kopiera anteckning">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Växla sidans läge">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Kör">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Visa">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Utseende">
 <!ENTITY standardView.label "Standardvy">
 <!ENTITY stackedView.label "Staplad vy">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "Visa källor från undersamling">
 <!ENTITY fontSize.label "Teckenstorlek">
 <!ENTITY noteFontSize.label "Teckenstorlek för anteckning">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Verktyg">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "Tillägg">
 <!ENTITY developer.label "Utvecklare">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Minimera">
 <!ENTITY bringAllToFront.label "Visa alla">
-<!ENTITY zoomWindow.label "Zoom">
-<!ENTITY windowMenu.label "Fönster">
-
 
 <!ENTITY helpMenu.label "Hjälp">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Hjälp">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

@@ -36,7 +36,7 @@ Zotero.Search = function(params = {}) {
 	this._conditions = {};
 	this._hasPrimaryConditions = false;
 	
-	Zotero.Utilities.assignProps(this, params, ['name', 'libraryID']);
+	Zotero.Utilities.Internal.assignProps(this, params, ['name', 'libraryID']);
 }
 
 Zotero.extendClass(Zotero.DataObject, Zotero.Search);
@@ -75,7 +75,12 @@ Zotero.defineProperty(Zotero.Search.prototype, 'key', {
 });
 Zotero.defineProperty(Zotero.Search.prototype, 'name', {
 	get: function() { return this._get('name'); },
-	set: function(val) { return this._set('name', val); }
+	set: function (val) {
+		if (!val) {
+			throw new Error("Saved search name cannot be empty");
+		}
+		return this._set('name', val);
+	}
 });
 Zotero.defineProperty(Zotero.Search.prototype, 'version', {
 	get: function() { return this._get('version'); },
@@ -94,18 +99,18 @@ Zotero.defineProperty(Zotero.Search.prototype, '_canHaveParent', {
 
 Zotero.defineProperty(Zotero.Search.prototype, 'treeViewID', {
 	get: function () {
-		return "S" + this.id
+		return "S" + this.id;
 	}
 });
 
 Zotero.defineProperty(Zotero.Search.prototype, 'treeViewImage', {
 	get: function () {
-		if (Zotero.isMac) {
-			return `chrome://zotero-platform/content/treesource-search${Zotero.hiDPISuffix}.png`;
-		}
-		return "chrome://zotero/skin/treesource-search" + Zotero.hiDPISuffix + ".png";
+		return "chrome://zotero/skin/16/universal/saved-search.svg";
 	}
 });
+
+// Properties for a search to "pretend" to be an item for trash itemTree
+Object.assign(Zotero.Search.prototype, Zotero.DataObjectUtilities.itemTreeMockProperties);
 
 Zotero.Search.prototype.loadFromRow = function (row) {
 	var primaryFields = this._ObjectsClass.primaryFields;
@@ -245,12 +250,6 @@ Zotero.Search.prototype._finalizeSave = Zotero.Promise.coroutine(function* (env)
 	}
 	else if (!env.options.skipNotifier) {
 		Zotero.Notifier.queue('modify', 'search', this.id, env.notifierData, env.options.notifierQueue);
-	}
-	
-	if (env.isNew && Zotero.Libraries.isGroupLibrary(this.libraryID)) {
-		var groupID = Zotero.Groups.getGroupIDFromLibraryID(this.libraryID);
-		var group = yield Zotero.Groups.get(groupID);
-		group.clearSearchCache();
 	}
 	
 	if (!env.skipCache) {
@@ -604,9 +603,9 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
 				tmpTable = "tmpSearchResults_" + Zotero.randomString(8);
 				var sql = "CREATE TEMPORARY TABLE " + tmpTable + " AS "
 					+ (yield this._scope.getSQL());
-				yield Zotero.DB.queryAsync(sql, yield this._scope.getSQLParams());
+				yield Zotero.DB.queryAsync(sql, yield this._scope.getSQLParams(), { noCache: true });
 				var sql = "CREATE INDEX " + tmpTable + "_itemID ON " + tmpTable + "(itemID)";
-				yield Zotero.DB.queryAsync(sql);
+				yield Zotero.DB.queryAsync(sql, false, { noCache: true });
 			}
 			
 			// Search ids in temp table
@@ -622,7 +621,7 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
 			}
 			sql += ")";
 			
-			var res = yield Zotero.DB.valueQueryAsync(sql, this._sqlParams);
+			var res = yield Zotero.DB.valueQueryAsync(sql, this._sqlParams, { noCache: true });
 			var ids = res ? res.split(",").map(id => parseInt(id)) : [];
 			/*
 			// DEBUG: Should this be here?
@@ -636,7 +635,7 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
 		}
 		// Or just run main search
 		else {
-			var ids = yield Zotero.DB.columnQueryAsync(this._sql, this._sqlParams);
+			var ids = yield Zotero.DB.columnQueryAsync(this._sql, this._sqlParams, { noCache: true });
 		}
 		
 		//Zotero.debug('IDs from main search or subsearch: ');
@@ -680,9 +679,9 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
 					if (this.libraryID) {
 						sql += " AND libraryID=?";
 					}
-					let res = yield Zotero.DB.valueQueryAsync(sql, this.libraryID);
+					let res = yield Zotero.DB.valueQueryAsync(sql, this.libraryID, { noCache: true });
 					scopeIDs = res ? res.split(",").map(id => parseInt(id)) : [];
-					yield Zotero.DB.queryAsync("DROP TABLE " + tmpTable);
+					yield Zotero.DB.queryAsync("DROP TABLE " + tmpTable, false, { noCache: true });
 				}
 				// In ALL mode, include remaining items from the main search
 				else {
@@ -797,7 +796,7 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
 			}
 			
 			sql = "SELECT GROUP_CONCAT(itemID) FROM items WHERE itemID IN (" + sql + ")";
-			var res = yield Zotero.DB.valueQueryAsync(sql);
+			var res = yield Zotero.DB.valueQueryAsync(sql, false, { noCache: true });
 			var parentChildIDs = res ? res.split(",").map(id => parseInt(id)) : [];
 			
 			// Add parents and children to main ids
@@ -810,7 +809,7 @@ Zotero.Search.prototype.search = Zotero.Promise.coroutine(function* (asTempTable
 	}
 	finally {
 		if (tmpTable && !asTempTable) {
-			yield Zotero.DB.queryAsync("DROP TABLE IF EXISTS " + tmpTable);
+			yield Zotero.DB.queryAsync("DROP TABLE IF EXISTS " + tmpTable, false, { noCache: true });
 		}
 	}
 	
@@ -933,9 +932,15 @@ Zotero.Search.idsToTempTable = Zotero.Promise.coroutine(function* (ids) {
 	else {
 		sql += " (itemID INTEGER PRIMARY KEY)";
 	}
-	yield Zotero.DB.queryAsync(sql, false, { debug: false });
+	yield Zotero.DB.queryAsync(sql, false, { debug: false, noCache: true });
 	if (ids.length) {
-		yield Zotero.DB.queryAsync(`CREATE UNIQUE INDEX ${tmpTable}_itemID ON ${tmpTable}(itemID)`);
+		yield Zotero.DB.queryAsync(
+			`CREATE UNIQUE INDEX ${tmpTable}_itemID ON ${tmpTable}(itemID)`,
+			false,
+			{
+				noCache: true
+			}
+		);
 	}
 	
 	return tmpTable;
@@ -948,7 +953,11 @@ Zotero.Search.idsToTempTable = Zotero.Promise.coroutine(function* (ids) {
 Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 	this._requireData('conditions');
 	
-	var sql = 'SELECT itemID FROM items';
+	// TEMP: Match parent attachment for annotation matches
+	// var sql = 'SELECT itemID FROM items';
+	var sql = "SELECT COALESCE(IA.parentItemID, itemID) AS itemID FROM items "
+		+ "LEFT JOIN itemAnnotations IA USING (itemID)";
+	
 	var sqlParams = [];
 	// Separate ANY conditions for 'required' condition support
 	var anySQL = '';
@@ -957,12 +966,14 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 	var conditions = [];
 	
 	let lastCondition;
-	for (let condition of Object.values(this._conditions)) {
+	let conditionsToProcess = Object.values(this._conditions);
+	for (let condition of conditionsToProcess) {
 		let name = condition.condition;
 		let conditionData = Zotero.SearchConditions.get(name);
 		
 		// Has a table (or 'savedSearch', which doesn't have a table but isn't special)
-		if (conditionData.table || name == 'savedSearch' || name == 'tempTable') {
+		// TEMP: Or 'tag', which needs to match annotation parents
+		if (conditionData.table || name == 'savedSearch' || name == 'tempTable' || name == 'tag') {
 			// For conditions with an inline filter using 'is'/'isNot', combine with last condition
 			// if the same
 			if (lastCondition
@@ -1000,6 +1011,10 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 				case 'deleted':
 					var deleted = condition.operator == 'true';
 					continue;
+
+				case 'includeDeleted':
+					var includeDeleted = condition.operator == 'true';
+					continue;
 				
 				case 'noChildren':
 					var noChildren = condition.operator == 'true';
@@ -1028,6 +1043,10 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 				case 'publications':
 					var publications = condition.operator == 'true';
 					continue;
+
+				case 'feed':
+					var feed = condition.operator == 'true';
+					continue;
 				
 				// Search subcollections
 				case 'recursive':
@@ -1050,41 +1069,91 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 				case 'blockEnd':
 					conditions.push({name:'blockEnd'});
 					continue;
+				
+				case 'anyField':
+					// We expand this condition to the same underlying set of conditions as 'quicksearch-fields'
+					// (although we don't detect keys or split into quoted and unquoted segments). 'quicksearch-fields'
+					// is expanded in addCondition(), but we can't do that with this condition because we don't want
+					// to save the conditions it expands to in the search object
+					conditionsToProcess.push({ condition: 'blockStart' });
+					conditionsToProcess.push({
+						condition: 'field',
+						operator: condition.operator,
+						value: condition.value,
+						required: false
+					});
+					conditionsToProcess.push({
+						condition: 'tag',
+						operator: condition.operator,
+						value: condition.value,
+						required: false
+					});
+					conditionsToProcess.push({
+						condition: 'note',
+						operator: condition.operator,
+						value: condition.value,
+						required: false
+					});
+					conditionsToProcess.push({
+						condition: 'creator',
+						operator: condition.operator,
+						value: condition.value,
+						required: false
+					});
+					conditionsToProcess.push({ condition: 'blockEnd' });
+					continue;
 			}
 			
 			throw new Error('Unhandled special condition ' + name);
 		}
 	}
 	
-	// Exclude deleted items (and their child items) by default
-	let not = deleted ? "" : "NOT ";
-	let op = deleted ? "OR" : "AND";
-	sql += " WHERE ("
-		+ `itemID ${not} IN (SELECT itemID FROM deletedItems) `
-		+ `${op} itemID ${not}IN (SELECT itemID FROM itemNotes `
-				+ "WHERE parentItemID IS NOT NULL AND "
-				+ "parentItemID IN (SELECT itemID FROM deletedItems)) "
-		+ `${op} itemID ${not}IN (SELECT itemID FROM itemAttachments `
-				+ "WHERE parentItemID IS NOT NULL AND "
-				+ "parentItemID IN (SELECT itemID FROM deletedItems))"
-		+ ")";
+	// Exclude deleted items (and their child items) by default, unless includeDeleted is true
+	if (includeDeleted) {
+		sql += " WHERE 1";
+	}
+	else {
+		let not = deleted ? "" : "NOT ";
+		sql += ` WHERE (itemID ${not} IN (`
+				// Deleted items
+				+ "SELECT itemID FROM deletedItems "
+				// Child notes of deleted items
+				+ "UNION SELECT itemID FROM itemNotes "
+					+ "WHERE parentItemID IS NOT NULL AND "
+					+ "parentItemID IN (SELECT itemID FROM deletedItems) "
+				// Child attachments of deleted items
+				+ "UNION SELECT itemID FROM itemAttachments "
+					+ "WHERE parentItemID IS NOT NULL AND "
+					+ "parentItemID IN (SELECT itemID FROM deletedItems)"
+				// Annotations of deleted attachments
+				+ "UNION SELECT itemID FROM itemAnnotations "
+					+ "WHERE parentItemID IN (SELECT itemID FROM deletedItems)"
+				// Annotations of attachments of deleted items
+				+ "UNION SELECT itemID FROM itemAnnotations "
+					+ "WHERE parentItemID IN (SELECT itemID FROM itemAttachments WHERE parentItemID IN (SELECT itemID FROM deletedItems))"
+			+ "))";
+	}
 	
 	if (noChildren){
 		sql += " AND (itemID NOT IN (SELECT itemID FROM itemNotes "
 			+ "WHERE parentItemID IS NOT NULL) AND itemID NOT IN "
 			+ "(SELECT itemID FROM itemAttachments "
+			+ "WHERE parentItemID IS NOT NULL) AND itemID NOT IN "
+			+ "(SELECT itemID FROM itemAnnotations "
 			+ "WHERE parentItemID IS NOT NULL))";
 	}
 	
 	if (unfiled) {
-		sql += " AND (itemID NOT IN (SELECT itemID FROM collectionItems) "
+		sql += " AND (itemID NOT IN ("
+			// Exclude items that belong to non-trashed collections
+			+ "SELECT itemID FROM collectionItems WHERE collectionID NOT IN (SELECT collectionID FROM deletedCollections) "
 			// Exclude children
-			+ "AND itemID NOT IN "
-			+ "(SELECT itemID FROM itemAttachments WHERE parentItemID IS NOT NULL "
-			+ "UNION SELECT itemID FROM itemNotes WHERE parentItemID IS NOT NULL)"
-			+ ") "
+			+ "UNION SELECT itemID FROM itemAttachments WHERE parentItemID IS NOT NULL "
+			+ "UNION SELECT itemID FROM itemNotes WHERE parentItemID IS NOT NULL "
+			+ "UNION SELECT itemID FROM itemAnnotations "
 			// Exclude My Publications
-			+ "AND itemID NOT IN (SELECT itemID FROM publicationsItems)";
+			+ "UNION SELECT itemID FROM publicationsItems "
+			+ "))";
 	}
 	
 	if (retracted) {
@@ -1093,6 +1162,10 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 	
 	if (publications) {
 		sql += " AND (itemID IN (SELECT itemID FROM publicationsItems))";
+	}
+
+	if (feed) {
+		sql += " AND (itemID IN (SELECT itemID FROM feedItems))";
 	}
 	
 	// Limit to library search belongs to
@@ -1119,22 +1192,42 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 				//
 				// Special table handling
 				//
-				if (condition['table']){
-					switch (condition['table']){
-						default:
-							condSelectSQL += 'itemID '
-							switch (condition['operator']){
-								case 'isNot':
-								case 'doesNotContain':
-									condSelectSQL += 'NOT ';
-									break;
-							}
-							condSelectSQL += 'IN (';
-							selectOpenParens = 1;
-							condSQL += 'SELECT itemID FROM ' +
-								condition['table'] + ' WHERE (';
-							openParens = 1;
+				if (condition.table) {
+					let negationOperators = ['isNot', 'doesNotContain'];
+					let isNegationOperator = negationOperators.includes(condition.operator);
+					
+					condSelectSQL += 'itemID '
+					if (isNegationOperator) {
+						condSelectSQL += 'NOT ';
 					}
+					condSelectSQL += 'IN (';
+					selectOpenParens = 1;
+					
+					// TEMP: Don't match annotations for negation operators, since it would result in
+					// all parent attachments being returned
+					if (isNegationOperator) {
+						condSelectSQL += "SELECT itemID FROM items WHERE itemTypeID="
+							+ Zotero.ItemTypes.getID('annotation') + " UNION ";
+					}
+					
+					switch (condition.name) {
+						// TEMP: Match parent attachments of matching annotations
+						case 'tag':
+							condSQL += "SELECT COALESCE(IAnT.parentItemID, itemID) FROM itemTags "
+								+ "LEFT JOIN itemAnnotations IAnT USING (itemID) WHERE (";
+							break;
+						
+						// TEMP: Match parent attachments of matching annotations
+						case 'annotationText':
+						case 'annotationComment':
+							condSQL += `SELECT parentItemID FROM ${condition.table} WHERE (`
+							break;
+							
+						default:
+							condSQL += `SELECT itemID FROM ${condition.table} WHERE (`;
+					}
+					
+					openParens = 1;
 				}
 				
 				//
@@ -1331,6 +1424,15 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 						condSQL += "creatorID IN (SELECT creatorID FROM creators WHERE ";
 						openParens++;
 						break;
+
+					case 'author':
+					case 'editor':
+					case 'bookAuthor': {
+						let creatorTypeID = Zotero.CreatorTypes.getID(condition.name);
+						condSQL += `creatorTypeID = ${creatorTypeID} AND creatorID IN (SELECT creatorID FROM creators WHERE `;
+						openParens++;
+						break;
+					}
 					
 					case 'childNote':
 						condSQL += "itemID IN (SELECT parentItemID FROM "
@@ -1700,7 +1802,11 @@ Zotero.Search.prototype._buildQuery = Zotero.Promise.coroutine(function* () {
 		
 		// Add on quicksearch conditions
 		if (quicksearchSQLSet) {
-			sql = "SELECT itemID FROM items WHERE itemID IN (" + sql + ") "
+			// TEMP: Match parent attachments for annotations
+			//sql = "SELECT itemID FROM items WHERE itemID IN (" + sql + ") "
+			sql = "SELECT COALESCE(IAn.parentItemID, itemID) AS itemID FROM items "
+				+ "LEFT JOIN itemAnnotations IAn USING (itemID) "
+				+ "WHERE itemID IN (" + sql + ") "
 				+ "AND ((" + quicksearchSQLSet.join(') AND (') + "))";
 			
 			for (var k=0; k<quicksearchParamsSet.length; k++) {

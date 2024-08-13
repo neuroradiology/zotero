@@ -59,6 +59,42 @@ describe("Zotero.DataObjectUtilities", function() {
 			// place was already empty, so it shouldn't be included
 			assert.notProperty(obj, 'place');
 		});
+		
+		it("shouldn't include relations that haven't changed", function () {
+			var patchBase = {
+				title: "Old Title",
+				relations: {
+					"mendeleyDB:documentUUID": "6b97abe6-8e23-4471-b963-234cf26808b9"
+				}
+			};
+			var obj = {
+				title: "New Title",
+				relations: {
+					"mendeleyDB:documentUUID": "6b97abe6-8e23-4471-b963-234cf26808b9"
+				}
+			}
+			obj = Zotero.DataObjectUtilities.patch(patchBase, obj);
+			assert.notProperty(obj, 'relations');
+		});
+		
+		it("shouldn't include relations that only switched from string to array", function () {
+			var patchBase = {
+				title: "Old Title",
+				relations: {
+					"mendeleyDB:documentUUID": "6b97abe6-8e23-4471-b963-234cf26808b9"
+				}
+			};
+			var obj = {
+				title: "New Title",
+				relations: {
+					"mendeleyDB:documentUUID": [
+						"6b97abe6-8e23-4471-b963-234cf26808b9"
+					]
+				}
+			}
+			obj = Zotero.DataObjectUtilities.patch(patchBase, obj);
+			assert.notProperty(obj, 'relations');
+		});
 	})
 	
 	describe("#diff()", function () {
@@ -71,13 +107,13 @@ describe("Zotero.DataObjectUtilities", function() {
 			describe("fields", function () {
 				it("should not show empty items as different", function* () {
 					var id1, id2, json1, json2;
-					yield Zotero.DB.executeTransaction(function* () {
+					yield Zotero.DB.executeTransaction(async function () {
 						var item = new Zotero.Item('book');
-						id1 = yield item.save();
+						id1 = await item.save();
 						json1 = item.toJSON();
 						
 						var item = new Zotero.Item('book');
-						id2 = yield item.save();
+						id2 = await item.save();
 						json2 = item.toJSON();
 					});
 					

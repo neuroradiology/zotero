@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Lopeta Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Tiedosto">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Tallenna...">
@@ -24,7 +23,7 @@
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
 <!ENTITY manageAttachments.label "Hallitse liitteitä">
-<!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
+<!ENTITY convertToStored.label "Muuta linkitetyt tiedostot tallennetuiksi tiedostoiksi...">
 <!ENTITY importCmd.label "Tuo...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Tuo leikepöydältä">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Lopeta">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Kopioi viite">
 <!ENTITY copyBibliographyCmd.label "Kopioi kirjallisuusluettelo">
+<!ENTITY copyNoteCmd.label "Kopioi muistiinpano">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Vaihda sivun suuntaa">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,18 +42,22 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Mene">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Näytä">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Asettelu">
 <!ENTITY standardView.label "Vakionäkymä">
 <!ENTITY stackedView.label "Pinottu näkymä">
-<!ENTITY collectionsPane.label "Collections Pane">
-<!ENTITY itemPane.label "Item Pane">
-<!ENTITY tagSelector.label "Tag Selector">
-<!ENTITY recursiveCollections.label "Show Items from Subcollections">
+<!ENTITY collectionsPane.label "Kokoelmapalkki">
+<!ENTITY itemPane.label "Nimikenäkymä">
+<!ENTITY tagSelector.label "Aiheenvalitsin">
+<!ENTITY recursiveCollections.label "Näytä alakokoelmien nimikkeet">
 <!ENTITY fontSize.label "Fonttikoko">
-<!ENTITY noteFontSize.label "Note Font Size">
-
+<!ENTITY noteFontSize.label "Muistiinpanojen fonttikoko">
+<!ENTITY columns.label "Sarakkeet">
+<!ENTITY sortBy.label "Lajittele">
 
 <!ENTITY toolsMenu.label "Työkalut">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "Lisäosat">
 <!ENTITY developer.label "Kehittäjätyökalut">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Pienennä">
 <!ENTITY bringAllToFront.label "Tuo kaikki eteen">
-<!ENTITY zoomWindow.label "Lähennä">
-<!ENTITY windowMenu.label "Ikkuna">
-
 
 <!ENTITY helpMenu.label "Ohje">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Ohje">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

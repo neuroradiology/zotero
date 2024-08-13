@@ -6,15 +6,16 @@
 <!ENTITY zotero.general.deselectAll "Kijelölés megszüntetése">
 <!ENTITY zotero.general.edit "Szerkesztés">
 <!ENTITY zotero.general.delete "Törlés">
-<!ENTITY zotero.general.moveToTrash "Move to Trash">
+<!ENTITY zotero.general.moveToTrash "Mozgatás a Kukába">
 <!ENTITY zotero.general.ok "OK">
-<!ENTITY zotero.general.cancel "Mégse">
+<!ENTITY zotero.general.cancel "Mégsem">
 <!ENTITY zotero.general.refresh "Újratöltés">
 <!ENTITY zotero.general.saveAs "Mentés másként…">
 <!ENTITY zotero.general.options "Beállítások">
 <!ENTITY zotero.general.advancedOptions.label "Haladó beállítások">
 <!ENTITY zotero.general.tools "Eszközök">
 <!ENTITY zotero.general.more " Egyéb...">
+<!ENTITY zotero.general.moreInformation "További információ">
 <!ENTITY zotero.general.loading "Betöltés…">
 <!ENTITY zotero.general.close "Bezárás">
 <!ENTITY zotero.general.minimize "Kis méret">
@@ -45,53 +46,22 @@
 <!ENTITY zotero.upgrade.changeLogLink "a változások listájában">
 <!ENTITY zotero.upgrade.changeLogAfterLink "az újdonságoknak.">
 
-<!ENTITY zotero.tabs.info.label "Info">
 <!ENTITY zotero.tabs.notes.label "Jegyzetek">
 <!ENTITY zotero.tabs.attachments.label "Csatolmányok">
-<!ENTITY zotero.tabs.tags.label "Címkék">
-<!ENTITY zotero.tabs.related.label "Kapcsolatok">
-<!ENTITY zotero.notes.separate "Szerkesztés külön ablakban">
 
 <!ENTITY zotero.toolbar.duplicate.label "Duplumok listázása">
 <!ENTITY zotero.collections.showUnfiledItems "Besorolatlan elemek mutatása">
 <!ENTITY zotero.collections.showRetractedItems "Visszavont elemek mutatása">
 
 <!ENTITY zotero.items.itemType "Forrás típusa">
-<!ENTITY zotero.items.type_column "Forrás típusa">
-<!ENTITY zotero.items.title_column "Cím">
 <!ENTITY zotero.items.creator_column "Szerző">
-<!ENTITY zotero.items.date_column "Dátum">
 <!ENTITY zotero.items.year_column "Év">
-<!ENTITY zotero.items.publisher_column "Kiadó">
-<!ENTITY zotero.items.publication_column "Kiadvány">
-<!ENTITY zotero.items.journalAbbr_column "Rövidített cím">
-<!ENTITY zotero.items.language_column "Nyelv">
-<!ENTITY zotero.items.accessDate_column "Hozzáférés dátuma">
-<!ENTITY zotero.items.libraryCatalog_column "Könyvtár Katalógus">
-<!ENTITY zotero.items.callNumber_column "Raktári jelzet">
-<!ENTITY zotero.items.rights_column "Jogok">
-<!ENTITY zotero.items.dateAdded_column "Hozzáadás dátuma">
 <!ENTITY zotero.items.dateModified_column "Módosítás dátuma">
-<!ENTITY zotero.items.extra_column "Extra">
-<!ENTITY zotero.items.archive_column "Archívum">
-<!ENTITY zotero.items.archiveLocation_column "Pontos lelőhely">
-<!ENTITY zotero.items.place_column "Hely">
-<!ENTITY zotero.items.volume_column "Kötet">
-<!ENTITY zotero.items.edition_column "Kiadás">
-<!ENTITY zotero.items.pages_column "Oldalak">
-<!ENTITY zotero.items.issue_column "Szám">
-<!ENTITY zotero.items.series_column "Sorozat">
-<!ENTITY zotero.items.seriesTitle_column "Sorozat címe">
-<!ENTITY zotero.items.court_column "Bíróság">
-<!ENTITY zotero.items.medium_column "Közepes/Formátum">
-<!ENTITY zotero.items.genre_column "Műfaj">
-<!ENTITY zotero.items.system_column "Rendszer">
 <!ENTITY zotero.items.moreColumns.label "Több oszlop">
-<!ENTITY zotero.items.restoreColumnOrder.label "Restore Column Order">
+<!ENTITY zotero.items.restoreColumnOrder.label "Oszlopok sorrendjének visszaállítása">
 
 <!ENTITY zotero.items.menu.showInLibrary "Megjelenítés a könyvtárban">
 <!ENTITY zotero.items.menu.attach.note "Jegyzet hozzáadása">
-<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Csatolmány hozzáadása">
 <!ENTITY zotero.items.menu.attach.link.uri "Link csatolása az URI-hez…">
 <!ENTITY zotero.items.menu.attach.file "Helyben tárolt példány csatolása">
@@ -101,10 +71,9 @@
 <!ENTITY zotero.items.menu.duplicateItem "Kiválasztott elem duplikálása">
 <!ENTITY zotero.items.menu.mergeItems "Elemek összefésülése…">
 <!ENTITY zotero.items.menu.unrecognize "Beolvasott metaadatok visszavonása">
-<!ENTITY zotero.items.menu.reportMetadata "Hibás metaadatok jelentése">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Válassza ki azt az elemverziót, amit mester elemnek kíván használni: ">
-<!ENTITY zotero.duplicatesMerge.fieldSelect "Select fields to keep from other versions of the item:">
+<!ENTITY zotero.duplicatesMerge.fieldSelect "Válassza ki az elem más verzióiból megtartandó mezőket:">
 
 <!ENTITY zotero.toolbar.newItem.label "Új elem">
 <!ENTITY zotero.toolbar.moreItemTypes.label "Egyéb...">
@@ -112,7 +81,6 @@
 <!ENTITY zotero.toolbar.removeItem.label "Elem törlése...">
 <!ENTITY zotero.toolbar.newLibrary.label "Könyvtár létrehozása">
 <!ENTITY zotero.toolbar.newCollection.label "Új gyűjtemény...">
-<!ENTITY zotero.toolbar.markFeedRead.label "Mark Feed as Read">
 <!ENTITY zotero.toolbar.newGroup "Új csoport...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Új algyűjtemény...">
 <!ENTITY zotero.toolbar.newSavedSearch.label "Új mentett keresés...">
@@ -134,7 +102,6 @@
 <!ENTITY zotero.toolbar.feeds.new "New Feed">
 <!ENTITY zotero.toolbar.feeds.new.fromURL "URL-ből…">
 <!ENTITY zotero.toolbar.feeds.new.fromOPML "OPML-ből…">
-<!ENTITY zotero.toolbar.feeds.refresh "Refresh Feed">
 <!ENTITY zotero.toolbar.feeds.edit "Edit Feed…">
 
 <!ENTITY zotero.item.add "Hozzáadás">
@@ -143,7 +110,7 @@
 <!ENTITY zotero.item.textTransform.titlecase "Szókezdő">
 <!ENTITY zotero.item.textTransform.sentencecase "Mondatkezdő">
 <!ENTITY zotero.item.creatorTransform.nameSwap "Keresztnév/Vezetéknév felcserélése">
-<!ENTITY zotero.item.viewOnline "Online megtekintés">
+<!ENTITY zotero.item.creatorTransform.fixCase "Fix Case">
 <!ENTITY zotero.item.copyAsURL "Másolás URL-ként">
 <!ENTITY zotero.item.deletePermanently "Végleges törlés…">
 
@@ -157,8 +124,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Helyi másolat tárolása...">
 <!ENTITY zotero.toolbar.attachment.weblink "Hivatkozás az aktuális oldalra">
 <!ENTITY zotero.toolbar.attachment.snapshot "Pillanatfelvétel az aktuális oldalról">
-<!ENTITY zotero.toolbar.context.item "Item">
-<!ENTITY zotero.toolbar.context.notes "Notes">
+<!ENTITY zotero.toolbar.context.item "Elem">
+<!ENTITY zotero.toolbar.context.notes "Jegyzetek">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Nincsenek címkék">
 <!ENTITY zotero.tagSelector.loadingTags "Címkék betöltése…">
@@ -169,6 +136,7 @@
 <!ENTITY zotero.tagSelector.assignColor "Szín kiválasztása…">
 <!ENTITY zotero.tagSelector.renameTag "Címke átnevezése...">
 <!ENTITY zotero.tagSelector.deleteTag "Címke törlése...">
+<!ENTITY zotero.tagSelector.splitTag "Feldarabolás…">
 
 <!ENTITY zotero.tagColorChooser.title "Válassza ki a címke színét és a pozíciót.">
 <!ENTITY zotero.tagColorChooser.color "Szín:">
@@ -176,15 +144,15 @@
 <!ENTITY zotero.tagColorChooser.setColor "Szín beállítása">
 <!ENTITY zotero.tagColorChooser.removeColor "Szín eltávolítása">
 
-<!ENTITY zotero.lookup.description "ISBN, DOI, PMID, vagy arXiv ID hozzáadása a könyvtárhoz:">
+<!ENTITY zotero.lookup.description "ISBN-k, DOI-k, PMID-k, arXiv ID-k, vagy ADS Bibcodes hozzáadása a könyvtárhoz:">
 <!ENTITY zotero.lookup.button.search "Keresés">
 
-<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.title "Szülő elem létrehozása…">
 <!ENTITY zotero.createParent.button.manual "Kézi bevitel">
 
 <!ENTITY zotero.selectitems.title "Elemek kiválasztása">
 <!ENTITY zotero.selectitems.intro.label "A könyvtárhoz hozzáadni kíván elemek kiválasztása">
-<!ENTITY zotero.selectitems.cancel.label "Mégse">
+<!ENTITY zotero.selectitems.cancel.label "Mégsem">
 <!ENTITY zotero.selectitems.select.label "OK">
 
 <!ENTITY zotero.bibliography.title "Bibliográfia létrehozása">
@@ -209,12 +177,15 @@
 <!ENTITY zotero.import "Importálás">
 <!ENTITY zotero.import.whereToImportFrom "Honnét szeretné importálni?">
 <!ENTITY zotero.import.source.file "Egy fájl (BibTeX, RIS, Zotero RDF, stb.)">
+<!ENTITY zotero.import.source.folder "PDF-ek vagy más fájlok mappája">
+<!ENTITY zotero.import.onlineImport "online import">
 <!ENTITY zotero.import.importing "Importálás…">
 <!ENTITY zotero.import.database "Adatbázis">
 <!ENTITY zotero.import.lastModified "Utolsó módosítás">
 <!ENTITY zotero.import.size "Méret">
 <!ENTITY zotero.import.createCollection "Importált elemek és gyűjtemények áthelyezése új gyűjteménybe">
 <!ENTITY zotero.import.fileHandling "Fájlkezelés">
+<!ENTITY zotero.import.online.newItemsOnly "Csak új elemek letöltése; nem frissíti a korábban importált elemeket.">
 
 <!ENTITY zotero.exportOptions.title "Exportálás...">
 <!ENTITY zotero.exportOptions.format.label "Formátum:">
@@ -225,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Források sorbarendezése">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Szerző figyelmen kívül hagyása">
+<!ENTITY zotero.citation.suppressAuthor.label "Szerző kihagyása">
 <!ENTITY zotero.citation.prefix.label "Előtag:">
 <!ENTITY zotero.citation.suffix.label "Utótag:">
 <!ENTITY zotero.citation.editorWarning.label "Figyelmeztetés: Ha a szerkesztőben szerkeszt egy hivatkozást, akkor nem fog frissülni és nem fogja megjeleníteni az adatbázis vagy a hivatkozási stílus változásait.">
@@ -246,16 +217,16 @@
 <!ENTITY zotero.integration.prefs.footnotes.label "Lábjegyzetek">
 <!ENTITY zotero.integration.prefs.endnotes.label "Végjegyzetek">
 
-<!ENTITY zotero.integration.prefs.formatUsing.label "Store Citations as:">
+<!ENTITY zotero.integration.prefs.formatUsing.label "Idézetek visszaállítása">
 <!ENTITY zotero.integration.prefs.bookmarks.label "Könyvjelzők">
-<!ENTITY zotero.integration.prefs.bookmarks.caption "Bookmarks can be shared between Word and LibreOffice, but may cause errors if accidentally modified and cannot be inserted into footnotes.">
+<!ENTITY zotero.integration.prefs.bookmarks.caption "A könyvjelzők megoszthatók a Word és a LibreOffice között, de hibákat okozhatnak, ha véletlenül módosítják őket, és nem illeszthetők be lábjegyzetekbe.">
 
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.label "Hivatkozások automatikus frissítése">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.tooltip "A függőben lévő, frissítésekkel ellátott idézetek kiemelésre kerülnek a dokumentumban">
 <!ENTITY zotero.integration.prefs.automaticCitationUpdates.description "A frissítések letiltása felgyorsíthatja a hivatkozások beillesztését a nagy dokumentumokba. A hivatkozások manuális frissítéséhez kattintson a Frissítés gombra.">
 
-<!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Use MEDLINE journal abbreviations">
-<!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "The “Journal Abbr” field will be ignored.">
+<!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.label "Használja a MEDLINE folyóirat rövidítéseket">
+<!ENTITY zotero.integration.prefs.automaticJournalAbbeviations.caption "A &quot;Journal Abbr&quot; mező figyelmen kívül hagyása">
 
 <!ENTITY zotero.integration.prefs.exportDocument "Váltson egy másik szövegszerkesztőre…">
 
@@ -286,7 +257,7 @@
 
 <!ENTITY zotero.proxy.recognized.title "Proxy felismerve">
 <!ENTITY zotero.proxy.recognized.warning "Csak a könyvtárból, iskolából vagy vállalati weboldalról linkelt proxy-t adható hozzá">
-<!ENTITY zotero.proxy.recognized.warning.secondary "Adding other proxies allows malicious sites to masquerade as sites you trust.">
+<!ENTITY zotero.proxy.recognized.warning.secondary "Más proxyk hozzáadása lehetővé teszi a rosszindulatú webhelyek számára, hogy megbízható webhelyeknek álcázzák magukat.">
 <!ENTITY zotero.proxy.recognized.disable.label "Ne irányítsa át automatikusan a kéréseket az előzőleg felismert proxyikra.">
 <!ENTITY zotero.proxy.recognized.ignore.label "Elutasít">
 
@@ -302,7 +273,7 @@
 <!ENTITY zotero.feedSettings.cleanupReadAfter.label2 "nap(ok)">
 
 <!ENTITY zotero.rtfScan.title "RTF átvizsgálása…">
-<!ENTITY zotero.rtfScan.cancel.label "Mégse">
+<!ENTITY zotero.rtfScan.cancel.label "Mégsem">
 <!ENTITY zotero.rtfScan.citation.label "Hivatkozás">
 <!ENTITY zotero.rtfScan.itemName.label "Elem neve">
 <!ENTITY zotero.rtfScan.unmappedCitations.label "Nem felismert hivatkozások">
@@ -330,8 +301,33 @@
 <!ENTITY zotero.attachLink.label.link "Link:">
 <!ENTITY zotero.attachLink.label.title "Cím:">
 
-<!ENTITY zotero.context.addChildNote "Add Item Note">
-<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
-<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
-<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
-<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+<!ENTITY zotero.context.addChildNote "Elem jegyzetének hozzáadása">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Elem jegyzet hozzáadása a jegyzetekből">
+<!ENTITY zotero.context.addStandaloneNote "Önálló jegyzet hozzáadása">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Önálló jegyzet hozzáadása jegyzetekből">
+<!ENTITY zotero.context.editInWindow "Szerkesztés külön ablakban">
+
+<!ENTITY zotero.pdfReader.firstPage "Első oldal">
+<!ENTITY zotero.pdfReader.lastPage "Utolsó oldal">
+<!ENTITY zotero.pdfReader.back "Vissza">
+<!ENTITY zotero.pdfReader.forward "Előre">
+<!ENTITY zotero.pdfReader.handTool "Kéz eszköz">
+<!ENTITY zotero.pdfReader.verticalScrolling "Függőleges görgetés">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Vízszintes görgetés">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Rácsos görgetés">
+<!ENTITY zotero.pdfReader.noSpreads "Nincs oldaltapasztás">
+<!ENTITY zotero.pdfReader.oddSpreads "Oldalak összetapasztása: páratlan">
+<!ENTITY zotero.pdfReader.evenSpreads "Oldalak összetapasztása: páros">
+<!ENTITY zotero.pdfReader.scrolled "Scrolled">
+<!ENTITY zotero.pdfReader.paginated "Oldalszámozás">
+<!ENTITY zotero.pdfReader.zoomIn "Nagyítás">
+<!ENTITY zotero.pdfReader.zoomOut "Kicsinyítés">
+<!ENTITY zotero.pdfReader.zoomReset "Nagyítás visszaállítása">
+<!ENTITY zotero.pdfReader.zoomAuto "Automatikus átméretezés">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Nagyítás oldalszélességre">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Teljes oldal">
+<!ENTITY zotero.pdfReader.splitVertically "Függőlegesen osztva">
+<!ENTITY zotero.pdfReader.splitHorizontally "Vízszintesen osztva">
+<!ENTITY zotero.pdfReader.transferFromPDF "Jegyzetek importálása…">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Oldal elforgatása balra">
+<!ENTITY zotero.pdfReader.rotatePageRight "Oldal elforgatása jobbra">

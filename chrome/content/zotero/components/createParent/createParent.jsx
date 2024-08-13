@@ -25,13 +25,16 @@
 
 'use strict';
 
-import React, { memo } from 'react';
-import ReactDOM from "react-dom";
+import React, { memo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import cx from 'classnames';
-import { IntlProvider } from "react-intl";
 
 function CreateParent({ loading, item, toggleAccept }) {
+	// With React 18, this is required for the window's dialog to be properly sized
+	useEffect(() => {
+		window.sizeToContent();
+	}, []);
+
 	// When the input has/does not have characters toggle the accept button on the dialog
 	const handleInput = (e) => {
 		if (e.target.value.trim() !== '') {
@@ -43,31 +46,27 @@ function CreateParent({ loading, item, toggleAccept }) {
 	};
 
 	return (
-		<IntlProvider
-			locale={ Zotero.locale }
-			messages={ Zotero.Intl.strings }
-		>
-			<div className="create-parent-container">
-				<span className="title">
-					{ item.attachmentFilename }
-				</span>
-				<div className="body">
-					<input
-						id="parent-item-identifier"
-						placeholder={ Zotero.getString('createParent.prompt') }
-						size="50"
-						disabled={ loading }
-						onChange={ handleInput }
-					/>
-					<div
-						mode="undetermined"
-						className={ cx('downloadProgress', { hidden: !loading }) }
-					>
-						<div className="progress-bar"></div>
-					</div>
+		<div className="create-parent-container">
+			<div className="title">
+				{ item.attachmentFilename }
+			</div>
+			<p className="intro" data-l10n-id="create-parent-intro"/>
+			<div className="body">
+				<input
+					id="parent-item-identifier"
+					size="50"
+					autoFocus={true}
+					disabled={loading}
+					onChange={handleInput}
+				/>
+				<div
+					mode="undetermined"
+					className={cx('downloadProgress', { hidden: !loading })}
+				>
+					<div className="progress-bar"></div>
 				</div>
 			</div>
-		</IntlProvider>
+		</div>
 	);
 }
 
@@ -81,11 +80,6 @@ CreateParent.propTypes = {
 Zotero.CreateParent = memo(CreateParent);
 
 
-Zotero.CreateParent.destroy = (domEl) => {
-	ReactDOM.unmountComponentAtNode(domEl);
-};
-
-
-Zotero.CreateParent.render = (domEl, props) => {
-	ReactDOM.render(<CreateParent { ...props } />, domEl);
+Zotero.CreateParent.render = (root, props) => {
+	root.render(<CreateParent { ...props } />);
 };

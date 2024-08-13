@@ -10,20 +10,39 @@
 		"AddonManager": false,
 		"Cc": false,
 		"Ci": false,
+		"ChromeUtils": false,
 		"Components": false,
 		"ConcurrentCaller": false,
 		"ctypes": false,
 		"OS": false,
+		"MozXULElement": false,
 		"PluralForm": false,
 		"Services": false,
+		"windowUtils": false,
 		"XPCOMUtils": false,
-		"XRegExp": false
+		"XRegExp": false,
+		"XULElement": false,
+		"XULElementBase": false,
+		"ItemPaneSectionElementBase": false,
+		"Cu": false,
+		"ChromeWorker": false,
+		"Localization": false,
+		"L10nFileSource": false,
+		"L10nRegistry": false,
+		"ZoteroPane_Local": false,
+		"ZoteroPane": false,
+		"Zotero_Tabs": false,
+		"ZoteroContextPane": false,
+		"IOUtils": false,
+		"NetUtil": false,
+		"FileUtils": false,
+		"globalThis": false
 	},
 	"extends": [
 		"@zotero",
 		"plugin:react/recommended"
 	],
-	"parser": "babel-eslint",
+	"parser": "@babel/eslint-parser",
 	"parserOptions": {
 		"ecmaVersion": 2018,
 		"ecmaFeatures": {
@@ -32,11 +51,12 @@
 		"sourceType": "module"
 	},
 	"plugins": [
-		"react"
+		"react",
+		"@babel"
 	],
 	"settings": {
 		"react": {
-			"version": "16.8"
+			"version": "17.0"
 		}
 	},
 	"rules": {}

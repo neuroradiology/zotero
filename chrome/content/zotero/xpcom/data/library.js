@@ -38,7 +38,7 @@ Zotero.Library = function(params = {}) {
 	this._hasSearches = null;
 	this._storageDownloadNeeded = false;
 	
-	Zotero.Utilities.assignProps(
+	Zotero.Utilities.Internal.assignProps(
 		this,
 		params,
 		[
@@ -55,7 +55,7 @@ Zotero.Library = function(params = {}) {
 	// Return a proxy so that we can disable the object once it's deleted
 	return new Proxy(this, {
 		get: function(obj, prop) {
-			if (obj._disabled && !(prop == 'libraryID' || prop == 'id')) {
+			if (obj._disabled && !(prop == 'libraryID' || prop == 'id' || prop == 'name')) {
 				throw new Error("Library (" + obj.libraryID + ") has been disabled");
 			}
 			return obj[prop];
@@ -136,7 +136,7 @@ Zotero.defineProperty(Zotero.Library.prototype, 'libraryTypeID', {
 	get: function () {
 		switch (this._libraryType) {
 		case 'user':
-			return Zotero.Users.getCurrentUserID();
+			return Zotero.Users.getCurrentUserID() || 0;
 		
 		case 'group':
 			return Zotero.Groups.getGroupIDFromLibraryID(this._libraryID);
@@ -144,6 +144,12 @@ Zotero.defineProperty(Zotero.Library.prototype, 'libraryTypeID', {
 		default:
 			throw new Error(`Tried to get library type id for ${this._libraryType} library`);
 		}
+	}
+});
+
+Zotero.defineProperty(Zotero.Library.prototype, 'isGroup', {
+	get: function () {
+		return this.libraryType == 'group';
 	}
 });
 
@@ -176,13 +182,13 @@ Zotero.defineProperty(Zotero.Library.prototype, 'name', {
 
 Zotero.defineProperty(Zotero.Library.prototype, 'treeViewID', {
 	get: function () {
-		return "L" + this._libraryID
+		return "L" + this._libraryID;
 	}
 });
 
 Zotero.defineProperty(Zotero.Library.prototype, 'treeViewImage', {
 	get: function () {
-		return "chrome://zotero/skin/treesource-library" + Zotero.hiDPISuffix + ".png";
+		return "chrome://zotero/skin/16/universal/library.svg";
 	}
 });
 
@@ -456,9 +462,9 @@ Zotero.Library.prototype.save = Zotero.Promise.coroutine(function* (options) {
 		
 		// Create transaction
 		if (env.options.tx) {
-			return Zotero.DB.executeTransaction(function* () {
-				yield this._saveData(env);
-				yield this._finalizeSave(env);
+			return Zotero.DB.executeTransaction(async function () {
+				await this._saveData(env);
+				await this._finalizeSave(env);
 			}.bind(this), env.transactionOptions);
 		}
 		// Use existing transaction
@@ -592,9 +598,9 @@ Zotero.Library.prototype.erase = Zotero.Promise.coroutine(function* (options) {
 		env.notifierData = {};
 		
 		if (env.options.tx) {
-			yield Zotero.DB.executeTransaction(function* () {
-				yield this._eraseData(env);
-				yield this._finalizeErase(env);
+			yield Zotero.DB.executeTransaction(async function () {
+				await this._eraseData(env);
+				await this._finalizeErase(env);
 			}.bind(this), env.transactionOptions);
 		} else {
 			Zotero.DB.requireTransaction();
@@ -671,6 +677,25 @@ Zotero.Library.prototype._finalizeErase = Zotero.Promise.coroutine(function* (en
 	
 	this._disabled = true;
 });
+
+Zotero.Library.prototype.toResponseJSON = function (options = {}) {
+	let uri = Zotero.URI.getLibraryURI(this.libraryID);
+	return {
+		type: this.libraryType,
+		id: this.libraryTypeID,
+		name: this.name,
+		links: {
+			self: {
+				href: Zotero.URI.toAPIURL(uri, options.apiURL),
+				type: 'application/json'
+			},
+			alternate: Zotero.Users.getCurrentUserID() ? {
+				href: Zotero.URI.toWebURL(uri),
+				type: 'text/html'
+			} : undefined
+		}
+	};
+};
 
 Zotero.Library.prototype.hasCollections = function () {
 	if (this._hasCollections === null) {

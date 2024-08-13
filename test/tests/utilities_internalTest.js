@@ -44,6 +44,24 @@ describe("Zotero.Utilities.Internal", function () {
 			
 			yield OS.File.remove(file);
 		});
+		
+		it("should return false for a nonexistent file", async function () {
+			var tmpDir = Zotero.getTempDirectory().path;
+			var file = OS.Path.join(tmpDir, 'nonexistent-asawefaweoihafa');
+			await assert.eventually.isFalse(ZUI.md5Async(file));
+		});
+		
+		it("should return hash for an empty file", async function () {
+			const emptyHash = 'd41d8cd98f00b204e9800998ecf8427e';
+			
+			var tmpDir = Zotero.getTempDirectory().path;
+			var file = OS.Path.join(tmpDir, 'empty-file');
+			await IOUtils.write(file, new Uint8Array());
+			
+			await assert.eventually.equal(ZUI.md5Async(file), emptyHash);
+			
+			await IOUtils.remove(file);
+		});
 	})
 	
 	
@@ -67,6 +85,24 @@ describe("Zotero.Utilities.Internal", function () {
 		});
 	});
 	
+	
+	describe("#containsEmoji()", function () {
+		it("should return true for text with an emoji", function () {
+			assert.isTrue(Zotero.Utilities.Internal.containsEmoji("🐩 Hello 🐩"));
+		});
+		
+		it("should return true for text with an emoji with text representation that use Variation Selector-16", function () {
+			assert.isTrue(Zotero.Utilities.Internal.containsEmoji("This is a ⭐️"));
+		});
+		
+		it("should return true for text with an emoji made up of multiple characters with ZWJ", function () {
+			assert.isTrue(Zotero.Utilities.Internal.containsEmoji("I am a 👨‍🌾"));
+		});
+		
+		it("should return false for integer", function () {
+			assert.isFalse(Zotero.Utilities.Internal.containsEmoji("0"));
+		});
+	});
 	
 	describe("#delayGenerator", function () {
 		var spy;
@@ -123,11 +159,22 @@ describe("Zotero.Utilities.Internal", function () {
 	
 	
 	describe("#extractExtraFields()", function () {
-		it("should ignore 'type: note' and 'type: attachment'", function () {
-			var str = 'type: note';
-			var { itemType, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
-			assert.isNull(itemType);
-			assert.equal(extra, 'type: note');
+		it("should ignore 'Type: note', 'Type: attachment', and 'Type: annotation'", function () {
+			for (let type of ['note', 'attachment', 'annotation']) {
+				let str = `Type: ${type}`;
+				let { itemType, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+				assert.isNull(itemType, type);
+				assert.equal(extra, `Type: ${type}`, type);
+			}
+		});
+		
+		it("should ignore numeric values for Type", function () {
+			for (let type of ['3']) {
+				let str = `Type: ${type}`;
+				let { itemType, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+				assert.isNull(itemType, type);
+				assert.equal(extra, `Type: ${type}`, type);
+			}
 		});
 		
 		it("should use the first mapped Zotero type for a CSL type", function () {
@@ -281,14 +328,6 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.equal(fields.size, 0);
 			assert.strictEqual(extra, str);
 		});
-		
-		it("should ignore both Event Place and Publisher Place (temporary)", function () {
-			var str = "Event Place: Foo\nPublisher Place: Bar";
-			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
-			Zotero.debug([...fields.entries()]);
-			assert.equal(fields.size, 0);
-			assert.equal(extra, "Event Place: Foo\nPublisher Place: Bar");
-		});
 	});
 	
 	describe("#combineExtraFields", function () {
@@ -382,13 +421,22 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.propertyVal(identifiers[2], "arXiv", "hep-ex/9809001");
 			assert.propertyVal(identifiers[3], "arXiv", "math.GT/0309135");
 		});
+
+		it("should extract ADS bibcodes", async function () {
+			var identifiers = ZUI.extractIdentifiers("9 2021wfc..rept....8D, 2022MSSP..16208010Y.");
+			assert.lengthOf(identifiers, 2);
+			assert.lengthOf(Object.keys(identifiers[0]), 1);
+			assert.lengthOf(Object.keys(identifiers[1]), 1);
+			assert.propertyVal(identifiers[0], "adsBibcode", "2021wfc..rept....8D");
+			assert.propertyVal(identifiers[1], "adsBibcode", "2022MSSP..16208010Y");
+		});
 	});
 	
 	describe("#resolveLocale()", function () {
 		var availableLocales;
 		
 		before(function () {
-			availableLocales = Services.locale.getAvailableLocales();
+			availableLocales = Services.locale.availableLocales;
 		});
 		
 		function resolve(locale) {
@@ -468,4 +516,226 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.equal(Zotero.Utilities.Internal.getNextName('Name 2', existing, true), 'Name 4');
 		});
 	});
-})
+
+	describe("#parseURL()", function () {
+		var f;
+		before(() => {
+			f = Zotero.Utilities.Internal.parseURL;
+		});
+
+		describe("#fileName", function () {
+			it("should contain filename", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileName', 'def.html');
+			});
+
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileName', '');
+			});
+		});
+
+		describe("#fileExtension", function () {
+			it("should contain extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileExtension', 'html');
+			});
+
+			it("should be empty if no extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def'), 'fileExtension', '');
+			});
+
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileExtension', '');
+			});
+		});
+
+		describe("#fileBaseName", function () {
+			it("should contain base name", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileBaseName', 'def');
+			});
+
+			it("should equal filename if no extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def'), 'fileBaseName', 'def');
+			});
+
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileBaseName', '');
+			});
+		});
+	});
+
+	describe("#generateHTMLFromTemplate()", function () {
+		it("should support variables with attributes", function () {
+			var vars = {
+				v1: '1',
+				v2: pars => `${pars.a1 ?? ''}${pars.a2 ?? ''}${pars.a3 ?? ''}`,
+				v3: () => '',
+				v5: () => 'something',
+				ar1: [],
+				ar2: [1, 2]
+			};
+			var template = `{{ v1}}{{v2 a1= "1"  a2 =' 2' a3 = "3 "}}{{v3}}{{v4}}{{if ar1}}ar1{{endif}}{{if ar2}}{{ar2}}{{endif}}{{if v5}}yes{{endif}}{{if v3}}no1{{endif}}{{if v2}}{{v2}}{{endif}}`;
+			var html = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(html, '11 23 1,2yes');
+		});
+
+		it("should support empty string as attribute value and correctly render returned false-ish values", function () {
+			const vars = {
+				length: ({ string }) => string.length.toString(),
+			};
+			const template = `"" has a length of {{ length string="" }} and "hello" has a length of {{ length string="hello" }}`;
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out, '"" has a length of 0 and "hello" has a length of 5');
+		});
+
+		it("should support functions in comparison statements", function () {
+			const vars = {
+				sum: ({ a, b }) => (parseInt(a) + parseInt(b)).toString(),
+				fooBar: ({ isFoo }) => (isFoo === 'true' ? 'foo' : 'bar'),
+				false: 'false',
+				twoWords: 'two words',
+				onlyOne: 'actually == 1'
+			};
+			const template = `{{if {{ sum a="1" b="2" }} == "3"}}1 + 2 = {{sum a="1" b="2"}}{{else}}no speak math{{endif}}`;
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out, '1 + 2 = 3');
+
+			const template2 = '{{if false != "false"}}no{{elseif false == "false"}}yes{{else}}no{{endif}}';
+			const out2 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template2, vars);
+			assert.equal(out2, 'yes');
+
+			const template3 = '{{ if twoWords == "two words" }}yes{{else}}no{{endif}}';
+			const out3 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template3, vars);
+			assert.equal(out3, 'yes');
+
+			const template4 = '{{ if onlyOne == \'actually == 1\' }}yes{{else}}no{{endif}}';
+			const out4 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template4, vars);
+			assert.equal(out4, 'yes');
+
+			const template5 = '{{ if "3" == {{ sum a="1" b="2" }} }}yes{{else}}no{{endif}}';
+			const out5 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template5, vars);
+			assert.equal(out5, 'yes');
+
+			const template6 = '{{ if {{ sum a="1" b="2" }} }}yes{{else}}no{{endif}}';
+			const out6 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template6, vars);
+			assert.equal(out6, 'yes');
+
+			const template7 = '{{ if {{ twoWords }} }}yes{{else}}no{{endif}}';
+			const out7 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template7, vars);
+			assert.equal(out7, 'yes');
+
+			const template8 = '{{ if twoWords }}yes{{else}}no{{endif}}';
+			const out8 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template8, vars);
+			assert.equal(out8, 'yes');
+
+			const template9 = '{{ if missing }}no{{else}}yes{{endif}}';
+			const out9 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template9, vars);
+			assert.equal(out9, 'yes');
+
+			const template10 = '{{ if {{ missing foo="bar" }} }}no{{else}}yes{{endif}}';
+			const out10 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template10, vars);
+			assert.equal(out10, 'yes');
+
+			const template11 = '{{ if {{ missing foo="bar" }} == "" }}yes{{else}}no{{endif}}';
+			const out11 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template11, vars);
+			assert.equal(out11, 'yes');
+
+			const template12 = '{{ if fooBar == "bar" }}yes{{else}}no{{endif}}';
+			const out12 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template12, vars);
+			assert.equal(out12, 'yes');
+
+			const template13 = '{{ if {{ fooBar }} == "bar" }}yes{{else}}no{{endif}}';
+			const out13 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template13, vars);
+			assert.equal(out13, 'yes');
+
+			const template14 = `{{if {{ sum a="1" b="2" }}=="3"}}1 + 2 = {{sum a="1" b="2"}}{{else}}no{{endif}}`;
+			const out14 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template14, vars);
+			assert.equal(out14, '1 + 2 = 3');
+			
+			const template15 = `{{if "two words"==twoWords}}yes{{else}}no{{endif}}`;
+			const out15 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template15, vars);
+			assert.equal(out15, 'yes');
+		});
+
+		it("should accept hyphen-case variables and attributes", function () {
+			const vars = {
+				fooBar: ({ isFoo }) => (isFoo === 'true' ? 'foo' : 'bar'),
+			};
+			const template = '{{ foo-bar is-foo="true" }}{{ if {{ foo-bar is-foo="false" }} == "bar" }}{{ foo-bar is-foo="false" }}{{ endif }}';
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out, 'foobar');
+		});
+
+		it("should work with a condition in the middle", function () {
+			const vars = {
+				v1: '1',
+			};
+			const template = 'test {{ if v1 == "1" }}yes{{ else }}no{{ endif }} foobar';
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out, 'test yes foobar');
+		});
+
+		it("missing identifiers are evaluted as empty string", function () {
+			const vars = {
+				foo: 'foo',
+			};
+			const template = '{{bar}}{{ if foo == "" }}no{{elseif foo}}{{foo}}{{else}}no{{endif}}';
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out, 'foo');
+
+			const template2 = 'test: {{ if bar == "" }}yes{{else}}no{{endif}}';
+			const out2 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template2, vars);
+			assert.equal(out2, 'test: yes');
+		});
+
+		it("should preserve whitespace outside of brackets", function () {
+			const template = ' starts }} with {{ whitespace  	{"test"}  ==  \'foobar\'   ';
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, {});
+			assert.equal(out, template);
+			const vars = {
+				space: ' ',
+				spaceFn: () => ' ',
+			};
+
+			const whitespace = ' {{if spaceFn}}{{else}}  {{endif}}{{space}} {{space-fn}}';
+			const out2 = Zotero.Utilities.Internal.generateHTMLFromTemplate(whitespace, vars);
+			assert.equal(out2, '    ');
+		});
+
+		it("should accept array values in logic statements", function () {
+			let someTags = ['foo', 'bar'];
+			const vars = {
+				tags: ({ join }) => (join ? someTags.join(join) : someTags),
+			};
+			const template = '{{ if tags }}#{{ tags join=" #" }}{{else}}no tags{{endif}}';
+			const out = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out, '#foo #bar');
+
+			someTags = [];
+			const out2 = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(out2, 'no tags');
+		});
+
+
+		it("should throw if function returns anything else than a string (or an array which is always joined into string)", function () {
+			const vars = {
+				number: () => 1,
+				logic: () => true,
+				array: () => [],
+				fn: () => 1,
+			};
+			assert.throws(() => Zotero.Utilities.Internal.generateHTMLFromTemplate('{{ number }}', vars), /Identifier "number" does not evaluate to a string/);
+			assert.throws(() => Zotero.Utilities.Internal.generateHTMLFromTemplate('{{ logic }}', vars), /Identifier "logic" does not evaluate to a string/);
+			assert.throws(() => Zotero.Utilities.Internal.generateHTMLFromTemplate('{{ if fn }}no{{endif}}', vars), /Identifier "fn" does not evaluate to a string/);
+			assert.throws(() => Zotero.Utilities.Internal.generateHTMLFromTemplate('{{ if {{ fn foo="bar" }} }}no{{endif}}', vars), /Identifier "fn" does not evaluate to a string/);
+		});
+
+		it("should support nested 'if' statements", function () {
+			var vars = {
+				v1: '1',
+				v2: 'H',
+			};
+			var template = `{{if v1 == '1'}}yes1{{if x}}no{{elseif v2  == "h" }}yes2{{endif}}{{elseif v2 == "2"}}no{{else}}no{{endif}} {{if v2 == "1"}}not{{elseif x}}not{{else}}yes3{{ endif}}`;
+			var html = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(html, 'yes1yes2 yes3');
+		});
+	});
+});

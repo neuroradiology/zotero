@@ -7,8 +7,7 @@
 <!ENTITY hideOtherAppsCmdMac.commandkey "ا">
 <!ENTITY showAllAppsCmdMac.label "عرض الكل">
 <!ENTITY quitApplicationCmdMac.label "خروج من زوتيرو">
-<!ENTITY quitApplicationCmdMac.key "خ">
-
+<!ENTITY quitApplicationCmdMac.key "Q">
 
 <!ENTITY fileMenu.label "ملف">
 <!ENTITY fileMenu.accesskey "F">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "إنهاء">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "نسخ الاقتباس">
 <!ENTITY copyBibliographyCmd.label "نسخ قائمة المراجع">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "تغيير اتجاه الصفحة">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Go">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "عرض">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "تخطيط">
 <!ENTITY standardView.label "عرض قياسي">
 <!ENTITY stackedView.label "عرض مرصوص">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "إظهار العناصر من المجموعات الفرعية">
 <!ENTITY fontSize.label "حجم الخط">
 <!ENTITY noteFontSize.label "حجم خط الملاحظات">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "أدوات">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "ملحقات">
 <!ENTITY developer.label "المطور">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "تصغير">
 <!ENTITY bringAllToFront.label "أحضر الكل للأمام">
-<!ENTITY zoomWindow.label "تقريب">
-<!ENTITY windowMenu.label "نافذة">
-
 
 <!ENTITY helpMenu.label "مساعدة">
 <!ENTITY helpMenu.accesskey "م">
-
-
 <!ENTITY helpMenuWin.label "مساعدة">
 <!ENTITY helpMenuWin.accesskey "م">
 <!ENTITY helpMac.commandkey "؟">

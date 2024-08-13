@@ -1,6 +1,9 @@
 Zotero.Locale = {
 	/**
-	 * Keep this up to date with chrome.manifest
+	 * Keep this up to date with app/assets/multilocale.txt,
+	 * scripts/dictionaries/build-dictionaries, and possibly chrome.manifest
+	 *
+	 * Names from https://addons.mozilla.org/en-US/firefox/language-tools/
 	 */
 	availableLocales: Object.freeze({
 		'ar': 'عربي',
@@ -10,11 +13,15 @@ Zotero.Locale = {
 		'cs-CZ': 'Čeština',
 		'da-DK': 'Dansk',
 		'de': 'Deutsch',
+		'el-GR': 'Ελληνικά',
+		'en-AU': 'English (Australian)',
 		'en-CA': 'English (Canada)',
 		'en-US': 'English',
 		'en-GB': 'English (UK)',
+		'en-NZ': 'English (New Zealand)',
 		'es-ES': 'Español',
 		'et-EE': 'Eesti keel',
+		'eu-ES': 'Euskara',
 		'fa': 'فارسی',
 		'fi-FI': 'suomi',
 		'fr-FR': 'Français',
@@ -38,6 +45,7 @@ Zotero.Locale = {
 		'sl-SI': 'Slovenščina',
 		'sr-RS': 'Српски',
 		'sv-SE': 'Svenska',
+		'ta': 'தமிழ்',
 		'th-TH': 'ไทย',
 		'tr-TR': 'Türkçe',
 		'uk-UA': 'Українська',

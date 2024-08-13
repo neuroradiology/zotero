@@ -4,13 +4,9 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 	//
 	// Setup
 	//
-	Components.utils.import("resource://zotero-unit/httpd.js");
-	
 	var apiKey = Zotero.Utilities.randomString(24);
-	var port = 16213;
-	var baseURL = `http://localhost:${port}/`;
 	
-	var win, server, requestCount;
+	var win, server, requestCount, httpd, baseURL;
 	var responses = {};
 	
 	function setResponse(response) {
@@ -45,22 +41,23 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 	//
 	// Tests
 	//
-	beforeEach(function* () {
-		yield resetDB({
+	beforeEach(async function () {
+		await resetDB({
 			thisArg: this,
 			skipBundledFiles: true
 		});
-		win = yield loadZoteroPane();
+		win = await loadZoteroPane();
 		
 		Zotero.HTTP.mock = sinon.FakeXMLHttpRequest;
 		server = sinon.fakeServer.create();
 		server.autoRespond = true;
 		
-		this.httpd = new HttpServer();
-		this.httpd.start(port);
+		var port;
+		({ httpd, port } = await startHTTPServer());
+		baseURL = `http://localhost:${port}/`;
 		
-		yield Zotero.Users.setCurrentUserID(1);
-		yield Zotero.Users.setCurrentUsername("testuser");
+		await Zotero.Users.setCurrentUserID(1);
+		await Zotero.Users.setCurrentUsername("testuser");
 		
 		Zotero.Sync.Storage.Local.setModeForLibrary(Zotero.Libraries.userLibraryID, 'zfs');
 		
@@ -74,9 +71,10 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 	
 	var setup = Zotero.Promise.coroutine(function* (options = {}) {
 		Components.utils.import("resource://zotero/concurrentCaller.js");
+		var stopOnError = options.stopOnError !== undefined ? options.stopOnError : true;
 		var caller = new ConcurrentCaller(1);
 		caller.setLogger(msg => Zotero.debug(msg));
-		caller.stopOnError = true;
+		caller.stopOnError = stopOnError;
 		
 		Components.utils.import("resource://zotero/config.js");
 		var client = new Zotero.Sync.APIClient({
@@ -93,7 +91,8 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 				apiClient: client,
 				maxS3ConsecutiveFailures: 2
 			}),
-			stopOnError: true
+			background: options.background,
+			stopOnError
 		});
 		
 		return { engine, client, caller };
@@ -101,7 +100,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 	
 	afterEach(function* () {
 		var defer = new Zotero.Promise.defer();
-		this.httpd.stop(() => defer.resolve());
+		httpd.stop(() => defer.resolve());
 		yield defer.promise;
 		win.close();
 	})
@@ -146,7 +145,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			item.attachmentSyncState = "to_download";
 			yield item.saveTx();
 			
-			this.httpd.registerPathHandler(
+			httpd.registerPathHandler(
 				`/users/1/items/${item.key}/file`,
 				{
 					handle: function (request, response) {
@@ -212,7 +211,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			item.attachmentSyncState = "to_download";
 			yield item.saveTx();
 			
-			this.httpd.registerPathHandler(
+			httpd.registerPathHandler(
 				`/users/1/items/${item.key}/file`,
 				{
 					handle: function (request, response) {
@@ -249,7 +248,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			var md5 = Zotero.Utilities.Internal.md5(text)
 			
 			var s3Path = `pretend-s3/${item.key}`;
-			this.httpd.registerPathHandler(
+			httpd.registerPathHandler(
 				`/users/1/items/${item.key}/file`,
 				{
 					handle: function (request, response) {
@@ -270,7 +269,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 					}
 				}
 			);
-			this.httpd.registerPathHandler(
+			httpd.registerPathHandler(
 				"/" + s3Path,
 				{
 					handle: function (request, response) {
@@ -291,6 +290,61 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			assert.isFalse(library.storageDownloadNeeded);
 			assert.equal(library.storageVersion, library.libraryVersion);
 		})
+		
+		it("should notify when file is downloaded", async function () {
+			var { engine, client, caller } = await setup();
+			
+			var library = Zotero.Libraries.userLibrary;
+			library.libraryVersion = 5;
+			await library.saveTx();
+			library.storageDownloadNeeded = true;
+			
+			var item = new Zotero.Item("attachment");
+			item.attachmentLinkMode = 'imported_file';
+			item.attachmentPath = 'storage:test.txt';
+			var text = Zotero.Utilities.randomString();
+			item.attachmentSyncState = "to_download";
+			await item.saveTx();
+			
+			var mtime = "1441252524905";
+			var md5 = Zotero.Utilities.Internal.md5(text);
+			
+			var s3Path = `pretend-s3/${item.key}`;
+			httpd.registerPathHandler(
+				`/users/1/items/${item.key}/file`,
+				{
+					handle: function (request, response) {
+						response.setStatusLine(null, 302, "Found");
+						response.setHeader("Zotero-File-Modification-Time", mtime, false);
+						response.setHeader("Zotero-File-MD5", md5, false);
+						response.setHeader("Zotero-File-Compressed", "No", false);
+						response.setHeader("Location", baseURL + s3Path, false);
+					}
+				}
+			);
+			httpd.registerPathHandler(
+				"/" + s3Path,
+				{
+					handle: function (request, response) {
+						response.setStatusLine(null, 200, "OK");
+						response.write(text);
+					}
+				}
+			);
+
+			var deferred = Zotero.Promise.defer();
+			var observerID = Zotero.Notifier.registerObserver({
+				notify: async function (event, type, ids, extraData) {
+					if (event == 'download' && ids[0] == item.id && await item.getFilePathAsync()) {
+						deferred.resolve();
+					}
+				}
+			}, 'file', 'testFileDownload');
+			
+			await engine.start();
+			await deferred.promise;
+			Zotero.Notifier.unregisterObserver(observerID);
+		});
 		
 		it("should upload new files", function* () {
 			var { engine, client, caller } = yield setup();
@@ -458,15 +512,9 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 					var reader = new FileReader();
 					reader.addEventListener("loadend", Zotero.Promise.coroutine(function* () {
 						try {
-							
-							let file = yield OS.File.open(tmpZipPath, {
-								create: true
-							});
-							
-							var contents = new Uint8Array(reader.result);
+							let contents = new Uint8Array(reader.result);
 							contents = contents.slice(prefix2.length, suffix2.length * -1);
-							yield file.write(contents);
-							yield file.close();
+							yield IOUtils.write(tmpZipPath, contents);
 							
 							var zr = Components.classes["@mozilla.org/libjar/zip-reader;1"]
 								.createInstance(Components.interfaces.nsIZipReader);
@@ -630,7 +678,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			var md5 = Zotero.Utilities.Internal.md5(file)
 			
 			var s3Path = `pretend-s3/${item.key}`;
-			this.httpd.registerPathHandler(
+			httpd.registerPathHandler(
 				`/users/1/items/${item.key}/file`,
 				{
 					handle: function (request, response) {
@@ -802,6 +850,75 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			var result = yield engine.start();
 			assert.equal(called, 4);
 		});
+		
+		
+		it("should stop uploading files on quota error", async function () {
+			var { engine, client, caller } = await setup({ stopOnError: false });
+			
+			var numItems = 4;
+			var items = [];
+			for (let i = 0; i < numItems; i++) {
+				let item = await importFileAttachment('test.png');
+				item.version = 5;
+				item.synced = true;
+				await item.saveTx();
+				items.push(item);
+			}
+			
+			var requests = 0;
+			server.respond(function (req) {
+				if (req.method == "POST"
+						&& req.url.startsWith(`${baseURL}users/1/items/`)
+						&& req.url.endsWith('/file')
+						&& req.requestBody.indexOf('upload=') == -1
+						&& req.requestHeaders["If-None-Match"] == "*") {
+					requests++;
+					req.respond(
+						413,
+						{
+							"Content-Type": "application/json",
+							"Last-Modified-Version": 10,
+							"Zotero-Storage-Usage": "300",
+							"Zotero-Storage-Quota": "300"
+						},
+						"File would exceed quota (299.7 + 0.5 > 300)"
+					);
+				}
+			})
+			
+			await engine.start();
+			assert.equal(requests, Zotero.Prefs.get('sync.storage.maxUploads'));
+			
+			Zotero.Sync.Storage.Local.storageRemainingForLibrary.delete(items[0].libraryID);
+		});
+		
+		
+		// If there was a quota error in a previous run and remaining storage was determined to be
+		// very low, stop further file uploads for a background sync even when we bail without an
+		// HTTP request. A manual sync clears the remaining-storage value.
+		it("should stop uploading files for background sync if no storage remaining after previous quota error", async function () {
+			var { engine, client, caller } = await setup({ background: true, stopOnError: false });
+			
+			var numItems = 4;
+			var items = [];
+			for (let i = 0; i < numItems; i++) {
+				let item = await importFileAttachment('test.png');
+				item.version = 5;
+				item.synced = true;
+				await item.saveTx();
+				items.push(item);
+			}
+			
+			Zotero.Sync.Storage.Local.storageRemainingForLibrary.set(items[0].libraryID, 0);
+			
+			var spy = sinon.spy(engine.controller, 'uploadFile');
+			await engine.start()
+			
+			assert.equal(spy.callCount, Zotero.Prefs.get('sync.storage.maxUploads'));
+			spy.restore();
+			
+			Zotero.Sync.Storage.Local.storageRemainingForLibrary.delete(items[0].libraryID);
+		});
 	})
 	
 	
@@ -830,7 +947,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			
 			var request = { name: item.libraryKey };
 			
-			var stub = sinon.stub(zfs, '_processUploadFile');
+			var stub = sinon.stub(zfs, '_processUploadFile').returns(Zotero.Promise.resolve());
 			await zfs.uploadFile(request);
 			
 			var zipFile = OS.Path.join(Zotero.getTempDirectory().path, item.key + '.zip');
@@ -1057,7 +1174,7 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 							"Zotero-Storage-Usage": "300",
 							"Zotero-Storage-Quota": "300"
 						},
-						"File would exceed quota (299.7 + 0.5 &gt; 300)"
+						"File would exceed quota (299.7 + 0.5 > 300)"
 					);
 				}
 			})
@@ -1073,7 +1190,8 @@ describe("Zotero.Sync.Storage.Mode.ZFS", function () {
 			
 			// Try again
 			var e = yield getPromiseError(zfs.uploadFile({
-				name: item.libraryKey
+				name: item.libraryKey,
+				engine
 			}));
 			assert.ok(e);
 			assert.equal(e.errorType, 'warning');

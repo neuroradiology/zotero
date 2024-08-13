@@ -23,12 +23,15 @@
 	***** END LICENSE BLOCK *****
 */
 
+// Run in RunJS:
+// window.open('chrome://zotero/content/tools/data_generator.html', '_blank', 'chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar')
+
 const React = require('react');
 const ReactDOM = require('react-dom');
 
 function init() {
 	let div = document.querySelector('div');
-	ReactDOM.render(<DataGeneratorForm/>, div);
+	ReactDOM.createRoot(div).render(<DataGeneratorForm/>);
 }
 
 class DataGeneratorForm extends React.Component {
@@ -39,6 +42,10 @@ class DataGeneratorForm extends React.Component {
 			chunkSize: 50,
 			numCollections: 1000
 		};
+	}
+
+	componentDidMount() {
+		window.sizeToContent();
 	}
 
 	render() {

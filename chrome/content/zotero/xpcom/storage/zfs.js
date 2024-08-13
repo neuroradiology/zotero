@@ -66,10 +66,7 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 		// saveURI() below appears not to create empty files for Content-Length: 0,
 		// so we create one here just in case, which also lets us check file access
 		try {
-			let file = yield OS.File.open(destPath, {
-				truncate: true
-			});
-			file.close();
+			yield IOUtils.write(destPath, new Uint8Array());
 		}
 		catch (e) {
 			Zotero.File.checkFileAccessError(e, destPath, 'create');
@@ -154,6 +151,8 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 					if (status != 200) {
 						if (status == 404) {
 							Zotero.debug("Remote file not found for item " + item.libraryKey);
+							// Don't refresh item pane rows when nothing happened
+							request.skipProgressBarUpdate = true;
 							deferred.resolve(new Zotero.Sync.Storage.Result);
 							return;
 						}
@@ -284,6 +283,11 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 				}
 			}
 			if (skip) {
+				// Stop trying to upload files if there's very little storage remaining
+				if (request.engine && remaining < Zotero.Sync.Storage.Local.STORAGE_REMAINING_MINIMUM) {
+					Zotero.debug(`${remaining} MB remaining in storage -- skipping further uploads`);
+					request.engine.stop('upload');
+				}
 				throw yield this._getQuotaError(item);
 			}
 		}
@@ -294,7 +298,22 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 				return new Zotero.Sync.Storage.Result;
 			}
 		}
-		return this._processUploadFile(request);
+		
+		try {
+			return yield this._processUploadFile(request);
+		}
+		catch (e) {
+			// Stop trying to upload files if we hit a quota error and there's very little space
+			// remaining. If there's more space, we keep going, because it might just be a big file.
+			if (request.engine && e.error == Zotero.Error.ERROR_ZFS_OVER_QUOTA) {
+				let remaining = Zotero.Sync.Storage.Local.storageRemainingForLibrary.get(item.libraryID);
+				if (remaining < Zotero.Sync.Storage.Local.STORAGE_REMAINING_MINIMUM) {
+					Zotero.debug(`${remaining} MB remaining in storage -- skipping further uploads`);
+					request.engine.stop('upload');
+				}
+			}
+			throw e;
+		}
 	}),
 	
 	
@@ -345,7 +364,7 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 		var funcName = "Zotero.Sync.Storage.ZFS._getFileUploadParameters()";
 		
 		var path = item.getFilePath();
-		var filename = OS.Path.basename(path);
+		var filename = PathUtils.filename(path);
 		var zip = yield this._isZipUpload(item);
 		if (zip) {
 			var uploadPath = OS.Path.join(Zotero.getTempDirectory().path, item.key + '.zip');
@@ -408,7 +427,7 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 		};
 		if (zip) {
 			params.zipMD5 = yield Zotero.Utilities.Internal.md5Async(uploadPath);
-			params.zipFilename = OS.Path.basename(uploadPath);
+			params.zipFilename = PathUtils.filename(uploadPath);
 		}
 		var body = [];
 		for (let i in params) {
@@ -545,14 +564,14 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 			
 			// Get updated item metadata
 			let library = Zotero.Libraries.get(item.libraryID);
-			let json = yield this.apiClient.downloadObjects(
+			let { json, error } = yield this.apiClient.downloadObjects(
 				library.libraryType,
 				library.libraryTypeID,
 				'item',
 				[item.key]
 			)[0];
-			if (!Array.isArray(json)) {
-				Zotero.logError(json);
+			if (error) {
+				Zotero.logError(error);
 				throw new Error(Zotero.Sync.Storage.defaultError);
 			}
 			if (json.length > 1) {
@@ -607,7 +626,7 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 			}
 			
 			// Store the remaining space so that we can skip files bigger than that until the next
-			// manual sync
+			// manual sync. Values are in megabytes.
 			let usage = req.getResponseHeader('Zotero-Storage-Usage');
 			let quota = req.getResponseHeader('Zotero-Storage-Quota');
 			Zotero.Sync.Storage.Local.storageRemainingForLibrary.set(item.libraryID, quota - usage);
@@ -793,15 +812,15 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 	 */
 	_updateItemFileInfo: Zotero.Promise.coroutine(function* (item, params) {
 		// Mark as in-sync
-		yield Zotero.DB.executeTransaction(function* () {
+		yield Zotero.DB.executeTransaction(async function () {
 				// Store file mod time and hash
 			item.attachmentSyncedModificationTime = params.mtime;
 			item.attachmentSyncedHash = params.md5;
 			item.attachmentSyncState = "in_sync";
-			yield item.save({ skipAll: true });
+			await item.save({ skipAll: true });
 			
 			// Update sync cache with new file metadata and version from server
-			var json = yield Zotero.Sync.Data.Local.getCacheObject(
+			var json = await Zotero.Sync.Data.Local.getCacheObject(
 				'item', item.libraryID, item.key, item.version
 			);
 			if (json) {
@@ -809,10 +828,10 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 				json.data.version = params.version;
 				json.data.mtime = params.mtime;
 				json.data.md5 = params.md5;
-				yield Zotero.Sync.Data.Local.saveCacheObject('item', item.libraryID, json);
+				await Zotero.Sync.Data.Local.saveCacheObject('item', item.libraryID, json);
 			}
 			// Update item with new version from server
-			yield Zotero.Items.updateVersion([item.id], params.version);
+			await Zotero.Items.updateVersion([item.id], params.version);
 			
 			// TODO: Can filename, contentType, and charset change the attachment item?
 		});
@@ -979,9 +998,9 @@ Zotero.Sync.Storage.Mode.ZFS.prototype = {
 				}
 				
 				if (same) {
-					yield Zotero.DB.executeTransaction(function* () {
-						yield Zotero.Sync.Storage.setSyncedModificationTime(item.id, fmtime);
-						yield Zotero.Sync.Storage.setSyncState(
+					yield Zotero.DB.executeTransaction(async function () {
+						await Zotero.Sync.Storage.setSyncedModificationTime(item.id, fmtime);
+						await Zotero.Sync.Storage.setSyncState(
 							item.id, Zotero.Sync.Storage.Local.SYNC_STATE_IN_SYNC
 						);
 					});

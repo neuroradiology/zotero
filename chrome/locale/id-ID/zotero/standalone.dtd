@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Berhentikan Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Berkas">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Simpan...">
@@ -23,19 +22,19 @@
 <!ENTITY closeCmd.label "Tutup">
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
-<!ENTITY manageAttachments.label "Manage Attachments">
-<!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
-<!ENTITY importCmd.label "Import…">
+<!ENTITY manageAttachments.label "Kelola Lampiran">
+<!ENTITY convertToStored.label "Konversi File Tertaut ke File Tersimpan...">
+<!ENTITY importCmd.label "Impor...">
 <!ENTITY importCmd.key "I">
-<!ENTITY importFromClipboardCmd.label "Import from Clipboard">
+<!ENTITY importFromClipboardCmd.label "Impor dari Clipboard">
 <!ENTITY quitApplicationCmdWin.label "Keluar">
 <!ENTITY quitApplicationCmdWin.accesskey "x">
 <!ENTITY quitApplicationCmd.label "Berhenti">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Kopi Sitasi">
 <!ENTITY copyBibliographyCmd.label "Kopi Bibliografi">
+<!ENTITY copyNoteCmd.label "Salin catatan">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Ubah Arah Halaman">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,38 +42,34 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Pergi">
+<!ENTITY goMenu.accesskey "G">
 
-<!ENTITY viewMenu.label "View">
-<!ENTITY layout.label "Layout">
-<!ENTITY standardView.label "Standard View">
-<!ENTITY stackedView.label "Stacked View">
-<!ENTITY collectionsPane.label "Collections Pane">
-<!ENTITY itemPane.label "Item Pane">
-<!ENTITY tagSelector.label "Tag Selector">
-<!ENTITY recursiveCollections.label "Show Items from Subcollections">
-<!ENTITY fontSize.label "Font Size">
-<!ENTITY noteFontSize.label "Note Font Size">
-
+<!ENTITY viewMenu.label "Lihat">
+<!ENTITY viewMenu.accesskey "V">
+<!ENTITY layout.label "Tata letak">
+<!ENTITY standardView.label "Tampilan Standar">
+<!ENTITY stackedView.label "Tampilan Bertumpuk">
+<!ENTITY collectionsPane.label "Panel Koleksi">
+<!ENTITY itemPane.label "Panel Item">
+<!ENTITY tagSelector.label "Pemilih Tag">
+<!ENTITY recursiveCollections.label "Tampilkan Item dari Subkoleksi">
+<!ENTITY fontSize.label "Ukuran font">
+<!ENTITY noteFontSize.label "Ukuran font catatan">
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Perkakas">
 <!ENTITY toolsMenu.accesskey "T">
-<!ENTITY installConnector.label "Install Browser Connector">
+<!ENTITY installConnector.label "Pasang Konektor Peramban">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Pengaya">
-<!ENTITY developer.label "Developer">
+<!ENTITY developer.label "Pengembang">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Kecilkan">
 <!ENTITY bringAllToFront.label "Bawa Semuanya ke Depan">
-<!ENTITY zoomWindow.label "Arahkan">
-<!ENTITY windowMenu.label "Jendela">
-
 
 <!ENTITY helpMenu.label "Bantuan">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Bantuan">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">
@@ -84,18 +79,18 @@
 <!ENTITY productHelp.accesskey "H">
 <!ENTITY helpTroubleshootingInfo.label "Informasi Penyelasaian Masalah">
 <!ENTITY helpTroubleshootingInfo.accesskey "T">
-<!ENTITY helpFeedbackPage.label "Discussion Forums">
+<!ENTITY helpFeedbackPage.label "Forum Diskusi">
 <!ENTITY helpFeedbackPage.accesskey "F">
 
-<!ENTITY helpReportErrors.label "Report Errors…">
+<!ENTITY helpReportErrors.label "Laporkan Kesalahan...">
 <!ENTITY helpReportErrors.accesskey "R">
 
-<!ENTITY debugOutputLogging.label "Debug Output Logging">
+<!ENTITY debugOutputLogging.label "Pencatatan Output Debug">
 <!ENTITY debugOutputLogging.accesskey "L">
-<!ENTITY debugOutputLogging.submit "Submit Output">
-<!ENTITY debugOutputLogging.view "View Output">
-<!ENTITY debugOutputLogging.clear "Clear Output">
-<!ENTITY debugOutputLogging.restartWithLoggingEnabled "Restart with Logging Enabled…">
+<!ENTITY debugOutputLogging.submit "Kirim Output">
+<!ENTITY debugOutputLogging.view "Lihat Output">
+<!ENTITY debugOutputLogging.clear "Bersihkan Output">
+<!ENTITY debugOutputLogging.restartWithLoggingEnabled "Mulai ulang dengan Pencatatan Diaktifkan...">
 
 <!ENTITY helpCheckForUpdates.label "Periksa Pemutakhiran">
 <!ENTITY helpCheckForUpdates.accesskey "U">

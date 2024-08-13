@@ -3,8 +3,8 @@
 describe("Create Bibliography Dialog", function () {
 	var win, zp;
 	
-	before(function* () {
-		win = yield loadZoteroPane();
+	before(async function () {
+		win = await loadZoteroPane();
 		zp = win.ZoteroPane;
 	});
 	
@@ -12,24 +12,21 @@ describe("Create Bibliography Dialog", function () {
 		win.close();
 	});
 	
-	it("should perform a search", function* () {
-		yield Zotero.Styles.init();
-		var item = yield createDataObject('item');
+	it("should open the Cite prefpane when Manage Styles… is clicked", async function () {
+		await Zotero.Styles.init();
+		var item = await createDataObject('item');
 		
 		var deferred = Zotero.Promise.defer();
 		var called = false;
-		waitForWindow("chrome://zotero/content/bibliography.xul", function (dialog) {
-			waitForWindow("chrome://zotero/content/preferences/preferences.xul", function (window) {
-				// Wait for pane switch
-				Zotero.Promise.coroutine(function* () {
+		waitForWindow("chrome://zotero/content/bibliography.xhtml", function (dialog) {
+			waitForWindow("chrome://zotero/content/preferences/preferences.xhtml", function (window) {
+				// Wait for switch to Cite pane
+				(async function () {
 					do {
 						Zotero.debug("Checking for pane");
-						yield Zotero.Promise.delay(5);
+						await Zotero.Promise.delay(5);
 					}
-					while (window.document.documentElement.currentPane.id != 'zotero-prefpane-cite');
-					let pane = window.document.documentElement.currentPane;
-					assert.equal(pane.getElementsByTagName('tabbox')[0].selectedTab.id, 'styles-tab');
-					assert.equal(pane.getElementsByTagName('tabbox')[0].selectedPanel.id, 'styles');
+					while (!window.document.querySelector('[value=zotero-prefpane-cite]').selected);
 					called = true;
 					window.close();
 					deferred.resolve();
@@ -37,8 +34,8 @@ describe("Create Bibliography Dialog", function () {
 			});
 			dialog.document.getElementById('manage-styles').click();
 		});
-		win.Zotero_File_Interface.bibliographyFromItems();
-		yield deferred.promise;
+		await win.Zotero_File_Interface.bibliographyFromItems();
+		await deferred.promise;
 		
 		assert.ok(called);
 	});

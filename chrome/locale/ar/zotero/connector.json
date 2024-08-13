@@ -5,14 +5,38 @@
   "general_done": {
     "message": "تم"
   },
+  "general_yes": {
+    "message": "نعم"
+  },
+  "general_no": {
+    "message": "لا"
+  },
   "general_tryAgain": {
     "message": "حاول مرة أخرى"
   },
   "general_warning": {
     "message": "تحذير"
   },
+  "general_ok": {
+    "message": "موافق"
+  },
   "general_cancel": {
     "message": "إلغاء"
+  },
+  "general_selectAll": {
+    "message": "تحديد الكل"
+  },
+  "general_deselectAll": {
+    "message": "إلغاء تحديد الكل"
+  },
+  "general_copyToClipboard": {
+    "message": "انسخ إلى الحافظة"
+  },
+  "itemType_note": {
+    "message": "ملاحظة"
+  },
+  "itemType_attachment": {
+    "message": "مرفق"
   },
   "progressWindow_savingTo": {
     "message": "الحفظ في"

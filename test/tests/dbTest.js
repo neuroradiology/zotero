@@ -73,7 +73,14 @@ describe("Zotero.DB", function() {
 			assert.lengthOf(rows, 2);
 			assert.equal(rows[0].a, 1);
 			assert.equal(rows[1].a, 3);
-		})
+		});
+		
+		it("should accept combination of numbered and unnumbered placeholders", async function () {
+			var rows = await Zotero.DB.queryAsync("SELECT a FROM " + tmpTable + " WHERE (a=?1 OR b=?1) OR b=?", [2, 4]);
+			assert.lengthOf(rows, 2);
+			assert.equal(rows[0].a, 1);
+			assert.equal(rows[1].a, 3);
+		});
 		
 		it("should accept a single placeholder within parentheses", function* () {
 			var rows = yield Zotero.DB.queryAsync("SELECT a FROM " + tmpTable + " WHERE b IN (?)", 2);
@@ -185,21 +192,21 @@ describe("Zotero.DB", function() {
 				reject2 = reject;
 			});
 			
-			Zotero.DB.executeTransaction(function* () {
-				yield Zotero.Promise.delay(250);
-				var num = yield Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
+			Zotero.DB.executeTransaction(async function () {
+				await Zotero.Promise.delay(250);
+				var num = await Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
 				assert.equal(num, 0);
-				yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
+				await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
 				assert.ok(Zotero.DB.inTransaction());
 			})
 			.then(resolve1)
 			.catch(reject1);
 			
-			Zotero.DB.executeTransaction(function* () {
-				var num = yield Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
+			Zotero.DB.executeTransaction(async function () {
+				var num = await Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
 				assert.equal(num, 1);
-				yield Zotero.Promise.delay(500);
-				yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (2)");
+				await Zotero.Promise.delay(500);
+				await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (2)");
 				assert.ok(Zotero.DB.inTransaction());
 			})
 			.then(resolve2)
@@ -224,30 +231,30 @@ describe("Zotero.DB", function() {
 			});
 			
 			// Start a transaction and have it delay
-			Zotero.DB.executeTransaction(function* () {
-				yield Zotero.Promise.delay(100);
-				var num = yield Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
+			Zotero.DB.executeTransaction(async function () {
+				await Zotero.Promise.delay(100);
+				var num = await Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
 				assert.equal(num, 0);
-				yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
+				await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
 				assert.ok(Zotero.DB.inTransaction());
 			})
 			.then(resolve1)
 			.catch(reject1);
 			
 			// Start two more transactions, which should wait on the first
-			Zotero.DB.executeTransaction(function* () {
-				var num = yield Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
+			Zotero.DB.executeTransaction(async function () {
+				var num = await Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
 				assert.equal(num, 1);
-				yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (2)");
+				await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (2)");
 				assert.ok(Zotero.DB.inTransaction());
 			})
 			.then(resolve2)
 			.catch(reject2);
 			
-			Zotero.DB.executeTransaction(function* () {
-				var num = yield Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
+			Zotero.DB.executeTransaction(async function () {
+				var num = await Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM " + tmpTable);
 				assert.equal(num, 2);
-				yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (3)");
+				await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (3)");
 				// But make sure the second queued transaction doesn't start at the same time,
 				// such that the first queued transaction gets closed while the second is still
 				// running
@@ -262,8 +269,8 @@ describe("Zotero.DB", function() {
 		it("should roll back on error", function* () {
 			yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
 			try {
-				yield Zotero.DB.executeTransaction(function* () {
-					yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (2)");
+				yield Zotero.DB.executeTransaction(async function () {
+					await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (2)");
 					throw 'Aborting transaction -- ignore';
 				});
 			}
@@ -283,8 +290,8 @@ describe("Zotero.DB", function() {
 			var callbackRan = false;
 			try {
 				yield Zotero.DB.executeTransaction(
-					function* () {
-						yield Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
+					async function () {
+						await Zotero.DB.queryAsync("INSERT INTO " + tmpTable + " VALUES (1)");
 						throw 'Aborting transaction -- ignore';
 					},
 					{
@@ -302,11 +309,18 @@ describe("Zotero.DB", function() {
 			yield Zotero.DB.queryAsync("DROP TABLE " + tmpTable);
 		});
 		
-		it("should time out on nested transactions", function* () {
+		it("should time out on nested transactions", async function () {
 			var e;
-			yield Zotero.DB.executeTransaction(function* () {
-				e = yield getPromiseError(
-					Zotero.DB.executeTransaction(function* () {}).timeout(250)
+			await Zotero.DB.executeTransaction(async function () {
+				e = await getPromiseError(
+					Promise.race([
+						Zotero.Promise.delay(250).then(() => {
+							var e = new Error;
+							e.name = "TimeoutError";
+							throw e;
+						}),
+						Zotero.DB.executeTransaction(async function () {})
+					])
 				);
 			});
 			assert.ok(e);
@@ -317,9 +331,9 @@ describe("Zotero.DB", function() {
 			var callback1Ran = false;
 			var callback2Ran = false;
 			try {
-				yield Zotero.DB.executeTransaction(function* () {
-					yield Zotero.DB.executeTransaction(
-						function* () {},
+				yield Zotero.DB.executeTransaction(async function () {
+					await Zotero.DB.executeTransaction(
+						async function () {},
 						{
 							waitTimeout: 100,
 							onRollback: function () {

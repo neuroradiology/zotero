@@ -6,7 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Hiçbirini Seçme">
 <!ENTITY zotero.general.edit "Düzenle">
 <!ENTITY zotero.general.delete "Sil">
-<!ENTITY zotero.general.moveToTrash "Move to Trash">
+<!ENTITY zotero.general.moveToTrash "Çöp Sepetine Gönder">
 <!ENTITY zotero.general.ok "Tamam">
 <!ENTITY zotero.general.cancel "İptal Et">
 <!ENTITY zotero.general.refresh "Yenile">
@@ -15,6 +15,7 @@
 <!ENTITY zotero.general.advancedOptions.label "Gelişmiş Seçenekler">
 <!ENTITY zotero.general.tools "Araçlar">
 <!ENTITY zotero.general.more "Daha Başka">
+<!ENTITY zotero.general.moreInformation "Daha Fazla Bilgi">
 <!ENTITY zotero.general.loading "Yükleniyor...">
 <!ENTITY zotero.general.close "Kapat">
 <!ENTITY zotero.general.minimize "Küçült">
@@ -45,55 +46,24 @@
 <!ENTITY zotero.upgrade.changeLogLink "değişiklik kaydına">
 <!ENTITY zotero.upgrade.changeLogAfterLink "bakınız.">
 
-<!ENTITY zotero.tabs.info.label "Bilgi">
 <!ENTITY zotero.tabs.notes.label "Notlar">
 <!ENTITY zotero.tabs.attachments.label "Ekler">
-<!ENTITY zotero.tabs.tags.label "Etiketler">
-<!ENTITY zotero.tabs.related.label "İlişkili">
-<!ENTITY zotero.notes.separate "Ayrı bir pencerede düzenle">
 
 <!ENTITY zotero.toolbar.duplicate.label "Yinelenmiş Eserleri Göster">
 <!ENTITY zotero.collections.showUnfiledItems "Dosyalanmamış Eserleri Göster">
 <!ENTITY zotero.collections.showRetractedItems "Geri Çekilmiş Eserleri Göster">
 
 <!ENTITY zotero.items.itemType "Eser Türü">
-<!ENTITY zotero.items.type_column "Eser Türü">
-<!ENTITY zotero.items.title_column "Başlık">
 <!ENTITY zotero.items.creator_column "Yaratan">
-<!ENTITY zotero.items.date_column "Tarih">
 <!ENTITY zotero.items.year_column "Yıl">
-<!ENTITY zotero.items.publisher_column "Yayıncı">
-<!ENTITY zotero.items.publication_column "Yayın">
-<!ENTITY zotero.items.journalAbbr_column "Dergi Kısaltması">
-<!ENTITY zotero.items.language_column "Dil">
-<!ENTITY zotero.items.accessDate_column "Erişildi">
-<!ENTITY zotero.items.libraryCatalog_column "Kütüphane Kataloğu">
-<!ENTITY zotero.items.callNumber_column "Yer Numarası">
-<!ENTITY zotero.items.rights_column "Telif">
-<!ENTITY zotero.items.dateAdded_column "Eklendiği Tarih">
 <!ENTITY zotero.items.dateModified_column "Değiştirildiği Tarih">
-<!ENTITY zotero.items.extra_column "İlave">
-<!ENTITY zotero.items.archive_column "Arşiv">
-<!ENTITY zotero.items.archiveLocation_column "Arşivdeki Yeri">
-<!ENTITY zotero.items.place_column "Yayın Yeri">
-<!ENTITY zotero.items.volume_column "Cilt">
-<!ENTITY zotero.items.edition_column "Baskı">
-<!ENTITY zotero.items.pages_column "Sayfalar">
-<!ENTITY zotero.items.issue_column "Sayı">
-<!ENTITY zotero.items.series_column "Seriler">
-<!ENTITY zotero.items.seriesTitle_column "Seri Başlığı">
-<!ENTITY zotero.items.court_column "Mahkeme">
-<!ENTITY zotero.items.medium_column "Ortam/Biçim">
-<!ENTITY zotero.items.genre_column "Tür">
-<!ENTITY zotero.items.system_column "Sistem">
 <!ENTITY zotero.items.moreColumns.label "Diğer Sütunlar">
 <!ENTITY zotero.items.restoreColumnOrder.label "Sütun Sırasını Geri Yükle">
 
 <!ENTITY zotero.items.menu.showInLibrary "Kitaplıkta Göster">
 <!ENTITY zotero.items.menu.attach.note "Not Ekle">
-<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Ek Ekle">
-<!ENTITY zotero.items.menu.attach.link.uri "URI'ye Bağlantı İliştir">
+<!ENTITY zotero.items.menu.attach.link.uri "URI'ye Bağlantı Ekle">
 <!ENTITY zotero.items.menu.attach.file "Dosyanın Kaydedilmiş Kopyasını Ekle">
 <!ENTITY zotero.items.menu.attach.fileLink "Dosyaya Bağlantı Ekle...">
 
@@ -101,7 +71,6 @@
 <!ENTITY zotero.items.menu.duplicateItem "Seçili Eseri Çoğalt">
 <!ENTITY zotero.items.menu.mergeItems "Eserleri Birleştir...">
 <!ENTITY zotero.items.menu.unrecognize "Üstveri Alma İşlemini Geri Al">
-<!ENTITY zotero.items.menu.reportMetadata "Yanlış Üstverileri Bildir">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Eserin hangi versiyonunun asıl eser olarak kullanılacağını seç:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Eserin diğer versiyonlarından hangi alanların tutulacağını seç:">
@@ -112,7 +81,6 @@
 <!ENTITY zotero.toolbar.removeItem.label "Eseri Kaldır...">
 <!ENTITY zotero.toolbar.newLibrary.label "Yeni Kitaplık">
 <!ENTITY zotero.toolbar.newCollection.label "Yeni Derme...">
-<!ENTITY zotero.toolbar.markFeedRead.label "Beslemeyi Okunmuş İşaretle">
 <!ENTITY zotero.toolbar.newGroup "Yeni Grup...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Yeni Alt Derme...">
 <!ENTITY zotero.toolbar.newSavedSearch.label "Yeni Kaydedilen Arama...">
@@ -134,7 +102,6 @@
 <!ENTITY zotero.toolbar.feeds.new "Yeni Besleme">
 <!ENTITY zotero.toolbar.feeds.new.fromURL "URL'den...">
 <!ENTITY zotero.toolbar.feeds.new.fromOPML "OPML'den...">
-<!ENTITY zotero.toolbar.feeds.refresh "Beslemeyi Yenile">
 <!ENTITY zotero.toolbar.feeds.edit "Beslemeyi Düzenle...">
 
 <!ENTITY zotero.item.add "Ekle">
@@ -143,7 +110,7 @@
 <!ENTITY zotero.item.textTransform.titlecase "Başlık Biçimi">
 <!ENTITY zotero.item.textTransform.sentencecase "Cümle Biçimi">
 <!ENTITY zotero.item.creatorTransform.nameSwap "İlk ve Soyadları Takas Et">
-<!ENTITY zotero.item.viewOnline "Çevrimiçi Göster">
+<!ENTITY zotero.item.creatorTransform.fixCase "Büyük Harfleri Düzelt">
 <!ENTITY zotero.item.copyAsURL "URL'i Kopyala">
 <!ENTITY zotero.item.deletePermanently "Kalıcı Olarak Sil...">
 
@@ -153,12 +120,12 @@
 <!ENTITY zotero.toolbar.note.standalone "Yeni Bağımsız Not">
 <!ENTITY zotero.toolbar.note.child "Alt Not Ekle">
 <!ENTITY zotero.toolbar.lookup "Tanımlayıcı ile Arama...">
-<!ENTITY zotero.toolbar.attachment.linked "Dosyaya Bağlantı...">
+<!ENTITY zotero.toolbar.attachment.linked "Dosyaya Bağlantı Kur...">
 <!ENTITY zotero.toolbar.attachment.add "Dosyanın bir Kopyasının Sakla">
 <!ENTITY zotero.toolbar.attachment.weblink "Geçerli Sayfaya Bağlantıyı Kaydet">
-<!ENTITY zotero.toolbar.attachment.snapshot "Geçerli Sayfanın Görünümünü Al">
-<!ENTITY zotero.toolbar.context.item "Item">
-<!ENTITY zotero.toolbar.context.notes "Notes">
+<!ENTITY zotero.toolbar.attachment.snapshot "Geçerli Sayfanın Anlık Görüntüsünü Al">
+<!ENTITY zotero.toolbar.context.item "Eser">
+<!ENTITY zotero.toolbar.context.notes "Notlar">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Gösterilecek etiket yok">
 <!ENTITY zotero.tagSelector.loadingTags "Etiketleri yüklüyor...">
@@ -169,6 +136,7 @@
 <!ENTITY zotero.tagSelector.assignColor "Etikete Renk Ata...">
 <!ENTITY zotero.tagSelector.renameTag "Etiketi Yeniden Adlandır...">
 <!ENTITY zotero.tagSelector.deleteTag "Etiketi Sil...">
+<!ENTITY zotero.tagSelector.splitTag "Ayır...">
 
 <!ENTITY zotero.tagColorChooser.title "Etiket Rengi ve Konumunu Seç">
 <!ENTITY zotero.tagColorChooser.color "Renk:">
@@ -176,7 +144,7 @@
 <!ENTITY zotero.tagColorChooser.setColor "Rengi Ayarla">
 <!ENTITY zotero.tagColorChooser.removeColor "Rengi Kaldır">
 
-<!ENTITY zotero.lookup.description "ISBN, DOI, PMID ya da arXiv numaralarını girerek kitaplığınıza ekleyin:">
+<!ENTITY zotero.lookup.description "ISBN, DOI, PMID, arXiv ID ya da ADS Bibcode tanımlayıcılarını girerek kitaplığınıza ekleyin:">
 <!ENTITY zotero.lookup.button.search "Ara">
 
 <!ENTITY zotero.createParent.title "Ana Eser Yarat">
@@ -209,12 +177,15 @@
 <!ENTITY zotero.import "İçeri Aktar">
 <!ENTITY zotero.import.whereToImportFrom "Nereden içeri aktarmak istiyorsunuz?">
 <!ENTITY zotero.import.source.file "Bir dosya (BibTeX, RIS, Zotero RDF, vb.)">
+<!ENTITY zotero.import.source.folder "PDF'lerin veya diğer dosyaların bulunduğu bir klasör">
+<!ENTITY zotero.import.onlineImport "çevrim içi içe aktarma">
 <!ENTITY zotero.import.importing "İçeri aktarılıyor...">
 <!ENTITY zotero.import.database "Veritabanı">
 <!ENTITY zotero.import.lastModified "Son Değiştirilmesi">
 <!ENTITY zotero.import.size "Boyut">
 <!ENTITY zotero.import.createCollection "İçeri aktarılmış dermeler ve eserleri yeni bir dermeye yerleştir">
 <!ENTITY zotero.import.fileHandling "Dosyaların İdare Edilmesi">
+<!ENTITY zotero.import.online.newItemsOnly "Yalnızca yeni eserleri indir; daha önce içeri aktarılmış olan eserleri güncelleme">
 
 <!ENTITY zotero.exportOptions.title "Dışarı Aktar...">
 <!ENTITY zotero.exportOptions.format.label "Biçim">
@@ -225,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Kaynakları Sıralı Tut">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Yazarı Sakla">
+<!ENTITY zotero.citation.suppressAuthor.label "Yazar Adını Sakla">
 <!ENTITY zotero.citation.prefix.label "Önek:">
 <!ENTITY zotero.citation.suffix.label "Sonek:">
 <!ENTITY zotero.citation.editorWarning.label "Uyarı: Eğer düzenleyicide bir alıntı düzenlerseniz, bu veritabanınızdaki ya da alıntı stilinizdeki değişikliklerle güncellenmeyecektir.">
@@ -236,9 +207,9 @@
 <!ENTITY zotero.richText.superscript.label "Üstsimge">
 <!ENTITY zotero.richText.subscript.label "Altsimge">
 
-<!ENTITY zotero.annotate.toolbar.add.label "Açıklama Ekle">
-<!ENTITY zotero.annotate.toolbar.collapse.label "Tüm Açıklamaları Daralt">
-<!ENTITY zotero.annotate.toolbar.expand.label "Tüm Açıklamaları Genişlet">
+<!ENTITY zotero.annotate.toolbar.add.label "Ek Açıklama Ekle">
+<!ENTITY zotero.annotate.toolbar.collapse.label "Tüm Ek Açıklamaları Daralt">
+<!ENTITY zotero.annotate.toolbar.expand.label "Tüm Ek Açıklamaları Genişlet">
 <!ENTITY zotero.annotate.toolbar.highlight.label "Metni Vurgula">
 <!ENTITY zotero.annotate.toolbar.unhighlight.label "Metni Vurgulama">
 
@@ -272,7 +243,7 @@
 
 <!ENTITY zotero.sync.longTagFixer.followingTagTooLong "Zotero kitaplığınızda bulunan bu etiket sunucuya eşitlenmek için çok uzundur:">
 <!ENTITY zotero.sync.longTagFixer.syncedTagSizeLimit "Eşitlenecek etiketler 256 karakterden daha kısa olmalıdır.">
-<!ENTITY zotero.sync.longTagFixer.splitEditDelete "Bir etiketi birden fazla etikete bölebilirsiniz. etiketi kısaltmak için düzenleyiniz veya siliniz.">
+<!ENTITY zotero.sync.longTagFixer.splitEditDelete "Bir etiketi birden fazla etikete bölebilirsiniz, etiketi kısaltmak için düzenleyebilirsiniz, ya da silebilirsiniz.">
 <!ENTITY zotero.sync.longTagFixer.split "Böl">
 <!ENTITY zotero.sync.longTagFixer.splitAtThe "Böl">
 <!ENTITY zotero.sync.longTagFixer.character "karaktere">
@@ -330,8 +301,33 @@
 <!ENTITY zotero.attachLink.label.link "Bağlantı">
 <!ENTITY zotero.attachLink.label.title "Başlık">
 
-<!ENTITY zotero.context.addChildNote "Add Item Note">
-<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
-<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
-<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
-<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+<!ENTITY zotero.context.addChildNote "Eser Notu Ekle">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Ek Açıklamalardan Eser Notu Ekle">
+<!ENTITY zotero.context.addStandaloneNote "Bağımsız Not Ekle">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Ek Açıklamalardan Bağımsız Not Ekle">
+<!ENTITY zotero.context.editInWindow "Ayrı Bir Pencerede Düzenle">
+
+<!ENTITY zotero.pdfReader.firstPage "İlk Sayfa">
+<!ENTITY zotero.pdfReader.lastPage "Son Sayfa">
+<!ENTITY zotero.pdfReader.back "Geri">
+<!ENTITY zotero.pdfReader.forward "İleri">
+<!ENTITY zotero.pdfReader.handTool "El Aracı">
+<!ENTITY zotero.pdfReader.verticalScrolling "Dikey Kaydırma">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Yatay Kaydırma">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Yan Yana Kaydırma">
+<!ENTITY zotero.pdfReader.noSpreads "Birleştirme">
+<!ENTITY zotero.pdfReader.oddSpreads "Tek Numaralı">
+<!ENTITY zotero.pdfReader.evenSpreads "Çift Numaralı">
+<!ENTITY zotero.pdfReader.scrolled "Kaydırmalı">
+<!ENTITY zotero.pdfReader.paginated "Sayfalanmış">
+<!ENTITY zotero.pdfReader.zoomIn "Yakınlaştır">
+<!ENTITY zotero.pdfReader.zoomOut "Uzaklaştır">
+<!ENTITY zotero.pdfReader.zoomReset "Yakınlaştırmayı Sıfırla">
+<!ENTITY zotero.pdfReader.zoomAuto "Otomatik Olarak Yeniden Boyutlandır">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Sayfa Genişliğine Yakınlaştır">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Sayfa Yüksekliğine Yakınlaştır">
+<!ENTITY zotero.pdfReader.splitVertically "Dikey Olarak Böl">
+<!ENTITY zotero.pdfReader.splitHorizontally "Yatay Olarak Böl">
+<!ENTITY zotero.pdfReader.transferFromPDF "Ek Açıklamaları İçeri Aktar...">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Sayfayı Sola Döndür">
+<!ENTITY zotero.pdfReader.rotatePageRight "Sayfayı Sağa Döndür">

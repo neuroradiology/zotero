@@ -25,30 +25,40 @@
 
 "use strict";
 
+import ReactDOM from "react-dom";
+
 var io;
 let createParent;
+let root;
 
 function toggleAccept(enabled) {
-	document.documentElement.getButton("accept").disabled = !enabled;
+	document.querySelector('dialog').getButton("accept").disabled = !enabled;
 }
 
 function doLoad() {
 	// Set font size from pref
 	let sbc = document.getElementById('zotero-create-parent-container');
-	Zotero.setFontSize(sbc);
+	Zotero.UIProperties.registerRoot(sbc);
 
 	io = window.arguments[0];
 
 	createParent = document.getElementById('create-parent');
-	Zotero.CreateParent.render(createParent, {
+	root = ReactDOM.createRoot(createParent);
+	Zotero.CreateParent.render(root, {
 		loading: false,
 		item: io.dataIn.item,
 		toggleAccept
 	});
+
+	document.addEventListener('dialogaccept', (event) => {
+		doAccept();
+		event.preventDefault();
+	});
+	document.addEventListener('dialogextra2', doManualEntry);
 }
 
 function doUnload() {
-	Zotero.CreateParent.destroy(createParent);
+	root.unmount();
 }
 
 async function doAccept() {
@@ -59,7 +69,7 @@ async function doAccept() {
 		childItem,
 		(on) => {
 			// Render react again with correct loading value
-			Zotero.CreateParent.render(createParent, {
+			Zotero.CreateParent.render(root, {
 				loading: on,
 				item: childItem,
 				toggleAccept
@@ -68,7 +78,7 @@ async function doAccept() {
 	);
 
 	// If we successfully created a parent, return it
-	if (newItems) {
+	if (newItems.length) {
 		io.dataOut = { parent: newItems[0] };
 		window.close();
 	}

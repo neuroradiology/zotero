@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Hætta í Zotero">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Skrá">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Vista…">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Hætta">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Afrita tilvísun">
 <!ENTITY copyBibliographyCmd.label "Afrita heimildaskrá">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Snúa við síðustefnu">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Go">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "View">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Layout">
 <!ENTITY standardView.label "Standard View">
 <!ENTITY stackedView.label "Stacked View">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "Show Items from Subcollections">
 <!ENTITY fontSize.label "Font Size">
 <!ENTITY noteFontSize.label "Note Font Size">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Verkfæri">
 <!ENTITY toolsMenu.accesskey "T">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "Viðbætur (add-ons)">
 <!ENTITY developer.label "Developer">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Minnka">
 <!ENTITY bringAllToFront.label "Færa allt framfyrir">
-<!ENTITY zoomWindow.label "Þysja inn">
-<!ENTITY windowMenu.label "Gluggi">
-
 
 <!ENTITY helpMenu.label "Hjálp">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Hjálp">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

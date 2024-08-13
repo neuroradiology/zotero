@@ -1,0 +1,9 @@
+item-box {
+
+	#item-type-menu {
+		padding: 1px;
+		@include comfortable {
+			padding: 2px;
+		}
+	}
+}

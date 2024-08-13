@@ -61,6 +61,7 @@ Zotero.HTTPIntegrationClient.Application = function() {
 	this.supportedNotes = ['footnotes'];
 	this.supportsImportExport = false;
 	this.supportsTextInsertion = false;
+	this.supportsCitationMerging = false;
 	this.processorName = "HTTP Integration";
 };
 Zotero.HTTPIntegrationClient.Application.prototype = {
@@ -70,16 +71,18 @@ Zotero.HTTPIntegrationClient.Application.prototype = {
 		this.supportedNotes = result.supportedNotes || this.supportedNotes;
 		this.supportsImportExport = result.supportsImportExport || this.supportsImportExport;
 		this.supportsTextInsertion = result.supportsTextInsertion || this.supportsTextInsertion;
+		this.supportsCitationMerging = result.supportsCitationMerging || this.supportsCitationMerging;
 		this.processorName = result.processorName || this.processorName;
-		return new Zotero.HTTPIntegrationClient.Document(result.documentID);
+		return new Zotero.HTTPIntegrationClient.Document(result.documentID, this.processorName);
 	}
 };
 
 /**
  * See integrationTests.js
  */
-Zotero.HTTPIntegrationClient.Document = function(documentID) {
+Zotero.HTTPIntegrationClient.Document = function(documentID, processorName) {
 	this._documentID = documentID;
+	this.processorName = processorName;
 };
 for (let method of ["activate", "canInsertField", "displayAlert", "getDocumentData",
 	"setDocumentData", "setBibliographyStyle", "importDocument", "exportDocument",
@@ -167,6 +170,10 @@ Zotero.HTTPIntegrationClient.Field = function(documentID, json) {
 	this._code = json.code;
 	this._text = json.text;
 	this._noteIndex = json.noteIndex;
+	this._adjacent = json.adjacent;
+	if (this._adjacent !== 'undefined') {
+		this.isAdjacentToNextField = this._isAdjacentToNextField;
+	}
 };
 Zotero.HTTPIntegrationClient.Field.prototype = {};
 
@@ -182,8 +189,7 @@ Zotero.HTTPIntegrationClient.Field.prototype.getText = async function() {
 Zotero.HTTPIntegrationClient.Field.prototype.setText = async function(text, isRich) {
 	// The HTML will be stripped by Google Docs and and since we're 
 	// caching this value, we need to strip it ourselves
-	var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
-             .createInstance(Components.interfaces.nsIDOMParser);
+	var parser = new DOMParser();
 	var doc = parser.parseFromString(text, "text/html");
 	this._text = doc.documentElement.textContent;
 	return Zotero.HTTPIntegrationClient.sendCommand("Field.setText", [this._documentID, this._id, text, true]);
@@ -201,3 +207,6 @@ Zotero.HTTPIntegrationClient.Field.prototype.getNoteIndex = async function() {
 Zotero.HTTPIntegrationClient.Field.prototype.equals = async function(arg) {
 	return this._id === arg._id;
 };
+Zotero.HTTPIntegrationClient.Field.prototype._isAdjacentToNextField = async function() {
+	return this._adjacent;
+}

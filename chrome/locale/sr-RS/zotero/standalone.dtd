@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Напусти Зотеро">
 <!ENTITY quitApplicationCmdMac.key "Q">
 
-
 <!ENTITY fileMenu.label "Датотека">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Сачувај…">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Напусти">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Копирај цитат">
 <!ENTITY copyBibliographyCmd.label "Копирај библиографију">
+<!ENTITY copyNoteCmd.label "Копирај белешку">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Промени смер странице">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Иди">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Преглед">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Распоред">
 <!ENTITY standardView.label "Уобичајени приказ">
 <!ENTITY stackedView.label "Приказ на гомили">
@@ -54,27 +56,20 @@
 <!ENTITY recursiveCollections.label "Прикажи ставке из подзбирки">
 <!ENTITY fontSize.label "Величина фонта">
 <!ENTITY noteFontSize.label "Величина фонта за белешке">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Алати">
 <!ENTITY toolsMenu.accesskey "T">
-<!ENTITY installConnector.label "Инсталирај програм за повезивање са разгледачем">
+<!ENTITY installConnector.label "Инсталирај повезивање са прегледачем">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Додаци">
 <!ENTITY developer.label "Програмер">
 
-
-<!ENTITY minimizeWindow.key "m">
-<!ENTITY minimizeWindow.label "Умањи">
 <!ENTITY bringAllToFront.label "Постави све напред">
-<!ENTITY zoomWindow.label "Увећај">
-<!ENTITY windowMenu.label "Прозор">
-
 
 <!ENTITY helpMenu.label "Помоћ">
 <!ENTITY helpMenu.accesskey "H">
-
-
 <!ENTITY helpMenuWin.label "Помоћ">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

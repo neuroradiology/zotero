@@ -139,67 +139,6 @@ Zotero.Items = function() {
 	});
 	
 	
-	/**
-	 * Return item data in web API format
-	 *
-	 * var data = Zotero.Items.getAPIData(0, 'collections/NF3GJ38A/items');
-	 *
-	 * @param {Number} libraryID
-	 * @param {String} [apiPath='items'] - Web API style
-	 * @return {Promise<String>}.
-	 */
-	this.getAPIData = Zotero.Promise.coroutine(function* (libraryID, apiPath) {
-		var gen = this.getAPIDataGenerator(...arguments);
-		var data = "";
-		while (true) {
-			var result = gen.next();
-			if (result.done) {
-				break;
-			}
-			var val = yield result.value;
-			if (typeof val == 'string') {
-				data += val;
-			}
-			else if (val === undefined) {
-				continue;
-			}
-			else {
-				throw new Error("Invalid return value from generator");
-			}
-		}
-		return data;
-	});
-	
-	
-	/**
-	 * Zotero.Utilities.Internal.getAsyncInputStream-compatible generator that yields item data
-	 * in web API format as strings
-	 *
-	 * @param {Object} params - Request parameters from Zotero.API.parsePath()
-	 */
-	this.apiDataGenerator = function* (params) {
-		Zotero.debug(params);
-		var s = new Zotero.Search;
-		s.addCondition('libraryID', 'is', params.libraryID);
-		if (params.scopeObject == 'collections') {
-			s.addCondition('collection', 'is', params.scopeObjectKey);
-		}
-		s.addCondition('title', 'contains', 'test');
-		var ids = yield s.search();
-		
-		yield '[\n';
-		
-		for (let i=0; i<ids.length; i++) {
-			let prefix = i > 0 ? ',\n' : '';
-			let item = yield this.getAsync(ids[i], { noCache: true });
-			var json = item.toResponseJSON();
-			yield prefix + JSON.stringify(json, null, 4);
-		}
-		
-		yield '\n]';
-	};
-	
-	
 	//
 	// Bulk data loading functions
 	//
@@ -217,7 +156,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					let fieldID = row.getResultByIndex(1);
@@ -251,7 +190,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					let item = this._objectCache[itemID];
@@ -283,6 +222,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					let title = row.getResultByIndex(1);
@@ -334,7 +274,7 @@ Zotero.Items = function() {
 			+ 'FROM items LEFT JOIN itemCreators USING (itemID) '
 			+ 'WHERE libraryID=?' + idSQL + " ORDER BY itemID, orderIndex";
 		var params = [libraryID];
-		var rows = yield Zotero.DB.queryAsync(sql, params);
+		var rows = yield Zotero.DB.queryAsync(sql, params, { noCache: true });
 		
 		// Mark creator indexes above the number of creators as changed,
 		// so that they're cleared if the item is saved
@@ -413,7 +353,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					let item = this._objectCache[itemID];
@@ -459,11 +399,11 @@ Zotero.Items = function() {
 		);
 		
 		if (notesToUpdate.length) {
-			yield Zotero.DB.executeTransaction(function* () {
+			yield Zotero.DB.executeTransaction(async function () {
 				for (let i = 0; i < notesToUpdate.length; i++) {
 					let row = notesToUpdate[i];
 					let sql = "UPDATE itemNotes SET note=? WHERE itemID=?";
-					yield Zotero.DB.queryAsync(sql, [row[1], row[0]]);
+					await Zotero.DB.queryAsync(sql, [row[1], row[0]]);
 				}
 			}.bind(this));
 		}
@@ -476,7 +416,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					let item = this._objectCache[itemID];
@@ -494,55 +434,81 @@ Zotero.Items = function() {
 	
 	
 	this._loadAnnotations = async function (libraryID, ids, idSQL) {
-		var sql = "SELECT itemID, IA.parentItemID, IA.type, IA.text, IA.comment, IA.color, "
-			+ "IA.sortIndex, IA.isExternal "
+		var sql = "SELECT itemID, IA.parentItemID, IA.type, IA.authorName, IA.text, IA.comment, "
+			+ "IA.color, IA.sortIndex, IA.isExternal "
 			+ "FROM items JOIN itemAnnotations IA USING (itemID) "
 			+ "WHERE libraryID=?" + idSQL;
 		var params = [libraryID];
-		await Zotero.DB.queryAsync(
-			sql,
-			params,
-			{
-				noCache: ids.length != 1,
-				onRow: function (row) {
-					let itemID = row.getResultByIndex(0);
-					
-					let item = this._objectCache[itemID];
-					if (!item) {
-						throw new Error("Item " + itemID + " not found");
-					}
-					
-					item._parentItemID = row.getResultByIndex(1);
-					var typeID = row.getResultByIndex(2);
-					var type;
-					switch (typeID) {
-						case Zotero.Annotations.ANNOTATION_TYPE_HIGHLIGHT:
-							type = 'highlight';
-							break;
+		
+		// TEMP: Fix faulty upgrade from early 6.0 beta
+		// https://github.com/zotero/zotero/issues/3013
+		try {
+			await Zotero.DB.queryAsync(
+				sql,
+				params,
+				{
+					noCache: true,
+					onRow: function (row) {
+						let itemID = row.getResultByIndex(0);
 						
-						case Zotero.Annotations.ANNOTATION_TYPE_NOTE:
-							type = 'note';
-							break;
+						let item = this._objectCache[itemID];
+						if (!item) {
+							throw new Error("Item " + itemID + " not found");
+						}
 						
-						case Zotero.Annotations.ANNOTATION_TYPE_IMAGE:
-							type = 'image';
-							break;
+						item._parentItemID = row.getResultByIndex(1);
+						var typeID = row.getResultByIndex(2);
+						var type;
+						switch (typeID) {
+							case Zotero.Annotations.ANNOTATION_TYPE_HIGHLIGHT:
+								type = 'highlight';
+								break;
+
+							case Zotero.Annotations.ANNOTATION_TYPE_UNDERLINE:
+								type = 'underline';
+								break;
+							
+							case Zotero.Annotations.ANNOTATION_TYPE_NOTE:
+								type = 'note';
+								break;
+
+							case Zotero.Annotations.ANNOTATION_TYPE_TEXT:
+								type = 'text';
+								break;
+							
+							case Zotero.Annotations.ANNOTATION_TYPE_IMAGE:
+								type = 'image';
+								break;
+							
+							case Zotero.Annotations.ANNOTATION_TYPE_INK:
+								type = 'ink';
+								break;
+							
+							default:
+								throw new Error(`Unknown annotation type id ${typeID}`);
+						}
+						item._annotationType = type;
+						item._annotationAuthorName = row.getResultByIndex(3);
+						item._annotationText = row.getResultByIndex(4);
+						item._annotationComment = row.getResultByIndex(5);
+						item._annotationColor = row.getResultByIndex(6);
+						item._annotationSortIndex = row.getResultByIndex(7);
+						item._annotationIsExternal = !!row.getResultByIndex(8);
 						
-						default:
-							throw new Error(`Unknown annotation type id ${typeID}`);
-					}
-					item._annotationType = type;
-					item._annotationText = row.getResultByIndex(3);
-					item._annotationComment = row.getResultByIndex(4);
-					item._annotationColor = row.getResultByIndex(5);
-					item._annotationSortIndex = row.getResultByIndex(6);
-					item._annotationIsExternal = !!row.getResultByIndex(7);
-					
-					item._loaded.annotation = true;
-					item._clearChanged('annotation');
-				}.bind(this)
+						item._loaded.annotation = true;
+						item._clearChanged('annotation');
+					}.bind(this)
+				}
+			);
+		}
+		catch (e) {
+			if (e.message.includes('no such column: IA.authorName')
+					&& await Zotero.DB.valueQueryAsync("SELECT COUNT(*) FROM version WHERE schema='userdata' AND version IN (120, 121, 122)")) {
+				await Zotero.DB.queryAsync("UPDATE version SET version=119 WHERE schema='userdata'");
+				Zotero.crash();
 			}
-		);
+			throw e;
+		}
 	};
 	
 	
@@ -555,7 +521,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					
@@ -598,11 +564,12 @@ Zotero.Items = function() {
 		//
 		// Attachments
 		//
+		var titleFieldID = Zotero.ItemFields.getID('title');
 		var sql = "SELECT parentItemID, A.itemID, value AS title, "
 			+ "CASE WHEN DI.itemID IS NULL THEN 0 ELSE 1 END AS trashed "
 			+ "FROM itemAttachments A "
 			+ "JOIN items I ON (A.parentItemID=I.itemID) "
-			+ "LEFT JOIN itemData ID ON (fieldID=110 AND A.itemID=ID.itemID) "
+			+ `LEFT JOIN itemData ID ON (fieldID=${titleFieldID} AND A.itemID=ID.itemID) `
 			+ "LEFT JOIN itemDataValues IDV USING (valueID) "
 			+ "LEFT JOIN deletedItems DI USING (itemID) "
 			+ "WHERE libraryID=?"
@@ -632,7 +599,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					onRow(row, setAttachmentItem);
 				}
@@ -686,7 +653,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					onRow(row, setNoteItem);
 				}
@@ -731,7 +698,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					onRow(row, setAnnotationItem);
 				}
@@ -755,7 +722,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					var itemID = row.getResultByIndex(0);
 					var item = this._objectCache[itemID];
@@ -797,7 +764,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					
@@ -850,7 +817,7 @@ Zotero.Items = function() {
 			sql,
 			params,
 			{
-				noCache: ids.length != 1,
+				noCache: true,
 				onRow: function (row) {
 					let itemID = row.getResultByIndex(0);
 					
@@ -876,22 +843,66 @@ Zotero.Items = function() {
 	
 	
 	/**
+	 * Copy child items from one item to another (e.g., in another library)
+	 *
+	 * Requires a transaction
+	 */
+	this.copyChildItems = async function (fromItem, toItem) {
+		Zotero.DB.requireTransaction();
+		
+		var fromGroup = fromItem.library.isGroup;
+		
+		// Annotations on files
+		if (fromItem.isFileAttachment()) {
+			let annotations = fromItem.getAnnotations();
+			for (let annotation of annotations) {
+				// Don't copy embedded PDF annotations
+				if (annotation.annotationIsExternal) {
+					continue;
+				}
+				let newAnnotation = annotation.clone(toItem.libraryID);
+				newAnnotation.parentItemID = toItem.id;
+				// If there's no explicit author and we're copying an annotation created by another
+				// user from a group, set the author to the creating user
+				if (fromGroup
+						&& !annotation.annotationAuthorName
+						&& annotation.createdByUserID != Zotero.Users.getCurrentUserID()) {
+					newAnnotation.annotationAuthorName =
+						Zotero.Users.getName(annotation.createdByUserID);
+				}
+				await newAnnotation.save();
+			}
+		}
+		
+		// TODO: Other things as necessary
+	};
+	
+	
+	/**
 	 * Move child items from one item to another
+	 *
+	 * Requires a transaction
 	 *
 	 * @param {Zotero.Item} fromItem
 	 * @param {Zotero.Item} toItem
+	 * @param {Object} options
+	 * @param {Boolean} [includeTrashed=false]
+	 * @param {Boolean} [skipEditCheck=false]
 	 * @return {Promise}
 	 */
-	this.moveChildItems = async function (fromItem, toItem) {
+	this.moveChildItems = async function (fromItem, toItem, { includeTrashed = false, skipEditCheck = false } = {}) {
+		Zotero.DB.requireTransaction();
+		
 		// Annotations on files
 		if (fromItem.isFileAttachment()) {
-			await Zotero.DB.executeTransaction(async function () {
-				let annotations = fromItem.getAnnotations();
-				for (let annotation of annotations) {
-					annotation.parentItemID = toItem.id;
-					await annotation.save();
+			let annotations = fromItem.getAnnotations(includeTrashed);
+			for (let annotation of annotations) {
+				if (annotation.annotationIsExternal) {
+					continue;
 				}
-			}.bind(this));
+				annotation.parentItemID = toItem.id;
+				await annotation.save({ skipEditCheck });
+			}
 		}
 		
 		// TODO: Other things as necessary
@@ -900,68 +911,41 @@ Zotero.Items = function() {
 	
 	this.merge = function (item, otherItems) {
 		Zotero.debug("Merging items");
-		
-		return Zotero.DB.executeTransaction(function* () {
-			var otherItemIDs = [];
-			var itemURI = Zotero.URI.getItemURI(item);
-			
+
+		return Zotero.DB.executeTransaction(async function () {
 			var replPred = Zotero.Relations.replacedItemPredicate;
 			var toSave = {};
 			toSave[item.id] = item;
 			
 			var earliestDateAdded = item.dateAdded;
+
+			let remapAttachmentKeys = await this._mergePDFAttachments(item, otherItems);
+			await this._mergeWebAttachments(item, otherItems);
+			await this._mergeOtherAttachments(item, otherItems);
 			
 			for (let otherItem of otherItems) {
+				if (otherItem.libraryID !== item.libraryID) {
+					throw new Error('Items being merged must be in the same library');
+				}
+
 				// Use the earliest date added of all the items
 				if (otherItem.dateAdded < earliestDateAdded) {
 					earliestDateAdded = otherItem.dateAdded;
 				}
 				
-				let otherItemURI = Zotero.URI.getItemURI(otherItem);
-				
-				// Move child items to master
-				var ids = otherItem.getAttachments(true).concat(otherItem.getNotes(true));
-				for (let id of ids) {
-					var attachment = yield this.getAsync(id);
-					
-					// TODO: Skip identical children?
-					
-					attachment.parentID = item.id;
-					yield attachment.save();
+				// Move notes to master
+				var noteIDs = otherItem.getNotes(true);
+				for (let id of noteIDs) {
+					var note = await this.getAsync(id);
+					note.parentItemID = item.id;
+					Zotero.Notes.replaceItemKey(note, otherItem.key, item.key);
+					Zotero.Notes.replaceAllItemKeys(note, remapAttachmentKeys);
+					toSave[note.id] = note;
 				}
 				
-				// Add relations to master
-				let oldRelations = otherItem.getRelations();
-				for (let pred in oldRelations) {
-					oldRelations[pred].forEach(obj => item.addRelation(pred, obj));
-				}
+				// Move relations to master
+				await this._moveRelations(otherItem, item);
 				
-				// Remove merge-tracking relations from other item, so that there aren't two
-				// subjects for a given deleted object
-				let replItems = otherItem.getRelationsByPredicate(replPred);
-				for (let replItem of replItems) {
-					otherItem.removeRelation(replPred, replItem);
-				}
-				
-				// Update relations on items in the library that point to the other item
-				// to point to the master instead
-				let rels = yield Zotero.Relations.getByObject('item', otherItemURI);
-				for (let rel of rels) {
-					// Skip merge-tracking relations, which are dealt with above
-					if (rel.predicate == replPred) continue;
-					// Skip items in other libraries. They might not be editable, and even
-					// if they are, merging items in one library shouldn't affect another library,
-					// so those will follow the merge-tracking relations and can optimize their
-					// path if they're resaved.
-					if (rel.subject.libraryID != item.libraryID) continue;
-					rel.subject.removeRelation(rel.predicate, otherItemURI);
-					rel.subject.addRelation(rel.predicate, itemURI);
-					if (!toSave[rel.subject.id]) {
-						toSave[rel.subject.id] = rel.subject;
-					}
-				}
-				
-				// All other operations are additive only and do not affect the,
 				// old item, which will be put in the trash
 				
 				// Add collections to master
@@ -987,25 +971,400 @@ Zotero.Items = function() {
 					}
 				}
 				
-				// Add relation to track merge
-				item.addRelation(replPred, otherItemURI);
-				
 				// Trash other item
 				otherItem.deleted = true;
-				yield otherItem.save();
+				toSave[otherItem.id] = otherItem;
 			}
 			
 			item.setField('dateAdded', earliestDateAdded);
+
+			// Hack to remove master item from duplicates view without recalculating duplicates
+			// Pass force = true so observers will be notified before this transaction is committed
+			await Zotero.Notifier.trigger('removeDuplicatesMaster', 'item', item.id, null, true);
 			
 			for (let i in toSave) {
-				yield toSave[i].save();
+				await toSave[i].save();
 			}
-			
-			// Hack to remove master item from duplicates view without recalculating duplicates
-			Zotero.Notifier.trigger('removeDuplicatesMaster', 'item', item.id);
 		}.bind(this));
 	};
+
+
+	this._mergePDFAttachments = async function (item, otherItems) {
+		Zotero.DB.requireTransaction();
+
+		let remapAttachmentKeys = new Map();
+		let masterAttachmentHashes = await this._hashItem(item, 'bytes');
+		let hashesIncludeText = false;
+
+		for (let otherItem of otherItems) {
+			let mergedMasterAttachments = new Set();
+
+			let doMerge = async (fromAttachment, toAttachment) => {
+				mergedMasterAttachments.add(toAttachment.id);
 	
+				await this.moveChildItems(
+					fromAttachment,
+					toAttachment,
+					{
+						includeTrashed: true,
+						skipEditCheck: true
+					}
+				);
+				await this._moveEmbeddedNote(fromAttachment, toAttachment);
+				await this._moveRelations(fromAttachment, toAttachment);
+	
+				fromAttachment.deleted = true;
+				await fromAttachment.save();
+	
+				// Later on, when processing notes, we'll use this to remap
+				// URLs pointing to the old attachment.
+				remapAttachmentKeys.set(fromAttachment.key, toAttachment.key);
+	
+				// Items can only have one replaced item predicate
+				if (!toAttachment.getRelationsByPredicate(Zotero.Relations.replacedItemPredicate)) {
+					toAttachment.addRelation(Zotero.Relations.replacedItemPredicate,
+						Zotero.URI.getItemURI(fromAttachment));
+				}
+	
+				await toAttachment.save();
+			};
+
+			for (let otherAttachment of await this.getAsync(otherItem.getAttachments(true))) {
+				if (!otherAttachment.isPDFAttachment()) {
+					continue;
+				}
+
+				// First check if master has an attachment with identical MD5 hash
+				let matchingHash = await otherAttachment.attachmentHash;
+				let masterAttachmentID = masterAttachmentHashes.get(matchingHash);
+
+				if (!masterAttachmentID && item.numAttachments()) {
+					// If that didn't work, hash master attachments by the
+					// most common words in their text and check again.
+					if (!hashesIncludeText) {
+						masterAttachmentHashes = new Map([
+							...masterAttachmentHashes,
+							...await this._hashItem(item, 'text')
+						]);
+						hashesIncludeText = true;
+					}
+
+					matchingHash = await this._hashAttachmentText(otherAttachment);
+					masterAttachmentID = masterAttachmentHashes.get(matchingHash);
+				}
+
+				if (!masterAttachmentID || mergedMasterAttachments.has(masterAttachmentID)) {
+					Zotero.debug(`No unmerged match for attachment ${otherAttachment.key} in master item - moving`);
+					otherAttachment.parentItemID = item.id;
+					await otherAttachment.save();
+					continue;
+				}
+
+				let masterAttachment = await this.getAsync(masterAttachmentID);
+
+				if (masterAttachment.attachmentContentType !== otherAttachment.attachmentContentType) {
+					Zotero.debug(`Master attachment ${masterAttachment.key} matches ${otherAttachment.key}, `
+						+ 'but content types differ - keeping both');
+					otherAttachment.parentItemID = item.id;
+					await otherAttachment.save();
+					continue;
+				}
+
+				if (!((masterAttachment.isImportedAttachment() && otherAttachment.isImportedAttachment())
+						|| (masterAttachment.isLinkedFileAttachment() && otherAttachment.isLinkedFileAttachment()))) {
+					Zotero.debug(`Master attachment ${masterAttachment.key} matches ${otherAttachment.key}, `
+						+ 'but link modes differ - keeping both');
+					otherAttachment.parentItemID = item.id;
+					await otherAttachment.save();
+					continue;
+				}
+
+				// Check whether master and other have embedded annotations
+				// Error -> be safe and assume the item does have embedded annotations
+				let logAndBeSafe = (e) => {
+					Zotero.logError(e);
+					return true;
+				};
+
+				if (await otherAttachment.hasEmbeddedAnnotations().catch(logAndBeSafe)) {
+					// Other yes, master yes -> keep both
+					if (await masterAttachment.hasEmbeddedAnnotations().catch(logAndBeSafe)) {
+						Zotero.debug(`Master attachment ${masterAttachment.key} matches ${otherAttachment.key}, `
+							+ 'but both have embedded annotations - keeping both');
+						otherAttachment.parentItemID = item.id;
+						await otherAttachment.save();
+					}
+					// Other yes, master no -> keep other
+					else {
+						Zotero.debug(`Master attachment ${masterAttachment.key} matches ${otherAttachment.key}, `
+							+ 'but other has embedded annotations - merging into other');
+						await doMerge(masterAttachment, otherAttachment);
+						otherAttachment.parentItemID = item.id;
+						await otherAttachment.save();
+					}
+					continue;
+				}
+				// Other no, master yes -> keep master
+				// Other no, master no -> keep master
+
+				Zotero.debug(`Master attachment ${masterAttachment.key} matches ${otherAttachment.key} - merging into master`);
+				await doMerge(otherAttachment, masterAttachment);
+			}
+		}
+
+		return remapAttachmentKeys;
+	};
+
+
+	this._mergeWebAttachments = async function (item, otherItems) {
+		Zotero.DB.requireTransaction();
+
+		let masterAttachments = (await this.getAsync(item.getAttachments(true)))
+			.filter(attachment => attachment.isWebAttachment());
+
+		for (let otherItem of otherItems) {
+			for (let otherAttachment of await this.getAsync(otherItem.getAttachments(true))) {
+				if (!otherAttachment.isWebAttachment()) {
+					continue;
+				}
+
+				// If we can find an attachment with the same title *and* URL, use it.
+				let masterAttachment = (
+					masterAttachments.find(attachment => attachment.getField('title') == otherAttachment.getField('title')
+						&& attachment.getField('url') == otherAttachment.getField('url')
+						&& attachment.attachmentLinkMode === otherAttachment.attachmentLinkMode)
+					|| masterAttachments.find(attachment => attachment.getField('title') == otherAttachment.getField('title')
+						&& attachment.attachmentLinkMode === otherAttachment.attachmentLinkMode)
+				);
+
+				if (!masterAttachment) {
+					Zotero.debug(`No match for web attachment ${otherAttachment.key} in master item - moving`);
+					otherAttachment.parentItemID = item.id;
+					await otherAttachment.save();
+					continue;
+				}
+
+				otherAttachment.deleted = true;
+				await this._moveRelations(otherAttachment, masterAttachment);
+				await otherAttachment.save();
+
+				masterAttachment.addRelation(Zotero.Relations.replacedItemPredicate,
+					Zotero.URI.getItemURI(otherAttachment));
+				await masterAttachment.save();
+
+				// Don't match with this attachment again
+				masterAttachments = masterAttachments.filter(a => a !== masterAttachment);
+			}
+		}
+	};
+
+
+	this._mergeOtherAttachments = async function (item, otherItems) {
+		Zotero.DB.requireTransaction();
+
+		for (let otherItem of otherItems) {
+			for (let otherAttachment of await this.getAsync(otherItem.getAttachments(true))) {
+				if (otherAttachment.isPDFAttachment() || otherAttachment.isWebAttachment()) {
+					continue;
+				}
+
+				otherAttachment.parentItemID = item.id;
+				await otherAttachment.save();
+			}
+		}
+	};
+
+
+	/**
+	 * Hash each attachment of the provided item. Return a map from hashes to
+	 * attachment IDs.
+	 *
+	 * @param {Zotero.Item} item
+	 * @param {String} hashType 'bytes' or 'text'
+	 * @return {Promise<Map<String, String>>}
+	 */
+	this._hashItem = async function (item, hashType) {
+		if (!['bytes', 'text'].includes(hashType)) {
+			throw new Error('Invalid hash type');
+		}
+
+		let attachments = (await this.getAsync(item.getAttachments()))
+			.filter(attachment => attachment.isFileAttachment());
+		let hashes = new Map();
+		await Promise.all(attachments.map(async (attachment) => {
+			let hash = hashType === 'bytes'
+				? await attachment.attachmentHash
+				: await this._hashAttachmentText(attachment);
+			if (hash) {
+				hashes.set(hash, attachment.id);
+			}
+		}));
+		return hashes;
+	};
+
+
+	/**
+	 * Hash an attachment by the most common words in its text.
+	 * @param {Zotero.Item} attachment
+	 * @return {Promise<String>}
+	 */
+	this._hashAttachmentText = async function (attachment) {
+		var fileInfo;
+		try {
+			fileInfo = await OS.File.stat(attachment.getFilePath());
+		}
+		catch (e) {
+			if (e instanceof OS.File.Error && e.becauseNoSuchFile) {
+				Zotero.debug('_hashAttachmentText: Attachment not found');
+				return null;
+			}
+			Zotero.logError(e);
+			return null;
+		}
+		if (fileInfo.size > 5e8) {
+			Zotero.debug('_hashAttachmentText: Attachment too large');
+			return null;
+		}
+		
+		let text;
+		try {
+			text = await attachment.attachmentText;
+		}
+		catch (e) {
+			Zotero.logError(e);
+		}
+		if (!text) {
+			Zotero.debug('_hashAttachmentText: Attachment has no text');
+			return null;
+		}
+
+		let mostCommonWords = this._getMostCommonWords(text, 50);
+		if (mostCommonWords.length < 10) {
+			Zotero.debug('_hashAttachmentText: Not enough unique words');
+			return null;
+		}
+		return Zotero.Utilities.Internal.md5(mostCommonWords.sort().join(' '));
+	};
+
+
+	/**
+	 * Get the n most common words in s in descending order of frequency.
+	 * If s contains fewer than n unique words, the size of the returned array
+	 * will be less than n.
+	 *
+	 * @param {String} s
+	 * @param {Number} n
+	 * @return {String[]}
+	 */
+	this._getMostCommonWords = function (s, n) {
+		// Use an iterative approach for better performance.
+
+		const whitespaceRe = /\s/;
+		const wordCharRe = /\p{Letter}/u; // [a-z] only matches Latin
+
+		let freqs = new Map();
+		let currentWord = '';
+
+		for (let codePoint of s) {
+			if (whitespaceRe.test(codePoint)) {
+				if (currentWord.length > 3) {
+					freqs.set(currentWord, (freqs.get(currentWord) || 0) + 1);
+				}
+
+				currentWord = '';
+				continue;
+			}
+
+			if (wordCharRe.test(codePoint)) {
+				currentWord += codePoint.toLowerCase();
+			}
+		}
+		
+		// Add remaining word, if any
+		if (currentWord.length > 3) {
+			freqs.set(currentWord, (freqs.get(currentWord) || 0) + 1);
+		}
+
+		// Break ties in locale order.
+		return [...freqs.keys()]
+			.sort((a, b) => (freqs.get(b) - freqs.get(a)) || Zotero.localeCompare(a, b))
+			.slice(0, n);
+	};
+
+	/**
+	 * Move fromItem's embedded note, if it has one, to toItem.
+	 * If toItem already has an embedded note, the note will be added as a new
+	 * child note item on toItem's parent.
+	 * Requires a transaction.
+	 */
+	this._moveEmbeddedNote = async function (fromItem, toItem) {
+		Zotero.DB.requireTransaction();
+
+		if (fromItem.getNote()) {
+			let noteItem = toItem;
+			if (toItem.getNote()) {
+				noteItem = new Zotero.Item('note');
+				noteItem.parentItemID = toItem.parentItemID;
+			}
+			noteItem.setNote(fromItem.getNote());
+			fromItem.setNote('');
+			Zotero.Notes.replaceItemKey(noteItem, fromItem.key, toItem.key);
+			await noteItem.save();
+		}
+	};
+
+
+	/**
+	 * Move fromItem's relations to toItem as part of a merge.
+	 * Requires a transaction.
+	 *
+	 * @param {Zotero.Item} fromItem
+	 * @param {Zotero.Item} toItem
+	 * @return {Promise}
+	 */
+	this._moveRelations = async function (fromItem, toItem) {
+		Zotero.DB.requireTransaction();
+
+		let replPred = Zotero.Relations.replacedItemPredicate;
+		let fromURI = Zotero.URI.getItemURI(fromItem);
+		let toURI = Zotero.URI.getItemURI(toItem);
+
+		// Add relations to toItem
+		let oldRelations = fromItem.getRelations();
+		for (let pred in oldRelations) {
+			oldRelations[pred].forEach(obj => toItem.addRelation(pred, obj));
+		}
+		
+		// Remove merge-tracking relations from fromItem, so that there aren't two
+		// subjects for a given deleted object
+		let replItems = fromItem.getRelationsByPredicate(replPred);
+		for (let replItem of replItems) {
+			fromItem.removeRelation(replPred, replItem);
+		}
+		
+		// Update relations on items in the library that point to the other item
+		// to point to the master instead
+		let rels = await Zotero.Relations.getByObject('item', fromURI);
+		for (let rel of rels) {
+			// Skip merge-tracking relations, which are dealt with above
+			if (rel.predicate == replPred) continue;
+			// Skip items in other libraries. They might not be editable, and even
+			// if they are, merging items in one library shouldn't affect another library,
+			// so those will follow the merge-tracking relations and can optimize their
+			// path if they're resaved.
+			if (rel.subject.libraryID != toItem.libraryID) continue;
+			rel.subject.removeRelation(rel.predicate, fromURI);
+			rel.subject.addRelation(rel.predicate, toURI);
+			await rel.subject.save();
+		}
+
+		// Add relation to track merge
+		toItem.addRelation(replPred, fromURI);
+
+		await fromItem.save();
+		await toItem.save();
+	};
+
 	
 	this.trash = Zotero.Promise.coroutine(function* (ids) {
 		Zotero.DB.requireTransaction();
@@ -1066,7 +1425,7 @@ Zotero.Items = function() {
 	
 	
 	this.trashTx = function (ids) {
-		return Zotero.DB.executeTransaction(function* () {
+		return Zotero.DB.executeTransaction(async function () {
 			return this.trash(ids);
 		}.bind(this));
 	}
@@ -1127,6 +1486,7 @@ Zotero.Items = function() {
 				);
 			}
 			Zotero.debug("Emptied " + deleted.length + " item(s) from trash in " + (new Date() - t) + " ms");
+			Zotero.Notifier.trigger('refresh', 'trash', libraryID);
 		}
 		
 		return deleted.length;
@@ -1183,8 +1543,8 @@ Zotero.Items = function() {
 			}
 		};
 		
-		var idleService = Components.classes["@mozilla.org/widget/idleservice;1"].
-							getService(Components.interfaces.nsIIdleService);
+		var idleService = Components.classes["@mozilla.org/widget/useridleservice;1"].
+							getService(Components.interfaces.nsIUserIdleService);
 		idleService.addIdleObserver(this._emptyTrashIdleObserver, 305);
 	}
 	
@@ -1192,7 +1552,7 @@ Zotero.Items = function() {
 	this.addToPublications = function (items, options = {}) {
 		if (!items.length) return;
 		
-		return Zotero.DB.executeTransaction(function* () {
+		return Zotero.DB.executeTransaction(async function () {
 			var timestamp = Zotero.DB.transactionTimestamp;
 			
 			var allItems = [...items];
@@ -1236,7 +1596,7 @@ Zotero.Items = function() {
 				}
 			}
 			
-			yield Zotero.Utilities.Internal.forEachChunkAsync(allItems, 250, Zotero.Promise.coroutine(function* (chunk) {
+			await Zotero.Utilities.Internal.forEachChunkAsync(allItems, 250, Zotero.Promise.coroutine(function* (chunk) {
 				for (let item of chunk) {
 					item.setPublications(true);
 					item.synced = false;
@@ -1256,7 +1616,7 @@ Zotero.Items = function() {
 	
 	
 	this.removeFromPublications = function (items) {
-		return Zotero.DB.executeTransaction(function* () {
+		return Zotero.DB.executeTransaction(async function () {
 			let allItems = [];
 			for (let item of items) {
 				if (!item.inPublications) {
@@ -1277,7 +1637,7 @@ Zotero.Items = function() {
 			});
 			
 			var timestamp = Zotero.DB.transactionTimestamp;
-			yield Zotero.Utilities.Internal.forEachChunkAsync(allItems, 250, Zotero.Promise.coroutine(function* (chunk) {
+			await Zotero.Utilities.Internal.forEachChunkAsync(allItems, 250, Zotero.Promise.coroutine(function* (chunk) {
 				let idStr = chunk.map(item => item.id).join(", ");
 				yield Zotero.DB.queryAsync(
 					`UPDATE items SET synced=0, clientDateModified=? WHERE itemID IN (${idStr})`,
@@ -1323,9 +1683,17 @@ Zotero.Items = function() {
 	 *
 	 * @param {Integer} itemTypeID
 	 * @param {Object} creatorData
+	 * @param {Object} [options]
+	 * @param {Boolean} [options.omitBidiIsolates]
 	 * @return {String}
 	 */
-	this.getFirstCreatorFromData = function (itemTypeID, creatorsData) {
+	this.getFirstCreatorFromData = function (itemTypeID, creatorsData, options) {
+		if (!options) {
+			options = {
+				omitBidiIsolates: false
+			};
+		}
+		
 		if (creatorsData.length === 0) {
 			return "";
 		}
@@ -1347,7 +1715,12 @@ Zotero.Items = function() {
 			if (matches.length === 2) {
 				let a = matches[0];
 				let b = matches[1];
-				return a.lastName + " " + Zotero.getString('general.and') + " " + b.lastName;
+				let args = options.omitBidiIsolates
+					? [a.lastName, b.lastName]
+					// \u2068 FIRST STRONG ISOLATE: Isolates the directionality of characters that follow
+					// \u2069 POP DIRECTIONAL ISOLATE: Pops the above isolation
+					: [`\u2068${a.lastName}\u2069`, `\u2068${b.lastName}\u2069`];
+				return Zotero.getString('general.andJoiner', args);
 			}
 			if (matches.length >= 3) {
 				return matches[0].lastName + " " + Zotero.getString('general.etAl');
@@ -1359,22 +1732,98 @@ Zotero.Items = function() {
 	
 	
 	/**
-	 * Returns an array of items with children of selected parents removed
+	 * Get the top-level items of all passed items
 	 *
+	 * @param {Zotero.Item[]} items
 	 * @return {Zotero.Item[]}
 	 */
-	this.keepParents = function (items) {
-		var parentItems = new Set(
-			items
-				.filter(item => item.isTopLevelItem())
-				.map(item => item.id)
+	this.getTopLevel = function (items) {
+		return [...new Set(items.map(item => item.topLevelItem))];
+	};
+	
+	
+	/**
+	 * Return an array of items with descendants of selected top-level items removed
+	 *
+	 * Non-top-level items that aren't descendents of selected items are kept.
+	 *
+	 * @param {Zotero.Item[]}
+	 * @return {Zotero.Item[]}
+	 */
+	this.keepTopLevel = function (items) {
+		var topLevelItems = new Set(
+			items.filter(item => item.isTopLevelItem())
 		);
-		return items.filter(item => {
-			var parentItemID = item.parentItemID;
+		return items.filter((item) => {
+			var topLevelItem = !item.isTopLevelItem() && item.topLevelItem;
 			// Not a child item or not a child of one of the passed items
-			return !parentItemID || !parentItems.has(parentItemID);
+			return !topLevelItem || !topLevelItems.has(topLevelItem);
 		});
-	}
+	};
+	
+	
+	this.keepParents = function (items) {
+		Zotero.debug("Zotero.Items.keepParents() is deprecated -- use Zotero.Items.keepTopLevel() instead");
+		return this.keepTopLevel(items);
+	};
+	
+	
+	/**
+	 * Returns a rough count (0, 1, or 2) of the number of file attachments implied by the passed
+	 * array of items (which can include both parent and child items) in order to display a menu
+	 * label (e.g., "Show File" or "Show Files")
+	 *
+	 * @param {[Zotero.Item]} items
+	 * @param {Function} filter - An additional filter function to run on file attachment items to
+	 *     determine if they qualify
+	 * @return {Integer} - 0, 1, or 2, where 2 means >1
+	 */
+	this.numDistinctFileAttachmentsForLabel = function (items, filter = item => item.isFileAttachment()) {
+		const MAX_ITEMS = 2;
+		var num = 0;
+		var foundKey;
+		for (let item of items) {
+			if (item.isRegularItem()) {
+				// Ideally we want to avoid counting a parent item and its primary attachment as
+				// multiple files, but getBestAttachment() is asynchronous and we need to do this
+				// synchronously, so try to use the cached best-attachment state
+				let { key } = item.getBestAttachmentStateCached();
+				let bestAttachment = key && Zotero.Items.getByLibraryAndKey(item.libraryID, key);
+				if (bestAttachment && filter(bestAttachment)) {
+					if (foundKey) {
+						if (key == foundKey) {
+							continue;
+						}
+						return MAX_ITEMS;
+					}
+					foundKey = key;
+					num++;
+				}
+				// If we don't have a cached primary attachment, the best we can do is count the
+				// parent item if it has any file attachments. Since we're not recording the actual
+				// attachment being counted, this might result in returning MAX_ITEMS even if only
+				// the parent item and primary attachment are selected.
+				else if (item.getAttachments().map(itemID => Zotero.Items.get(itemID)).some(filter)) {
+					foundKey = item.key;
+					num++;
+				}
+			}
+			else if (filter(item)) {
+				if (foundKey) {
+					if (item.key == foundKey) {
+						continue;
+					}
+					return MAX_ITEMS;
+				}
+				foundKey = item.key;
+				num++;
+			}
+			if (num >= MAX_ITEMS) {
+				break;
+			}
+		}
+		return num;
+	};
 	
 	
 	/*
@@ -1392,8 +1841,8 @@ Zotero.Items = function() {
 		var contributorCreatorTypeID = Zotero.CreatorTypes.getID('contributor');
 		
 		/* This whole block is to get the firstCreator */
-		var localizedAnd = Zotero.getString('general.and');
-		var localizedEtAl = Zotero.getString('general.etAl'); 
+		var localizedAnd = Zotero.getString('general.andJoiner').replace(/%S/g, '%s');
+		var localizedEtAl = Zotero.getString('general.etAl');
 		var sql = "COALESCE(" +
 			// First try for primary creator types
 			"CASE (" +
@@ -1410,16 +1859,21 @@ Zotero.Items = function() {
 				"WHERE itemID=O.itemID AND primaryField=1" +
 			") " +
 			"WHEN 2 THEN (" +
-				"SELECT " +
-				"(SELECT lastName FROM itemCreators IC NATURAL JOIN creators " +
-				"LEFT JOIN itemTypeCreatorTypes ITCT " +
-				"ON (IC.creatorTypeID=ITCT.creatorTypeID AND ITCT.itemTypeID=O.itemTypeID) " +
-				"WHERE itemID=O.itemID AND primaryField=1 ORDER BY orderIndex LIMIT 1)" +
-				" || ' " + localizedAnd + " ' || " +
-				"(SELECT lastName FROM itemCreators IC NATURAL JOIN creators " +
-				"LEFT JOIN itemTypeCreatorTypes ITCT " +
-				"ON (IC.creatorTypeID=ITCT.creatorTypeID AND ITCT.itemTypeID=O.itemTypeID) " +
-				"WHERE itemID=O.itemID AND primaryField=1 ORDER BY orderIndex LIMIT 1,1)" +
+				"SELECT PRINTF(" +
+					`'${localizedAnd}'` +
+					", " +
+					// \u2068 FIRST STRONG ISOLATE: Isolates the directionality of characters that follow
+					// \u2069 POP DIRECTIONAL ISOLATE: Pops the above isolation
+					"(SELECT '\u2068' || lastName || '\u2069' FROM itemCreators IC NATURAL JOIN creators " +
+					"LEFT JOIN itemTypeCreatorTypes ITCT " +
+					"ON (IC.creatorTypeID=ITCT.creatorTypeID AND ITCT.itemTypeID=O.itemTypeID) " +
+					"WHERE itemID=O.itemID AND primaryField=1 ORDER BY orderIndex LIMIT 1)" +
+					", " +
+					"(SELECT '\u2068' || lastName || '\u2069' FROM itemCreators IC NATURAL JOIN creators " +
+					"LEFT JOIN itemTypeCreatorTypes ITCT " +
+					"ON (IC.creatorTypeID=ITCT.creatorTypeID AND ITCT.itemTypeID=O.itemTypeID) " +
+					"WHERE itemID=O.itemID AND primaryField=1 ORDER BY orderIndex LIMIT 1,1)" +
+				")" +
 			") " +
 			"ELSE (" +
 				"SELECT " +
@@ -1442,14 +1896,17 @@ Zotero.Items = function() {
 				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID}` +
 			") " +
 			"WHEN 2 THEN (" +
-				"SELECT " +
-				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
-				"ORDER BY orderIndex LIMIT 1)" +
-				" || ' " + localizedAnd + " ' || " +
-				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
-				"ORDER BY orderIndex LIMIT 1,1) " +
+				"SELECT PRINTF(" +
+					`'${localizedAnd}'` +
+					", " +
+					"(SELECT '\u2068' || lastName || '\u2069' FROM itemCreators NATURAL JOIN creators " +
+					`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
+					"ORDER BY orderIndex LIMIT 1)" +
+					", " +
+					"(SELECT '\u2068' || lastName || '\u2069' FROM itemCreators NATURAL JOIN creators " +
+					`WHERE itemID=O.itemID AND creatorTypeID=${editorCreatorTypeID} ` +
+					"ORDER BY orderIndex LIMIT 1,1) " +
+				")" +
 			") " +
 			"ELSE (" +
 				"SELECT " +
@@ -1471,14 +1928,17 @@ Zotero.Items = function() {
 				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID}` +
 			") " +
 			"WHEN 2 THEN (" +
-				"SELECT " +
-				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
-				"ORDER BY orderIndex LIMIT 1)" +
-				" || ' " + localizedAnd + " ' || " +
-				"(SELECT lastName FROM itemCreators NATURAL JOIN creators " +
-				`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
-				"ORDER BY orderIndex LIMIT 1,1) " +
+				"SELECT PRINTF(" +
+					`'${localizedAnd}'` +
+					", " +
+					"(SELECT '\u2068' || lastName || '\u2069' FROM itemCreators NATURAL JOIN creators " +
+					`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
+					"ORDER BY orderIndex LIMIT 1)" +
+					", " +
+					"(SELECT '\u2068' || lastName || '\u2069' FROM itemCreators NATURAL JOIN creators " +
+					`WHERE itemID=O.itemID AND creatorTypeID=${contributorCreatorTypeID} ` +
+					"ORDER BY orderIndex LIMIT 1,1) " +
+				")" +
 			") " +
 			"ELSE (" +
 				"SELECT " +
@@ -1631,17 +2091,58 @@ Zotero.Items = function() {
 		_sortCreatorSQL = sql;
 		return sql;
 	}
+
+
+	let _stripFromSortTitle = [
+		'</?i>',
+		'</?b>',
+		'</?sub>',
+		'</?sup>',
+		'<span style="font-variant:small-caps;">',
+		'<span class="nocase">',
+		'</span>',
+		// Any punctuation at the beginning of the string, repeated any number
+		// of times, and any opening punctuation that follows
+		'^\\s*([^\\P{P}@#*])\\1*[\\p{Ps}"\']*',
+	].map(re => Zotero.Utilities.XRegExp(re, 'g'));
 	
 	
-	this.getSortTitle = function(title) {
-		if (title === false || title === undefined || title == null) {
+	this.getSortTitle = function (title) {
+		if (!title) {
 			return '';
 		}
+
 		if (typeof title == 'number') {
-			return title + '';
+			return title.toString();
 		}
-		return title.replace(/^[\[\'\"](.*)[\'\"\]]?$/, '$1')
-	}
+
+		for (let re of _stripFromSortTitle) {
+			title = title.replace(re, '');
+		}
+		return title.trim();
+	};
+
+
+	/**
+	 * Find attachment items whose paths begin with the passed `pathPrefix` and don't exist on disk
+	 *
+	 * @param {Number} libraryID
+	 * @param {String} pathPrefix
+	 * @return {Zotero.Item[]}
+	 */
+	this.findMissingLinkedFiles = async function (libraryID, pathPrefix) {
+		let sql = "SELECT itemID FROM items JOIN itemAttachments USING (itemID) "
+			+ "WHERE itemID NOT IN (SELECT itemID FROM deletedItems) "
+			+ `AND linkMode=${Zotero.Attachments.LINK_MODE_LINKED_FILE} `
+			+ "AND path LIKE ? ESCAPE '\\' "
+			+ "AND libraryID=?";
+		let ids = await Zotero.DB.columnQueryAsync(sql, [Zotero.DB.escapeSQLExpression(pathPrefix) + '%', libraryID]);
+		let items = await this.getAsync(ids);
+		let missingItems = await Promise.all(
+			items.map(async item => (await item.fileExists() ? false : item))
+		);
+		return missingItems.filter(Boolean);
+	};
 	
 	
 	Zotero.DataObjects.call(this);

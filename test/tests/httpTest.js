@@ -45,6 +45,20 @@ describe("Zotero.HTTP", function () {
 				}
 			}
 		);
+		httpd.registerPathHandler(
+			'/requireJSON',
+			{
+				handle(request, response) {
+					if (request.getHeader('Content-Type') == 'application/json') {
+						response.setStatusLine(null, 200, "OK");
+					}
+					else {
+						response.setStatusLine(null, 400, "Bad Request");
+					}
+					response.write('JSON required');
+				}
+			}
+		);
 	});
 	
 	beforeEach(function () {
@@ -124,6 +138,20 @@ describe("Zotero.HTTP", function () {
 			server.respond();
 		});
 		
+		it("should process headers case insensitively", async function () {
+			Zotero.HTTP.mock = null;
+			var req = await Zotero.HTTP.request(
+				'GET',
+				baseURL + 'requireJSON',
+				{
+					headers: {
+						'content-type': 'application/json'
+					}
+				}
+			);
+			assert.equal(req.status, 200);
+		});
+		
 		describe("Retries", function () {
 			var spy;
 			var delayStub;
@@ -169,6 +197,29 @@ describe("Zotero.HTTP", function () {
 				assert.equal(delayStub.args[1][0], 20);
 			});
 			
+			it("shouldn't retry on 500 error if errorDelayMax=0", async function () {
+				setResponse({
+					method: "GET",
+					url: "error",
+					status: 500,
+					text: ""
+				});
+				spy = sinon.spy(Zotero.HTTP, "_requestInternal");
+				var e = await getPromiseError(
+					Zotero.HTTP.request(
+						"GET",
+						baseURL + "error",
+						{
+							errorDelayIntervals: [10, 20, 100],
+							errorDelayMax: 0
+						}
+					)
+				);
+				assert.instanceOf(e, Zotero.HTTP.UnexpectedStatusException);
+				assert.isTrue(spy.calledOnce);
+				assert.isTrue(delayStub.notCalled);
+			});
+			
 			it("should provide cancellerReceiver a callback to cancel while waiting to retry a 5xx error", async function () {
 				delayStub.restore();
 				setResponse({
@@ -181,13 +232,13 @@ describe("Zotero.HTTP", function () {
 				spy = sinon.spy(Zotero.HTTP, "_requestInternal");
 				setTimeout(() => {
 					cancel();
-				}, 80);
+				}, 300);
 				var e = await getPromiseError(
 					Zotero.HTTP.request(
 						"GET",
 						baseURL + "error",
 						{
-							errorDelayIntervals: [10, 10, 150],
+							errorDelayIntervals: [10, 10, 600],
 							cancellerReceiver: function () {
 								cancel = arguments[0];
 							}
@@ -237,6 +288,29 @@ describe("Zotero.HTTP", function () {
 				assert.approximately(delayStub.args[0][0], 5 * 1000, 5);
 				assert.approximately(delayStub.args[1][0], 10 * 1000, 5);
 			});
+			
+			it("should start with first interval on new request() call", async function () {
+				var called = 0;
+				server.respond(function (req) {
+					if (req.method == "GET" && req.url.startsWith(baseURL + "error")) {
+						if (called < 1) {
+							req.respond(500, {}, "");
+						}
+						else {
+							req.respond(200, {}, "");
+						}
+					}
+					called++;
+				});
+				spy = sinon.spy(Zotero.HTTP, "_requestInternal");
+				var errorDelayIntervals = [20];
+				await Zotero.HTTP.request("GET", baseURL + "error1", { errorDelayIntervals })
+				called = 0;
+				await Zotero.HTTP.request("GET", baseURL + "error2", { errorDelayIntervals }),
+				assert.equal(4, spy.callCount);
+				assert.equal(delayStub.args[0][0], 20);
+				assert.equal(delayStub.args[1][0], 20);
+			});
 		});
 	});
 	
@@ -275,47 +349,26 @@ describe("Zotero.HTTP", function () {
 			assert.isTrue(called);
 		});
 	});
-	
-	describe("#loadDocuments()", function () {
-		var win;
-		
-		before(function* () {
-			// TEMP: createHiddenBrowser currently needs a parent window
-			win = yield loadBrowserWindow();
-		});
-		
-		after(function* () {
-			win.close();
-		});
-		
-		it("should provide a document object", function* () {
-			var called = false;
-			yield new Zotero.Promise((resolve) => {
-				Zotero.HTTP.loadDocuments(
-					testURL,
-					function (doc) {
-						assert.equal(doc.location.href, testURL);
-						assert.equal(doc.querySelector('p').textContent, 'Test');
-						var p = doc.evaluate('//p', doc, null, XPathResult.ANY_TYPE, null).iterateNext();
-						assert.equal(p.textContent, 'Test');
-						called = true;
-					},
-					resolve
-				);
+
+	describe("CasePreservingHeaders", function () {
+		describe("#constructor()", function () {
+			it("should initialize from an iterable or object", function () {
+				let headers = new Zotero.HTTP.CasePreservingHeaders([['Name', 'value']]);
+				assert.equal(headers.get('name'), 'value');
+				headers = new Zotero.HTTP.CasePreservingHeaders({ NAME: 'value' });
+				assert.equal(headers.get('Name'), 'value');
 			});
-			assert.isTrue(called);
 		});
 		
-		it("should fail on non-2xx response", async function () {
-			var e = await getPromiseError(new Zotero.Promise((resolve, reject) => {
-				Zotero.HTTP.loadDocuments(
-					baseURL + "nonexistent",
-					() => {},
-					resolve,
-					reject
-				);
-			}));
-			assert.instanceOf(e, Zotero.HTTP.UnexpectedStatusException);
+		describe("#entries()", function () {
+			it("should iterate through headers with original capitalization", function () {
+				let headers = new Zotero.HTTP.CasePreservingHeaders({ 'A-Header': 'a value' });
+				headers.set('FuNkY-Header', 'some other value');
+				assert.deepEqual(Array.from(headers.entries()), [
+					['A-Header', 'a value'],
+					['FuNkY-Header', 'some other value']
+				]);
+			});
 		});
 	});
 });

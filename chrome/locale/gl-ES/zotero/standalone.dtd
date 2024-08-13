@@ -9,7 +9,6 @@
 <!ENTITY quitApplicationCmdMac.label "Pechar Zotero">
 <!ENTITY quitApplicationCmdMac.key "S">
 
-
 <!ENTITY fileMenu.label "Ficheiro">
 <!ENTITY fileMenu.accesskey "F">
 <!ENTITY saveCmd.label "Gardar...">
@@ -33,9 +32,9 @@
 <!ENTITY quitApplicationCmd.label "Saír">
 <!ENTITY quitApplicationCmd.accesskey "Q">
 
-
 <!ENTITY copyCitationCmd.label "Copiar a cita">
 <!ENTITY copyBibliographyCmd.label "Copiar a bibliografía">
+<!ENTITY copyNoteCmd.label "Copiar nota">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Cambiar a dirección de páxina">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -43,8 +42,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!ENTITY goMenu.label "Ir">
+<!ENTITY goMenu.accesskey "G">
 
 <!ENTITY viewMenu.label "Ver">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Interface">
 <!ENTITY standardView.label "Interface estándar">
 <!ENTITY stackedView.label "Interface agrupada">
@@ -54,7 +56,8 @@
 <!ENTITY recursiveCollections.label "Amosar os elementos das subcolecións">
 <!ENTITY fontSize.label "Tamaño da tipografía:">
 <!ENTITY noteFontSize.label "Tamaño tipográfico das notas">
-
+<!ENTITY columns.label "Columns">
+<!ENTITY sortBy.label "Sort By">
 
 <!ENTITY toolsMenu.label "Ferramentas">
 <!ENTITY toolsMenu.accesskey "F">
@@ -63,18 +66,10 @@
 <!ENTITY addons.label "Engadidos">
 <!ENTITY developer.label "Desenvolvedor">
 
-
-<!ENTITY minimizeWindow.key "e">
-<!ENTITY minimizeWindow.label "Minimizar">
 <!ENTITY bringAllToFront.label "Traer todo a diante">
-<!ENTITY zoomWindow.label "Ampliar">
-<!ENTITY windowMenu.label "Xanela">
-
 
 <!ENTITY helpMenu.label "Axuda">
 <!ENTITY helpMenu.accesskey "A">
-
-
 <!ENTITY helpMenuWin.label "Axuda">
 <!ENTITY helpMenuWin.accesskey "H">
 <!ENTITY helpMac.commandkey "?">

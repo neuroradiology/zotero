@@ -352,13 +352,9 @@ Zotero.ItemTypes = new function() {
 	this._hasCustom = true;
 	
 	var _primaryTypeNames = ['book', 'bookSection', 'journalArticle', 'newspaperArticle', 'document'];
-	var _primaryTypes;
-	var _secondaryTypes;
 	// Item types hidden from New Item menu
 	var _hiddenTypeNames = ['webpage', 'attachment', 'note', 'annotation'];
 	var _hiddenTypes;
-	
-	var _numPrimary = 5;
 	
 	var _customImages = {};
 	var _customLabels = {};
@@ -366,15 +362,6 @@ Zotero.ItemTypes = new function() {
 	
 	this.init = Zotero.Promise.coroutine(function* () {
 		yield this.constructor.prototype.init.apply(this);
-		
-		_primaryTypes = yield this._getTypesFromDB(
-			`WHERE typeName IN ('${_primaryTypeNames.join("', '")}')`
-		);
-		
-		// Secondary types
-		_secondaryTypes = yield this._getTypesFromDB(
-			`WHERE typeName NOT IN ('${_primaryTypeNames.concat(_hiddenTypeNames).join("', '")}')`
-		);
 		
 		// Hidden types
 		_hiddenTypes = yield this._getTypesFromDB(
@@ -394,44 +381,41 @@ Zotero.ItemTypes = new function() {
 	
 	
 	this.getPrimaryTypes = function () {
-		if (!_primaryTypes) {
-			throw new Zotero.Exception.UnloadedDataException("Primary item type data not yet loaded");
-		}
+		var names = _primaryTypeNames.concat();
 		
 		var mru = Zotero.Prefs.get('newItemTypeMRU');
 		if (mru && mru.length) {
 			// Get types from the MRU list
 			mru = new Set(
 				mru.split(',')
-				.slice(0, _numPrimary)
+				.slice(0, _primaryTypeNames.length)
 				.map(name => this.getName(name))
 				// Ignore hidden item types and 'webpage'
 				.filter(name => name && !_hiddenTypeNames.concat('webpage').includes(name))
 			);
 			
 			// Add types from defaults until we reach our limit
-			for (let i = 0; i < _primaryTypes.length && mru.size < _numPrimary; i++) {
-				mru.add(_primaryTypes[i].name);
+			for (let name of _primaryTypeNames) {
+				if (mru.size >= _primaryTypeNames.length) break;
+				mru.add(name);
 			}
 			
-			return Array.from(mru).map(name => ({ id: this.getID(name), name }));
+			names = Array.from(mru);
 		}
 		
-		return _primaryTypes;
+		return names.map(name => ({ id: this.getID(name), name }));
 	}
 
 	this.getSecondaryTypes = function () {
-		if (!_secondaryTypes) {
-			throw new Zotero.Exception.UnloadedDataException("Secondary item type data not yet loaded");
-		}
-		return _secondaryTypes;
+		var namesToRemove = new Set(this.getPrimaryTypes().map(x => x.name).concat(_hiddenTypeNames));
+		return this._typesArray.filter(x => !namesToRemove.has(x.name));
 	}
 	
 	this.getHiddenTypes = function () {
 		if (!_hiddenTypes) {
 			throw new Zotero.Exception.UnloadedDataException("Hidden item type data not yet loaded");
 		}
-		return _hiddenTypes;
+		return _hiddenTypes.concat();
 	}
 	
 	this.getLocalizedString = function (idOrName) {
@@ -455,6 +439,8 @@ Zotero.ItemTypes = new function() {
 	}
 	
 	this.getImageSrc = function (itemType) {
+		Zotero.debug('WARNING: getImageSrc() is deprecated -- use CSS icons');
+		
 		var suffix = Zotero.hiDPISuffix;
 		
 		if (this.isCustom(itemType)) {
@@ -464,19 +450,23 @@ Zotero.ItemTypes = new function() {
 			}
 			return _customImages[id];
 		}
+
+		let isDark = Zotero.getMainWindow()?.matchMedia('(prefers-color-scheme: dark)').matches;
 		
 		switch (itemType) {
 			// Use treeitem.png
-			case 'attachment-file':
+			case 'attachmentFile':
 			case 'document':
 				break;
 			
 			// HiDPI images available
-			case 'attachment-link':
-			case 'attachment-pdf':
-			case 'attachment-pdf-link':
-			case 'attachment-snapshot':
-			case 'attachment-web-link':
+			case 'attachmentLink':
+			case 'attachmentPDF':
+			case 'attachmentPDFLink':
+			case 'attachmentEPUB':
+			case 'attachmentEPUBLink':
+			case 'attachmentSnapshot':
+			case 'attachmentWebLink':
 			case 'artwork':
 			case 'audioRecording':
 			case 'bill':
@@ -486,6 +476,7 @@ Zotero.ItemTypes = new function() {
 			case 'case':
 			case 'computerProgram':
 			case 'conferencePaper':
+			case 'dataset':
 			case 'dictionaryEntry':
 			case 'email':
 			case 'encyclopediaArticle':
@@ -498,26 +489,26 @@ Zotero.ItemTypes = new function() {
 			case 'letter':
 			case 'magazineArticle':
 			case 'manuscript':
+			case 'map':
 			case 'newspaperArticle':
 			case 'note':
 			case 'patent':
+			case 'podcast':
+			case 'preprint':
 			case 'presentation':
+			case 'radioBroadcast':
 			case 'report':
+			case 'standard':
 			case 'statute':
 			case 'thesis':
-			case 'webpage':
-				return "chrome://zotero/skin/treeitem-" + itemType + suffix + ".png";
-			
-			// No HiDPI images available
-			case 'map':
-			case 'podcast':
-			case 'radioBroadcast':
 			case 'tvBroadcast':
 			case 'videoRecording':
-				return "chrome://zotero/skin/treeitem-" + itemType + ".png";
+			case 'webpage':
+				itemType = itemType.replace(/(?<=^|[^A-Z])([A-Z])/g, '-$1').toLowerCase();
+				return "chrome://zotero/skin/item-type/16/" + (isDark ? 'dark' : 'light') + "/" + itemType + suffix + ".svg";
 		}
-		
-		return "chrome://zotero/skin/treeitem" + suffix + ".png";
+
+		return "chrome://zotero/skin/item-type/16/" + (isDark ? 'dark' : 'light') + "/document" + suffix + ".svg";
 	}
 }
 
@@ -535,9 +526,8 @@ Zotero.FileTypes = new function() {
 	/**
 	 * @return {Promise<Integer>} fileTypeID
 	 */
-	this.getIDFromMIMEType = function (mimeType) {
-		var sql = "SELECT fileTypeID FROM fileTypeMIMETypes "
-			+ "WHERE ? LIKE mimeType || '%'";
+	this.getIDFromMIMEType = async function (mimeType) {
+		var sql = "SELECT fileTypeID FROM fileTypeMIMETypes WHERE mimeType = ?";
 		return Zotero.DB.valueQueryAsync(sql, [mimeType]);
 	};
 }

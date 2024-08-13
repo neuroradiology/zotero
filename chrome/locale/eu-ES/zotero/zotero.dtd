@@ -6,7 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Desautatu guztiak">
 <!ENTITY zotero.general.edit "Editatu">
 <!ENTITY zotero.general.delete "Ezabatu">
-<!ENTITY zotero.general.moveToTrash "Move to Trash">
+<!ENTITY zotero.general.moveToTrash "Zakarrontzira mugitu">
 <!ENTITY zotero.general.ok "Ados">
 <!ENTITY zotero.general.cancel "Ezeztatu">
 <!ENTITY zotero.general.refresh "Freskatu">
@@ -15,6 +15,7 @@
 <!ENTITY zotero.general.advancedOptions.label "Aukera aurreratuak">
 <!ENTITY zotero.general.tools "Tresnak">
 <!ENTITY zotero.general.more "Gehiago">
+<!ENTITY zotero.general.moreInformation "Informazio gehiago">
 <!ENTITY zotero.general.loading "Kargatzen...">
 <!ENTITY zotero.general.close "Itxi">
 <!ENTITY zotero.general.minimize "Minimizatu">
@@ -31,67 +32,36 @@
 <!ENTITY zotero.errorReport.postToForums "Mesedez, bidal ezazu mezu bat Zotero foroetara (forums.zotero.org) Txosten ID hau, arazoaren deskribapen bat, eta arazoa sortzeko urratsak azalduz.">
 <!ENTITY zotero.errorReport.notReviewed "Errore txostenak ez daude ikusgarri foroetan erreferentziarik egiten ez zaien artean.">
 
-<!ENTITY zotero.upgrade.title "Zotero eguneratzeko morroia">
+<!ENTITY zotero.upgrade.title "Zotero bertsio-berritzeko morroia">
 <!ENTITY zotero.upgrade.newVersionInstalled "Zotero-ren bertsio berria instalatu egin duzu.">
-<!ENTITY zotero.upgrade.upgradeRequired "Zure Zotero datu-basea eguneratu behar da bertsio berriarekin erabili ahal izateko.">
+<!ENTITY zotero.upgrade.upgradeRequired "Zure Zotero datu-basea bertsio-berritu egin behar da bertsio berriarekin erabili ahal izateko.">
 <!ENTITY zotero.upgrade.autoBackup "Zure oraingo datu-basea gorde egingo da inolako aldaketarik egin baino lehen..">
-<!ENTITY zotero.upgrade.majorUpgrade "Eguneraketa hau garrantzitsua da.">
+<!ENTITY zotero.upgrade.majorUpgrade "Bertsio-berritze hau garrantzitsua da.">
 <!ENTITY zotero.upgrade.majorUpgradeBeforeLink "Irakur itzazu">
-<!ENTITY zotero.upgrade.majorUpgradeLink "eguneraketa argibideak">
+<!ENTITY zotero.upgrade.majorUpgradeLink "bertsio-berritzerako argibideak">
 <!ENTITY zotero.upgrade.majorUpgradeAfterLink "jarraitu aurretik.">
-<!ENTITY zotero.upgrade.upgradeInProgress "Mesedez, itxaron eguneraketa burutu arte. Horrek minutu batzuk iraun ditzake.">
-<!ENTITY zotero.upgrade.upgradeSucceeded "Zure Zotero datu-basea eguneratu egin da.">
+<!ENTITY zotero.upgrade.upgradeInProgress "Mesedez, itxaron bertsio-berritzea burutu arte. Horrek minutu batzuk iraun ditzake.">
+<!ENTITY zotero.upgrade.upgradeSucceeded "Zure Zotero datu-basea bertsio-berritu egin da.">
 <!ENTITY zotero.upgrade.changeLogBeforeLink "Ikus ezazu">
 <!ENTITY zotero.upgrade.changeLogLink "aldaketen erregistroa">
 <!ENTITY zotero.upgrade.changeLogAfterLink "berrikuntzen berri izateko.">
 
-<!ENTITY zotero.tabs.info.label "Info">
 <!ENTITY zotero.tabs.notes.label "Oharrak">
 <!ENTITY zotero.tabs.attachments.label "Eranskinak">
-<!ENTITY zotero.tabs.tags.label "Etiketak">
-<!ENTITY zotero.tabs.related.label "Erlazionatutakoak">
-<!ENTITY zotero.notes.separate "Editatu lehio berri batean">
 
 <!ENTITY zotero.toolbar.duplicate.label "Bikoiztuak erakutsi">
 <!ENTITY zotero.collections.showUnfiledItems "Erakutsi artxibatu gabeko elemetuak">
 <!ENTITY zotero.collections.showRetractedItems "Erakutsi erretiratutako elementuak">
 
 <!ENTITY zotero.items.itemType "Elementu mota">
-<!ENTITY zotero.items.type_column "Elementu mota">
-<!ENTITY zotero.items.title_column "Izenburua">
 <!ENTITY zotero.items.creator_column "Egilea">
-<!ENTITY zotero.items.date_column "Data">
 <!ENTITY zotero.items.year_column "Urtea">
-<!ENTITY zotero.items.publisher_column "Argitaratzailea">
-<!ENTITY zotero.items.publication_column "Argitalpena">
-<!ENTITY zotero.items.journalAbbr_column "Aldizkaria labur">
-<!ENTITY zotero.items.language_column "Hizkuntza">
-<!ENTITY zotero.items.accessDate_column "Sartua">
-<!ENTITY zotero.items.libraryCatalog_column "Liburutegi katalogoa">
-<!ENTITY zotero.items.callNumber_column "Dei Zbk">
-<!ENTITY zotero.items.rights_column "Jabetza">
-<!ENTITY zotero.items.dateAdded_column "Noiz gehitua">
 <!ENTITY zotero.items.dateModified_column "Noiz aldatua">
-<!ENTITY zotero.items.extra_column "Estra">
-<!ENTITY zotero.items.archive_column "Artxiboa">
-<!ENTITY zotero.items.archiveLocation_column "Kok. artxiboan">
-<!ENTITY zotero.items.place_column "Tokia">
-<!ENTITY zotero.items.volume_column "Liburukia">
-<!ENTITY zotero.items.edition_column "Edizioa">
-<!ENTITY zotero.items.pages_column "Orrialdeak">
-<!ENTITY zotero.items.issue_column "Zenbakia">
-<!ENTITY zotero.items.series_column "Bilduma">
-<!ENTITY zotero.items.seriesTitle_column "Bildumaren izenburua">
-<!ENTITY zotero.items.court_column "Auzitegia">
-<!ENTITY zotero.items.medium_column "Bitartekoa/formatua">
-<!ENTITY zotero.items.genre_column "Generoa">
-<!ENTITY zotero.items.system_column "Sistema">
 <!ENTITY zotero.items.moreColumns.label "Zutabe gehiago">
 <!ENTITY zotero.items.restoreColumnOrder.label "Zutabeen ordena berrezarri">
 
 <!ENTITY zotero.items.menu.showInLibrary "Erakutsi liburutegian">
 <!ENTITY zotero.items.menu.attach.note "Oharra gehitu">
-<!ENTITY zotero.items.menu.attach.noteFromAnnotations "Add Note from Annotations">
 <!ENTITY zotero.items.menu.attach "Eranskina gehitu">
 <!ENTITY zotero.items.menu.attach.link.uri "URI baterako esteka erantsi...">
 <!ENTITY zotero.items.menu.attach.file "Gordetako dokumentu baten kopia erantsi">
@@ -101,7 +71,6 @@
 <!ENTITY zotero.items.menu.duplicateItem "Elementua bikoiztu">
 <!ENTITY zotero.items.menu.mergeItems "Elementuak bateratu...">
 <!ENTITY zotero.items.menu.unrecognize "Metadatuak berreskuratzea desegin">
-<!ENTITY zotero.items.menu.reportMetadata "Metadatu okerrak salatu">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Elementu nagusi gisa erabiltzeko elementuaren bertsioa aukeratu:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Elementuaren beste bertsioetatik mantentzeko eremuak hautatu:">
@@ -112,7 +81,6 @@
 <!ENTITY zotero.toolbar.removeItem.label "Elementua kendu...">
 <!ENTITY zotero.toolbar.newLibrary.label "Liburutegi berria...">
 <!ENTITY zotero.toolbar.newCollection.label "Bilduma berria...">
-<!ENTITY zotero.toolbar.markFeedRead.label "Jarioa irakurritzat eman">
 <!ENTITY zotero.toolbar.newGroup "Talde berria...">
 <!ENTITY zotero.toolbar.newSubcollection.label "Azpi-bilduma berria...">
 <!ENTITY zotero.toolbar.newSavedSearch.label "Gordetako bilaketa berria...">
@@ -134,7 +102,6 @@
 <!ENTITY zotero.toolbar.feeds.new "Jario berria">
 <!ENTITY zotero.toolbar.feeds.new.fromURL "URL batetik...">
 <!ENTITY zotero.toolbar.feeds.new.fromOPML "OPML bitartez...">
-<!ENTITY zotero.toolbar.feeds.refresh "Freskatu jarioa">
 <!ENTITY zotero.toolbar.feeds.edit "Editatu jarioa...">
 
 <!ENTITY zotero.item.add "Gehitu">
@@ -142,8 +109,8 @@
 <!ENTITY zotero.item.textTransform "Testua bihurtu">
 <!ENTITY zotero.item.textTransform.titlecase "Hitz Bakoitza Letra Larriz">
 <!ENTITY zotero.item.textTransform.sentencecase "Lehen letra letra larriz">
-<!ENTITY zotero.item.creatorTransform.nameSwap "Izen-abizenak trukatu">
-<!ENTITY zotero.item.viewOnline "Linean ikusi">
+<!ENTITY zotero.item.creatorTransform.nameSwap "Trukatu lehena/azkena">
+<!ENTITY zotero.item.creatorTransform.fixCase "Konpondu letra-kaxa">
 <!ENTITY zotero.item.copyAsURL "Kopiatu URL gisa">
 <!ENTITY zotero.item.deletePermanently "Betirako ezabatu...">
 
@@ -157,8 +124,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Fitxategi baten kopia gorde...">
 <!ENTITY zotero.toolbar.attachment.weblink "Oraingo orriaren esteka gorde">
 <!ENTITY zotero.toolbar.attachment.snapshot "Oraingo orrialdearen pantaila-irudia gorde">
-<!ENTITY zotero.toolbar.context.item "Item">
-<!ENTITY zotero.toolbar.context.notes "Notes">
+<!ENTITY zotero.toolbar.context.item "Elementua">
+<!ENTITY zotero.toolbar.context.notes "Oharrak">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Etiketarik ez erakusgarri">
 <!ENTITY zotero.tagSelector.loadingTags "Etiketak kargatzen...">
@@ -169,6 +136,7 @@
 <!ENTITY zotero.tagSelector.assignColor "Kolorea esleitu...">
 <!ENTITY zotero.tagSelector.renameTag "Etiketaren izena aldatu...">
 <!ENTITY zotero.tagSelector.deleteTag "Etiketa ezabatu...">
+<!ENTITY zotero.tagSelector.splitTag "Banatu...">
 
 <!ENTITY zotero.tagColorChooser.title "Etiketaren kolorea eta posizioa aukeratu">
 <!ENTITY zotero.tagColorChooser.color "Kolorea:">
@@ -209,12 +177,15 @@
 <!ENTITY zotero.import "Inportatu">
 <!ENTITY zotero.import.whereToImportFrom "Nondik inportatu nahi duzu?">
 <!ENTITY zotero.import.source.file "Fitxategi bat (BibTex, RIS, Zotero RDF etab.)">
+<!ENTITY zotero.import.source.folder "PDF edo bestelako fitxategidun karpeta">
+<!ENTITY zotero.import.onlineImport "lineako inportazioa">
 <!ENTITY zotero.import.importing "Inportatzen...">
 <!ENTITY zotero.import.database "Datubasea">
 <!ENTITY zotero.import.lastModified "Azkenekoz aldatua">
 <!ENTITY zotero.import.size "Tamaina">
 <!ENTITY zotero.import.createCollection "Inportatutako bilduma eta elementuak bilduma berri batean kokatu">
 <!ENTITY zotero.import.fileHandling "Fitxategien erabilera">
+<!ENTITY zotero.import.online.newItemsOnly "Deskargatu elementu berriak bakarrik; ez eguneratu lehenago inportatutako elementurik">
 
 <!ENTITY zotero.exportOptions.title "Esportatu...">
 <!ENTITY zotero.exportOptions.format.label "Formatua:">
@@ -225,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Iturriak ordenaturik mantendu">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Ezkutatu autorea">
+<!ENTITY zotero.citation.suppressAuthor.label "Egilerik ez aipatu">
 <!ENTITY zotero.citation.prefix.label "Aurrizkia:">
 <!ENTITY zotero.citation.suffix.label "Atzizkia:">
 <!ENTITY zotero.citation.editorWarning.label "Kontuz: aipu bat editorearen bitartez editatzen baduzu, ez da gehiago eguneratuko zure datubasean edo aipuen estiloan egon daitezkeen aldaketak islatzeko.">
@@ -281,7 +252,7 @@
 <!ENTITY zotero.sync.longTagFixer.tagWillBeDeleted "Etiketa hau elementu guztietatik kenduko da.">
 
 <!ENTITY zotero.merge.title "Gatazkak konpondu">
-<!ENTITY zotero.merge.of "of">
+<!ENTITY zotero.merge.of "(e)tik">
 <!ENTITY zotero.merge.deleted "Ezabatuta">
 
 <!ENTITY zotero.proxy.recognized.title "Proxya ezagututa">
@@ -330,8 +301,33 @@
 <!ENTITY zotero.attachLink.label.link "Esteka:">
 <!ENTITY zotero.attachLink.label.title "Izenburua:">
 
-<!ENTITY zotero.context.addChildNote "Add Item Note">
-<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
-<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
-<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
-<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+<!ENTITY zotero.context.addChildNote "Elementuaren oharra gehitu">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Elementuaren oharra gehitu oharpenetara">
+<!ENTITY zotero.context.addStandaloneNote "Ohar autonomoa gehitu">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Ohar autonomoa gehitu oharpenetatik">
+<!ENTITY zotero.context.editInWindow "Aparteko leihoan editatu">
+
+<!ENTITY zotero.pdfReader.firstPage "Lehen orrialdea">
+<!ENTITY zotero.pdfReader.lastPage "Azken orrialdea">
+<!ENTITY zotero.pdfReader.back "Atzera">
+<!ENTITY zotero.pdfReader.forward "Aurrera">
+<!ENTITY zotero.pdfReader.handTool "Esku tresna">
+<!ENTITY zotero.pdfReader.verticalScrolling "Desplazamendu bertikala">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Desplazamendu horizontala">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Desplazamendu egokitua">
+<!ENTITY zotero.pdfReader.noSpreads "Xaflarik ez">
+<!ENTITY zotero.pdfReader.oddSpreads "Xafla bakoitiak">
+<!ENTITY zotero.pdfReader.evenSpreads "Xafla bikoitiak">
+<!ENTITY zotero.pdfReader.scrolled "Scrolled">
+<!ENTITY zotero.pdfReader.paginated "Paginated">
+<!ENTITY zotero.pdfReader.zoomIn "Gerturatu">
+<!ENTITY zotero.pdfReader.zoomOut "Urrundu">
+<!ENTITY zotero.pdfReader.zoomReset "Reset Zoom">
+<!ENTITY zotero.pdfReader.zoomAuto "Tamaina automatikoki egokitu">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Orrialdearen zabalerara zoom egin">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Orrialdearen altuerara zoom egin">
+<!ENTITY zotero.pdfReader.splitVertically "Zatitu bertikalean">
+<!ENTITY zotero.pdfReader.splitHorizontally "Zatitu horizontalean">
+<!ENTITY zotero.pdfReader.transferFromPDF "Oharpenak inportatu">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Biratu orrialdea ezkerretara">
+<!ENTITY zotero.pdfReader.rotatePageRight "Biratu orrialdea eskubitara">
